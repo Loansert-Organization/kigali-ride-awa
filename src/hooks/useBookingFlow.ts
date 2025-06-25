@@ -1,124 +1,180 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from "@/hooks/use-toast";
-import { EdgeFunctionService, CreateTripRequest } from "@/services/EdgeFunctionService";
+import { useState, useCallback } from 'react';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from '@/hooks/useAuth';
+import { useErrorHandler } from './useErrorHandler';
 
-export interface TripData {
-  fromLocation: string;
-  toLocation: string;
-  fromLat?: number;
-  fromLng?: number;
-  toLat?: number;
-  toLng?: number;
-  scheduledTime: string;
-  vehicleType: string;
-  description?: string;
+interface BookingFlowService {
+  createBooking: (passengerTripId: string, driverTripId: string) => Promise<boolean>;
+  confirmBooking: (bookingId: string) => Promise<boolean>;
+  cancelBooking: (bookingId: string) => Promise<boolean>;
+  launchWhatsApp: (phoneNumber?: string, tripDetails?: any) => void;
+  isLoading: boolean;
 }
 
-export const useBookingFlow = () => {
-  const navigate = useNavigate();
+export const useBookingFlow = (): BookingFlowService => {
+  const { user } = useAuth();
+  const { handleError, handleSuccess } = useErrorHandler();
   const [isLoading, setIsLoading] = useState(false);
 
-  const createPassengerTrip = async (tripData: TripData) => {
+  const createBooking = useCallback(async (
+    passengerTripId: string, 
+    driverTripId: string
+  ): Promise<boolean> => {
+    if (!user) {
+      handleError(new Error('User not authenticated'), 'BookingFlow.createBooking');
+      return false;
+    }
+
     setIsLoading(true);
     try {
-      // Get current user
-      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-      
-      // Convert TripData to CreateTripRequest format with proper field mapping
-      const tripRequest: CreateTripRequest = {
-        user_id: currentUser.id,
-        role: 'passenger',
-        from_location: tripData.fromLocation,
-        from_lat: tripData.fromLat,
-        from_lng: tripData.fromLng,
-        to_location: tripData.toLocation,
-        to_lat: tripData.toLat,
-        to_lng: tripData.toLng,
-        vehicle_type: tripData.vehicleType,
-        scheduled_time: tripData.scheduledTime,
-        seats_available: 1,
-        is_negotiable: true,
-        description: tripData.description
-      };
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert({
+          passenger_trip_id: passengerTripId,
+          driver_trip_id: driverTripId,
+          confirmed: false
+        })
+        .select()
+        .single();
 
-      const response = await EdgeFunctionService.createTrip(tripRequest);
+      if (error) throw error;
 
-      if (response.success) {
-        toast({
-          title: "Trip Request Created!",
-          description: "Looking for available drivers..."
-        });
-        
-        // Navigate to matches page with trip ID
-        navigate('/matches', { 
-          state: { tripId: response.trip.id, tripData } 
-        });
-        
-        return response.trip;
-      }
-    } catch (error) {
-      console.error('Error creating passenger trip:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create trip request. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const findMatches = async (passengerTripId: string) => {
-    try {
-      const response = await EdgeFunctionService.matchPassengerDriver(
-        'find_matches',
-        passengerTripId
+      await handleSuccess(
+        'Booking request sent successfully!',
+        'BookingFlow.createBooking',
+        { bookingId: data.id }
       );
 
-      if (response.success) {
-        return response.matches || [];
-      }
-      return [];
+      return true;
     } catch (error) {
-      console.error('Error finding matches:', error);
-      return [];
-    }
-  };
-
-  const createBooking = async (passengerTripId: string, driverTripId: string) => {
-    setIsLoading(true);
-    try {
-      const response = await EdgeFunctionService.matchPassengerDriver(
-        'create_booking',
+      await handleError(error, 'BookingFlow.createBooking', {
         passengerTripId,
         driverTripId
-      );
-
-      if (response.success) {
-        toast({
-          title: "Booking Confirmed!",
-          description: "Your ride has been booked successfully"
-        });
-        return response.booking;
-      }
-    } catch (error) {
-      console.error('Error creating booking:', error);
-      toast({
-        title: "Booking Failed",
-        description: "Could not confirm your booking. Please try again.",
-        variant: "destructive"
       });
+      return false;
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, handleError, handleSuccess]);
+
+  const confirmBooking = useCallback(async (bookingId: string): Promise<boolean> => {
+    if (!user) {
+      handleError(new Error('User not authenticated'), 'BookingFlow.confirmBooking');
+      return false;
+    }
+
+    setIsLoading(true);
+    try {
+      // Update booking confirmation
+      const { error: bookingError } = await supabase
+        .from('bookings')
+        .update({ confirmed: true })
+        .eq('id', bookingId);
+
+      if (bookingError) throw bookingError;
+
+      // Update trip status to matched
+      const { data: booking } = await supabase
+        .from('bookings')
+        .select(`
+          passenger_trip_id,
+          driver_trip_id,
+          trips!inner(*)
+        `)
+        .eq('id', bookingId)
+        .single();
+
+      if (booking) {
+        await supabase
+          .from('trips')
+          .update({ status: 'matched' })
+          .in('id', [booking.passenger_trip_id, booking.driver_trip_id]);
+      }
+
+      await handleSuccess(
+        'Booking confirmed! You can now coordinate via WhatsApp.',
+        'BookingFlow.confirmBooking',
+        { bookingId }
+      );
+
+      return true;
+    } catch (error) {
+      await handleError(error, 'BookingFlow.confirmBooking', { bookingId });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, handleError, handleSuccess]);
+
+  const cancelBooking = useCallback(async (bookingId: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .delete()
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      await handleSuccess(
+        'Booking cancelled successfully',
+        'BookingFlow.cancelBooking',
+        { bookingId }
+      );
+
+      return true;
+    } catch (error) {
+      await handleError(error, 'BookingFlow.cancelBooking', { bookingId });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [handleError, handleSuccess]);
+
+  const launchWhatsApp = useCallback((phoneNumber?: string, tripDetails?: any) => {
+    try {
+      const defaultMessage = tripDetails 
+        ? `Hi! I'm contacting you about the ride from ${tripDetails.from_location} to ${tripDetails.to_location}. Let's coordinate the details!`
+        : "Hi! I'm contacting you about our Kigali Ride booking. Let's coordinate the details!";
+
+      const encodedMessage = encodeURIComponent(defaultMessage);
+      
+      let whatsappUrl: string;
+      if (phoneNumber) {
+        // Remove any non-numeric characters and ensure it starts with country code
+        const cleanNumber = phoneNumber.replace(/\D/g, '');
+        const formattedNumber = cleanNumber.startsWith('250') ? cleanNumber : `250${cleanNumber}`;
+        whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodedMessage}`;
+      } else {
+        // Open WhatsApp without specific number
+        whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+      }
+
+      window.open(whatsappUrl, '_blank');
+      
+      handleSuccess(
+        'WhatsApp opened successfully',
+        'BookingFlow.launchWhatsApp',
+        { phoneNumber, tripDetails }
+      );
+    } catch (error) {
+      handleError(error, 'BookingFlow.launchWhatsApp', { phoneNumber });
+      
+      // Fallback: copy message to clipboard
+      const fallbackMessage = tripDetails 
+        ? `Hi! Ride: ${tripDetails.from_location} to ${tripDetails.to_location}`
+        : "Hi! Kigali Ride booking - let's coordinate!";
+      
+      navigator.clipboard?.writeText(fallbackMessage).catch(() => {});
+    }
+  }, [handleError, handleSuccess]);
 
   return {
-    createPassengerTrip,
-    findMatches,
     createBooking,
+    confirmBooking,
+    cancelBooking,
+    launchWhatsApp,
     isLoading
   };
 };

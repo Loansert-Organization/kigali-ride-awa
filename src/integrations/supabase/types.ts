@@ -45,7 +45,21 @@ export type Database = {
             foreignKeyName: "admin_trip_flags_admin_user_id_fkey"
             columns: ["admin_user_id"]
             isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "admin_trip_flags_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_trip_flags_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_rewards_leaderboard_view"
             referencedColumns: ["id"]
           },
           {
@@ -53,6 +67,61 @@ export type Database = {
             columns: ["trip_id"]
             isOneToOne: false
             referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_logs: {
+        Row: {
+          component: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          message: string
+          metadata: Json | null
+          severity: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          severity?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          severity?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "agent_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_rewards_leaderboard_view"
             referencedColumns: ["id"]
           },
         ]
@@ -102,6 +171,55 @@ export type Database = {
           },
         ]
       }
+      driver_presence: {
+        Row: {
+          driver_id: string
+          is_online: boolean | null
+          last_seen: string | null
+          lat: number | null
+          lng: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          driver_id: string
+          is_online?: boolean | null
+          last_seen?: string | null
+          lat?: number | null
+          lng?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          driver_id?: string
+          is_online?: boolean | null
+          last_seen?: string | null
+          lat?: number | null
+          lng?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_presence_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_presence_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_presence_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "weekly_rewards_leaderboard_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_profiles: {
         Row: {
           created_at: string
@@ -135,7 +253,21 @@ export type Database = {
             foreignKeyName: "driver_profiles_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "weekly_rewards_leaderboard_view"
             referencedColumns: ["id"]
           },
         ]
@@ -176,7 +308,76 @@ export type Database = {
             foreignKeyName: "favorites_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_rewards_leaderboard_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_uploads: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          upload_type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          upload_type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          upload_type?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_uploads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "file_uploads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_uploads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_rewards_leaderboard_view"
             referencedColumns: ["id"]
           },
         ]
@@ -221,10 +422,109 @@ export type Database = {
             foreignKeyName: "incidents_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "incidents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "incidents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_rewards_leaderboard_view"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      push_tokens: {
+        Row: {
+          created_at: string | null
+          device_type: string | null
+          id: string
+          is_active: boolean | null
+          token: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          token: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          token?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_rewards_leaderboard_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      queue_tasks: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          event: string
+          id: number
+          payload: Json
+          processed_at: string | null
+          scheduled_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          event: string
+          id?: number
+          payload?: Json
+          processed_at?: string | null
+          scheduled_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          event?: string
+          id?: number
+          payload?: Json
+          processed_at?: string | null
+          scheduled_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       trip_heatmap_logs: {
         Row: {
@@ -327,7 +627,21 @@ export type Database = {
             foreignKeyName: "trips_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "trips_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_rewards_leaderboard_view"
             referencedColumns: ["id"]
           },
         ]
@@ -371,6 +685,34 @@ export type Database = {
             foreignKeyName: "user_referrals_referee_id_fkey"
             columns: ["referee_id"]
             isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "user_referrals_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_referrals_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_rewards_leaderboard_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "user_referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -378,7 +720,7 @@ export type Database = {
             foreignKeyName: "user_referrals_referrer_id_fkey"
             columns: ["referrer_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "weekly_rewards_leaderboard_view"
             referencedColumns: ["id"]
           },
         ]
@@ -419,7 +761,21 @@ export type Database = {
             foreignKeyName: "user_rewards_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "user_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_rewards_leaderboard_view"
             referencedColumns: ["id"]
           },
         ]
@@ -466,11 +822,109 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_logs: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          event_type: string
+          id: string
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          webhook_url: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+          webhook_url?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      admin_dashboard_stats_view: {
+        Row: {
+          online_drivers: number | null
+          total_bookings: number | null
+          total_drivers: number | null
+          total_referrals: number | null
+          total_rewards_issued: number | null
+          total_trips: number | null
+          total_users: number | null
+          weekly_bookings: number | null
+          weekly_new_users: number | null
+          weekly_referrals: number | null
+          weekly_trips: number | null
+        }
+        Relationships: []
+      }
+      daily_activity_snapshot_view: {
+        Row: {
+          bookings_created: number | null
+          date: string | null
+          drivers_joined: number | null
+          trips_created: number | null
+          users_joined: number | null
+        }
+        Relationships: []
+      }
+      driver_booking_success_view: {
+        Row: {
+          booking_rate_percent: number | null
+          bookings_confirmed: number | null
+          bookings_received: number | null
+          confirmation_rate_percent: number | null
+          driver_id: string | null
+          promo_code: string | null
+          trips_posted: number | null
+          vehicle_type: string | null
+        }
+        Relationships: []
+      }
+      heatmap_aggregated_view: {
+        Row: {
+          completion_rate: number | null
+          hour_bucket: string | null
+          lat_rounded: number | null
+          lng_rounded: number | null
+          role: string | null
+          trip_count: number | null
+        }
+        Relationships: []
+      }
+      weekly_rewards_leaderboard_view: {
+        Row: {
+          id: string | null
+          promo_code: string | null
+          referrals_made: number | null
+          role: string | null
+          total_points: number | null
+          week_start: string | null
+          weekly_rank: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      expire_old_trips: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       generate_promo_code: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -479,6 +933,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      invoke_queue_worker: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -486,6 +944,30 @@ export type Database = {
       is_owner: {
         Args: { check_user_id: string }
         Returns: boolean
+      }
+      postgres_fdw_disconnect: {
+        Args: { "": string }
+        Returns: boolean
+      }
+      postgres_fdw_disconnect_all: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      postgres_fdw_get_connections: {
+        Args: Record<PropertyKey, never>
+        Returns: Record<string, unknown>[]
+      }
+      postgres_fdw_handler: {
+        Args: Record<PropertyKey, never>
+        Returns: unknown
+      }
+      process_weekly_rewards: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      refresh_materialized_view: {
+        Args: { view_name: string }
+        Returns: undefined
       }
     }
     Enums: {

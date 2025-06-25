@@ -1,6 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  useAdminDashboardStats, 
+  useWeeklyRewardsLeaderboard, 
+  useDailyActivitySnapshot 
+} from './useAnalyticsViews';
 
 export interface AdminDashboardData {
   kpis: {
@@ -10,16 +15,25 @@ export interface AdminDashboardData {
     totalReferrals: number;
     weeklyActiveUsers: number;
     totalRewards: number;
+    weeklyTrips: number;
+    weeklyBookings: number;
+    onlineDrivers: number;
   };
   users: any[];
   trips: any[];
   aiLogs: any[];
+  leaderboard: any[];
+  dailyActivity: any[];
 }
 
 export const useAdminDashboard = (refreshTrigger: number) => {
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  const { data: statsData, isLoading: statsLoading } = useAdminDashboardStats();
+  const { data: leaderboardData, isLoading: leaderboardLoading } = useWeeklyRewardsLeaderboard();
+  const { data: dailyActivityData, isLoading: activityLoading } = useDailyActivitySnapshot();
 
   useEffect(() => {
     loadDashboardData();
@@ -30,41 +44,6 @@ export const useAdminDashboard = (refreshTrigger: number) => {
       setIsLoading(true);
       setError(null);
 
-      // Load KPI data - RLS will handle admin access
-      const [
-        { count: totalUsers },
-        { count: totalTrips },
-        { count: totalBookings },
-        { count: totalReferrals },
-        { data: recentUsers },
-        { data: trips },
-        { data: rewards }
-      ] = await Promise.all([
-        supabase.from('users').select('*', { count: 'exact', head: true }),
-        supabase.from('trips').select('*', { count: 'exact', head: true }),
-        supabase.from('bookings').select('*', { count: 'exact', head: true }),
-        supabase.from('user_referrals').select('*', { count: 'exact', head: true }),
-        supabase.from('users').select('*').gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-        supabase.from('trips').select(`
-          *, 
-          users!inner(
-            promo_code
-          )
-        `).order('created_at', { ascending: false }).limit(50),
-        supabase.from('user_rewards').select('points').eq('reward_issued', true)
-      ]);
-
-      const totalRewardsIssued = rewards?.reduce((sum, r) => sum + (r.points || 0), 0) || 0;
-
-      const kpis = {
-        totalUsers: totalUsers || 0,
-        totalTrips: totalTrips || 0,
-        totalBookings: totalBookings || 0,
-        totalReferrals: totalReferrals || 0,
-        weeklyActiveUsers: recentUsers?.length || 0,
-        totalRewards: totalRewardsIssued
-      };
-
       // Load user data
       const { data: users } = await supabase
         .from('users')
@@ -72,31 +51,53 @@ export const useAdminDashboard = (refreshTrigger: number) => {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      // Mock AI logs for now
-      const aiLogs = [
-        {
-          id: '1',
-          timestamp: new Date().toISOString(),
-          agent: 'trip-matcher',
-          action: 'match_found',
-          details: 'Matched passenger with driver',
-          status: 'success'
-        },
-        {
-          id: '2',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          agent: 'referral-validator',
-          action: 'validate_referral',
-          details: 'Processed weekly referral rewards',
-          status: 'success'
-        }
-      ];
+      // Load trip data with user info
+      const { data: trips } = await supabase
+        .from('trips')
+        .select(`
+          *, 
+          users!inner(promo_code)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      // Load recent agent logs
+      const { data: aiLogs } = await supabase
+        .from('agent_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      // Combine analytics data with fallbacks
+      const kpis = statsData ? {
+        totalUsers: statsData.total_users || 0,
+        totalTrips: statsData.total_trips || 0,
+        totalBookings: statsData.total_bookings || 0,
+        totalReferrals: statsData.total_referrals || 0,
+        weeklyActiveUsers: statsData.weekly_new_users || 0,
+        totalRewards: statsData.total_rewards_issued || 0,
+        weeklyTrips: statsData.weekly_trips || 0,
+        weeklyBookings: statsData.weekly_bookings || 0,
+        onlineDrivers: statsData.online_drivers || 0
+      } : {
+        totalUsers: 0,
+        totalTrips: 0,
+        totalBookings: 0,
+        totalReferrals: 0,
+        weeklyActiveUsers: 0,
+        totalRewards: 0,
+        weeklyTrips: 0,
+        weeklyBookings: 0,
+        onlineDrivers: 0
+      };
 
       setData({
         kpis,
         users: users || [],
         trips: trips || [],
-        aiLogs
+        aiLogs: aiLogs || [],
+        leaderboard: leaderboardData || [],
+        dailyActivity: dailyActivityData || []
       });
 
     } catch (err) {
@@ -107,5 +108,12 @@ export const useAdminDashboard = (refreshTrigger: number) => {
     }
   };
 
-  return { data, isLoading, error, refetch: loadDashboardData };
+  const allLoading = statsLoading || leaderboardLoading || activityLoading || isLoading;
+
+  return { 
+    data, 
+    isLoading: allLoading, 
+    error, 
+    refetch: loadDashboardData 
+  };
 };
