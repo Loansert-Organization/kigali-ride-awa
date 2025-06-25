@@ -3,8 +3,11 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MapPin, Navigation, Map, Keyboard } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
+import LocationPicker from '@/components/maps/LocationPicker';
+import { googleMapsService } from '@/services/GoogleMapsService';
 
 interface Favorite {
   id: string;
@@ -35,23 +38,17 @@ const LocationInputBlock: React.FC<LocationInputBlockProps> = ({
 }) => {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [manualInput, setManualInput] = useState(false);
+  const [showMapPicker, setShowMapPickerDialog] = useState(false);
 
   const handleUseMyLocation = async () => {
     setIsGettingLocation(true);
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000
-        });
-      });
+      const location = await googleMapsService.getCurrentLocation();
+      const address = await googleMapsService.geocodeLocation(
+        new google.maps.LatLng(location.lat, location.lng)
+      );
       
-      // Use reverse geocoding or set coordinates directly
-      onChange("Current Location", {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      });
+      onChange(address, location);
       
       toast({
         title: "Location detected",
@@ -76,6 +73,11 @@ const LocationInputBlock: React.FC<LocationInputBlockProps> = ({
     } : undefined);
   };
 
+  const handleMapSelection = (location: { lat: number; lng: number; address: string }) => {
+    onChange(location.address, { lat: location.lat, lng: location.lng });
+    setShowMapPickerDialog(false);
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -96,14 +98,27 @@ const LocationInputBlock: React.FC<LocationInputBlockProps> = ({
             )}
             
             {showMapPicker && (
-              <Button
-                onClick={() => {/* TODO: Open map picker modal */}}
-                className="w-full justify-start h-12"
-                variant="outline"
-              >
-                <Map className="w-5 h-5 mr-3" />
-                🗺️ Pick on map
-              </Button>
+              <Dialog open={showMapPicker} onOpenChange={setShowMapPickerDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full justify-start h-12"
+                    variant="outline"
+                  >
+                    <Map className="w-5 h-5 mr-3" />
+                    🗺️ Pick on map
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl h-[80vh]">
+                  <DialogHeader>
+                    <DialogTitle>Select Location on Map</DialogTitle>
+                  </DialogHeader>
+                  <LocationPicker
+                    onLocationSelect={handleMapSelection}
+                    placeholder="Search for a location..."
+                    height="60vh"
+                  />
+                </DialogContent>
+              </Dialog>
             )}
             
             <Button
