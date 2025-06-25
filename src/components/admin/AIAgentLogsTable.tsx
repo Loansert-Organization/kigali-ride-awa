@@ -1,221 +1,164 @@
 
 import React, { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, XCircle, Eye, RefreshCw } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, Bot, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
-interface AILogData {
+interface AIAgentLog {
   id: string;
   timestamp: string;
-  agentName: string;
+  agent: string;
   action: string;
-  status: 'success' | 'failure';
-  error?: string;
-  payload?: any;
+  details: string;
+  status: 'success' | 'error' | 'warning';
+  user_id?: string;
+  trip_id?: string;
 }
 
-interface AIAgentLogsTableProps {
-  data?: AILogData[];
-}
+const AIAgentLogsTable: React.FC = () => {
+  const [logs, setLogs] = useState<AIAgentLog[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-export const AIAgentLogsTable: React.FC<AIAgentLogsTableProps> = ({ data = [] }) => {
-  const [agentFilter, setAgentFilter] = useState<string>('all');
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [selectedLog, setSelectedLog] = useState<AILogData | null>(null);
-
-  // Mock data for demonstration
-  const mockLogs: AILogData[] = [
-    {
-      id: '1',
-      timestamp: new Date().toISOString(),
-      agentName: 'RideMatchAgent',
-      action: 'Matched passenger with driver',
-      status: 'success'
-    },
-    {
-      id: '2',
-      timestamp: new Date(Date.now() - 300000).toISOString(),
-      agentName: 'GeocodeAgent',
-      action: 'Geocoded address',
-      status: 'failure',
-      error: 'Invalid address format'
-    },
-    {
-      id: '3',
-      timestamp: new Date(Date.now() - 600000).toISOString(),
-      agentName: 'NotificationAgent',
-      action: 'Sent WhatsApp message',
-      status: 'success'
+  const loadLogs = async () => {
+    setIsLoading(true);
+    try {
+      // Mock data - in real implementation, this would fetch from agent_logs table
+      const mockLogs: AIAgentLog[] = [
+        {
+          id: '1',
+          timestamp: new Date().toISOString(),
+          agent: 'trip-matcher',
+          action: 'match_passenger_driver',
+          details: 'Successfully matched passenger with driver (Score: 85)',
+          status: 'success'
+        },
+        {
+          id: '2',
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          agent: 'referral-validator',
+          action: 'validate_weekly_referrals',
+          details: 'Processed 12 referrals, awarded 45 points',
+          status: 'success'
+        },
+        {
+          id: '3',
+          timestamp: new Date(Date.now() - 7200000).toISOString(),
+          agent: 'fraud-detector',
+          action: 'check_suspicious_activity',
+          details: 'Flagged user for potential fake trips',
+          status: 'warning'
+        },
+        {
+          id: '4',
+          timestamp: new Date(Date.now() - 10800000).toISOString(),
+          agent: 'geocoding-service',
+          action: 'reverse_geocode',
+          details: 'Failed to geocode address: timeout',
+          status: 'error'
+        }
+      ];
+      
+      setLogs(mockLogs);
+    } catch (error) {
+      console.error('Error loading AI agent logs:', error);
+    } finally {
+      setIsLoading(false);
     }
-  ];
-
-  const logsData = data.length > 0 ? data : mockLogs;
-
-  const uniqueAgents = [...new Set(logsData.map(log => log.agentName))];
-
-  const filteredLogs = logsData.filter(log => 
-    agentFilter === 'all' || log.agentName === agentFilter
-  );
-
-  // Auto-refresh functionality
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    const interval = setInterval(() => {
-      // In a real implementation, this would trigger a data refetch
-      console.log('Auto-refreshing AI logs...');
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
-
-  const formatRelativeTime = (timestamp: string) => {
-    const diff = Date.now() - new Date(timestamp).getTime();
-    const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) return 'Just now';
-    if (minutes === 1) return '1 min ago';
-    if (minutes < 60) return `${minutes} mins ago`;
-    
-    const hours = Math.floor(minutes / 60);
-    if (hours === 1) return '1 hour ago';
-    if (hours < 24) return `${hours} hours ago`;
-    
-    return new Date(timestamp).toLocaleDateString();
   };
 
-  const handleViewPayload = (log: AILogData) => {
-    setSelectedLog(log);
-    // In a real implementation, this would open a modal with the full payload
-    console.log('View log payload:', log);
+  useEffect(() => {
+    loadLogs();
+  }, []);
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'success':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'warning':
+        return <AlertTriangle className="w-4 h-4 text-yellow-600" />;
+      case 'error':
+        return <XCircle className="w-4 h-4 text-red-600" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'success':
+        return <Badge className="bg-green-100 text-green-800">Success</Badge>;
+      case 'warning':
+        return <Badge className="bg-yellow-100 text-yellow-800">Warning</Badge>;
+      case 'error':
+        return <Badge className="bg-red-100 text-red-800">Error</Badge>;
+      default:
+        return <Badge>Unknown</Badge>;
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString();
   };
 
   return (
-    <div className="space-y-4">
-      {/* Controls */}
-      <div className="flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Select value={agentFilter} onValueChange={setAgentFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by agent" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Agents</SelectItem>
-              {uniqueAgents.map(agent => (
-                <SelectItem key={agent} value={agent}>{agent}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <span className="text-sm text-gray-500">
-            {filteredLogs.length} logs found
-          </span>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Switch
-              checked={autoRefresh}
-              onCheckedChange={setAutoRefresh}
-              id="auto-refresh"
-            />
-            <label htmlFor="auto-refresh" className="text-sm text-gray-700">
-              Auto-refresh (10s)
-            </label>
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.location.reload()}
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh Now
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center text-lg">
+            <Bot className="w-5 h-5 mr-2" />
+            🤖 AI Agent Activity Logs
+          </CardTitle>
+          <Button onClick={loadLogs} disabled={isLoading} variant="outline" size="sm">
+            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
           </Button>
         </div>
-      </div>
+        <p className="text-sm text-gray-600">
+          Real-time logs from AI agents handling matching, validation, and monitoring
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {logs.map((log) => (
+            <div key={log.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+              <div className="flex-shrink-0 mt-1">
+                {getStatusIcon(log.status)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium text-gray-900">{log.agent}</span>
+                    <span className="text-gray-500">→</span>
+                    <span className="text-sm text-gray-700">{log.action}</span>
+                  </div>
+                  {getStatusBadge(log.status)}
+                </div>
+                <p className="text-sm text-gray-600 mb-2">{log.details}</p>
+                <div className="flex items-center text-xs text-gray-500">
+                  <Clock className="w-3 h-3 mr-1" />
+                  {formatTimestamp(log.timestamp)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
 
-      {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Timestamp</TableHead>
-              <TableHead>Agent</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Error</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredLogs.map((log) => (
-              <TableRow key={log.id}>
-                <TableCell>
-                  <div className="text-sm">
-                    <div className="font-medium">
-                      {formatRelativeTime(log.timestamp)}
-                    </div>
-                    <div className="text-gray-500 text-xs">
-                      {new Date(log.timestamp).toLocaleTimeString()}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="font-mono text-xs">
-                    {log.agentName}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="max-w-xs">
-                    <span className="text-sm">{log.action}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-1">
-                    {log.status === 'success' ? (
-                      <>
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="text-green-600 text-sm font-medium">Success</span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="w-4 h-4 text-red-500" />
-                        <span className="text-red-600 text-sm font-medium">Failure</span>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {log.error && (
-                    <div className="max-w-xs">
-                      <span className="text-sm text-red-600">{log.error}</span>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewPayload(log)}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-
-        {filteredLogs.length === 0 && (
+        {logs.length === 0 && !isLoading && (
           <div className="text-center py-8 text-gray-500">
-            No AI logs found matching the current filters.
+            No AI agent logs available
           </div>
         )}
-      </div>
-    </div>
+
+        {isLoading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent mx-auto mb-2"></div>
+            <p className="text-gray-600">Loading logs...</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
+
+export default AIAgentLogsTable;

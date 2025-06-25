@@ -13,38 +13,25 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🗺️ Maps signature request received');
+    const apiKey = Deno.env.get('GOOGLE_API_KEY');
     
-    // Load Google Maps API keys from environment
-    const SECRET_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY");
-    const RESTRICTED_KEY = Deno.env.get("GOOGLE_MAPS_RESTRICTED_KEY");
-    
-    if (!SECRET_KEY) {
-      console.error('❌ Google Maps API key not configured');
+    if (!apiKey) {
       throw new Error('Google Maps API key not configured');
     }
-    
-    // Prefer restricted key if available, fallback to secret key
-    const apiKey = RESTRICTED_KEY || SECRET_KEY;
-    
-    console.log('✅ Returning Google Maps API key with 60s TTL');
-    
+
+    // Return the API key with a short TTL for security
     return new Response(JSON.stringify({
       key: apiKey,
-      ttl: 60,
-      timestamp: Date.now()
+      ttl: 3600, // 1 hour
+      timestamp: new Date().toISOString()
     }), {
-      headers: { 
-        ...corsHeaders, 
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate'
-      },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('❌ Error in maps-sig function:', error);
+    console.error('Error in maps-sig:', error);
     return new Response(JSON.stringify({
-      error: 'Failed to generate maps signature',
+      error: 'Failed to fetch API key',
       details: error.message
     }), {
       status: 500,

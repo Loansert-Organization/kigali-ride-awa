@@ -1,17 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, AlertTriangle, XCircle, RefreshCw, Database, Shield, Link, BarChart3 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { RefreshCw, Database, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { SchemaAuditService, SchemaAuditResult } from '@/services/SchemaAuditService';
 
 const SchemaAuditReport: React.FC = () => {
   const [auditResults, setAuditResults] = useState<SchemaAuditResult[]>([]);
-  const [summary, setSummary] = useState({ total: 0, passed: 0, warnings: 0, failed: 0 });
   const [isLoading, setIsLoading] = useState(false);
-  const [lastAudit, setLastAudit] = useState<Date | null>(null);
+  const [summary, setSummary] = useState({
+    total: 0,
+    passed: 0,
+    warnings: 0,
+    failed: 0
+  });
 
   const runAudit = async () => {
     setIsLoading(true);
@@ -19,21 +22,8 @@ const SchemaAuditReport: React.FC = () => {
       const { results, summary: auditSummary } = await SchemaAuditService.performFullAudit();
       setAuditResults(results);
       setSummary(auditSummary);
-      setLastAudit(new Date());
     } catch (error) {
-      console.error('Audit failed:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const runRLSTest = async () => {
-    setIsLoading(true);
-    try {
-      const rlsResults = await SchemaAuditService.testRLSPolicies();
-      setAuditResults(prev => [...prev, ...rlsResults]);
-    } catch (error) {
-      console.error('RLS test failed:', error);
+      console.error('Error running schema audit:', error);
     } finally {
       setIsLoading(false);
     }
@@ -56,267 +46,93 @@ const SchemaAuditReport: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case '✅':
-        return 'bg-green-100 text-green-800';
+        return <Badge className="bg-green-100 text-green-800">Passed</Badge>;
       case '⚠️':
-        return 'bg-yellow-100 text-yellow-800';
+        return <Badge className="bg-yellow-100 text-yellow-800">Warning</Badge>;
       case '❌':
-        return 'bg-red-100 text-red-800';
+        return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
       default:
-        return 'bg-gray-100 text-gray-800';
+        return null;
     }
   };
 
-  const groupedResults = auditResults.reduce((acc, result) => {
-    const category = result.table;
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(result);
-    return acc;
-  }, {} as Record<string, SchemaAuditResult[]>);
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">🔍 Database Schema Audit</h1>
-          <p className="text-gray-600 mt-1">
-            Comprehensive verification of Supabase tables, RLS policies, and data integrity
-          </p>
-        </div>
-        <div className="flex space-x-2">
-          <Button onClick={runRLSTest} disabled={isLoading} variant="outline">
-            <Shield className="w-4 h-4 mr-2" />
-            Test RLS
-          </Button>
-          <Button onClick={runAudit} disabled={isLoading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Run Audit
-          </Button>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Checks</p>
-                <p className="text-2xl font-bold">{summary.total}</p>
-              </div>
-              <Database className="w-8 h-8 text-blue-600" />
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center text-xl">
+              <Database className="w-6 h-6 mr-2" />
+              🔍 Database Schema Audit
+            </CardTitle>
+            <Button onClick={runAudit} disabled={isLoading} variant="outline">
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Running Audit...' : 'Run Audit'}
+            </Button>
+          </div>
+          <div className="text-sm text-gray-600">
+            Comprehensive audit of database schema, RLS policies, and data integrity
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+              <div className="text-2xl font-bold text-gray-900">{summary.total}</div>
+              <div className="text-sm text-gray-600">Total Checks</div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Passed</p>
-                <p className="text-2xl font-bold text-green-600">{summary.passed}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-600" />
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{summary.passed}</div>
+              <div className="text-sm text-gray-600">Passed</div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Warnings</p>
-                <p className="text-2xl font-bold text-yellow-600">{summary.warnings}</p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-yellow-600" />
+            <div className="text-center p-3 bg-yellow-50 rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600">{summary.warnings}</div>
+              <div className="text-sm text-gray-600">Warnings</div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Failed</p>
-                <p className="text-2xl font-bold text-red-600">{summary.failed}</p>
-              </div>
-              <XCircle className="w-8 h-8 text-red-600" />
+            <div className="text-center p-3 bg-red-50 rounded-lg">
+              <div className="text-2xl font-bold text-red-600">{summary.failed}</div>
+              <div className="text-sm text-gray-600">Failed</div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      {/* Last Audit Info */}
-      {lastAudit && (
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-gray-600">
-              Last audit: {lastAudit.toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Detailed Results */}
-      <Tabs defaultValue="tables" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="tables">
-            <Database className="w-4 h-4 mr-2" />
-            Tables
-          </TabsTrigger>
-          <TabsTrigger value="rls">
-            <Shield className="w-4 h-4 mr-2" />
-            RLS Policies
-          </TabsTrigger>
-          <TabsTrigger value="relationships">
-            <Link className="w-4 h-4 mr-2" />
-            Relationships
-          </TabsTrigger>
-          <TabsTrigger value="integrity">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Data Integrity
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="tables">
-          <div className="space-y-4">
-            {Object.entries(groupedResults).map(([category, results]) => (
-              category !== 'relationships' && category !== 'data_integrity' && category !== 'rls_test' && (
-                <Card key={category}>
-                  <CardHeader>
-                    <CardTitle className="capitalize">{category.replace('_', ' ')} Table</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {results.map((result, index) => (
-                        <div key={index} className="flex items-start space-x-3 p-3 border rounded-lg">
-                          {getStatusIcon(result.status)}
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2">
-                              <span className="font-medium">{result.field || 'Table Structure'}</span>
-                              <Badge className={getStatusColor(result.status)}>
-                                {result.status}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600 mt-1">{result.issue}</p>
-                            {result.fix && (
-                              <p className="text-sm text-blue-600 mt-1">💡 {result.fix}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+          {/* Audit Results */}
+          <div className="space-y-3">
+            {auditResults.map((result, index) => (
+              <div key={index} className="flex items-start space-x-3 p-3 border rounded-lg">
+                <div className="flex-shrink-0 mt-0.5">
+                  {getStatusIcon(result.status)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium text-gray-900">
+                      {result.table}
+                      {result.field && (
+                        <span className="text-gray-500 ml-1">→ {result.field}</span>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              )
+                    {getStatusBadge(result.status)}
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">{result.issue}</p>
+                  {result.fix && (
+                    <p className="text-sm text-blue-600 mt-1 italic">
+                      Fix: {result.fix}
+                    </p>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
-        </TabsContent>
 
-        <TabsContent value="rls">
-          <Card>
-            <CardHeader>
-              <CardTitle>Row Level Security Policies</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {groupedResults.rls_test?.map((result, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 border rounded-lg">
-                    {getStatusIcon(result.status)}
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{result.field}</span>
-                        <Badge className={getStatusColor(result.status)}>
-                          {result.status}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">{result.issue}</p>
-                      {result.fix && (
-                        <p className="text-sm text-blue-600 mt-1">💡 {result.fix}</p>
-                      )}
-                    </div>
-                  </div>
-                )) || (
-                  <p className="text-gray-500 text-center py-8">
-                    No RLS tests run yet. Click "Test RLS" to verify security policies.
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="relationships">
-          <Card>
-            <CardHeader>
-              <CardTitle>Foreign Key Relationships</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {groupedResults.relationships?.map((result, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 border rounded-lg">
-                    {getStatusIcon(result.status)}
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{result.field}</span>
-                        <Badge className={getStatusColor(result.status)}>
-                          {result.status}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">{result.issue}</p>
-                      {result.fix && (
-                        <p className="text-sm text-blue-600 mt-1">💡 {result.fix}</p>
-                      )}
-                    </div>
-                  </div>
-                )) || (
-                  <p className="text-gray-500 text-center py-8">
-                    No relationship checks available.
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="integrity">
-          <Card>
-            <CardHeader>
-              <CardTitle>Data Integrity Checks</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {groupedResults.data_integrity?.map((result, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 border rounded-lg">
-                    {getStatusIcon(result.status)}
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{result.field}</span>
-                        <Badge className={getStatusColor(result.status)}>
-                          {result.status}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">{result.issue}</p>
-                      {result.fix && (
-                        <p className="text-sm text-blue-600 mt-1">💡 {result.fix}</p>
-                      )}
-                    </div>
-                  </div>
-                )) || (
-                  <p className="text-gray-500 text-center py-8">
-                    No data integrity checks available.
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          {auditResults.length === 0 && !isLoading && (
+            <div className="text-center py-8 text-gray-500">
+              No audit results available. Click "Run Audit" to start the analysis.
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

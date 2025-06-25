@@ -1,14 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Car, Truck, Bike } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Car, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useForm } from 'react-hook-form';
+import { supabase } from "@/integrations/supabase/client";
 import { UserProfile, DriverProfile } from '@/types/user';
 
 interface DriverSettingsBlockProps {
@@ -17,16 +16,15 @@ interface DriverSettingsBlockProps {
 
 const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userProfile }) => {
   const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { register, handleSubmit, setValue, watch } = useForm();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     loadDriverProfile();
-  }, [userProfile]);
+  }, [userProfile.id]);
 
   const loadDriverProfile = async () => {
-    if (!userProfile?.id) return;
-
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('driver_profiles')
@@ -41,69 +39,77 @@ const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userProfile }
 
       if (data) {
         setDriverProfile(data);
-        setValue('vehicle_type', data.vehicle_type);
-        setValue('plate_number', data.plate_number);
-        setValue('preferred_zone', data.preferred_zone);
-        setValue('is_online', data.is_online);
       }
     } catch (error) {
       console.error('Error loading driver profile:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const onSubmit = async (formData: any) => {
-    if (!userProfile?.id) return;
+  const handleSave = async () => {
+    if (!driverProfile) return;
 
+    setIsSaving(true);
     try {
-      const profileData = {
-        user_id: userProfile.id,
-        vehicle_type: formData.vehicle_type,
-        plate_number: formData.plate_number,
-        preferred_zone: formData.preferred_zone || null,
-        is_online: formData.is_online || false,
-        updated_at: new Date().toISOString()
-      };
-
       const { error } = await supabase
         .from('driver_profiles')
-        .upsert(profileData);
+        .upsert({
+          id: driverProfile.id,
+          user_id: userProfile.id,
+          vehicle_type: driverProfile.vehicle_type,
+          plate_number: driverProfile.plate_number,
+          preferred_zone: driverProfile.preferred_zone,
+          is_online: driverProfile.is_online,
+          updated_at: new Date().toISOString()
+        });
 
       if (error) throw error;
 
       toast({
-        title: "Settings updated",
-        description: "Your driver profile has been updated successfully.",
+        title: "Settings saved",
+        description: "Your driver settings have been updated successfully",
       });
-
-      // Reload profile
-      loadDriverProfile();
     } catch (error) {
-      console.error('Error updating driver profile:', error);
+      console.error('Error saving driver profile:', error);
       toast({
-        title: "Update failed",
-        description: "There was an error updating your profile.",
+        title: "Error",
+        description: "Failed to save driver settings. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  const handleInputChange = (field: keyof DriverProfile, value: string | boolean) => {
+    if (!driverProfile) return;
+    
+    setDriverProfile({
+      ...driverProfile,
+      [field]: value
+    });
+  };
+
   const vehicleTypes = [
-    { value: 'moto', label: '🏍️ Moto', icon: Bike },
-    { value: 'car', label: '🚗 Car', icon: Car },
-    { value: 'tuktuk', label: '🛺 Tuktuk', icon: Truck },
-    { value: 'minibus', label: '🚐 Minibus', icon: Truck }
+    { value: 'moto', label: '🏍️ Motorcycle' },
+    { value: 'car', label: '🚗 Car' },
+    { value: 'tuktuk', label: '🛺 Tuk-tuk' },
+    { value: 'minibus', label: '🚐 Minibus' }
   ];
 
-  if (loading) {
+  if (userProfile.role !== 'driver') {
+    return null;
+  }
+
+  if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>🚗 Driver Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-500">Loading driver settings...</p>
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-600 border-t-transparent"></div>
+            <span className="text-gray-600">Loading driver settings...</span>
+          </div>
         </CardContent>
       </Card>
     );
@@ -112,13 +118,19 @@ const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userProfile }
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">🚗 Driver Settings</CardTitle>
+        <CardTitle className="flex items-center text-lg">
+          <Car className="w-5 h-5 mr-2" />
+          🚗 Driver Settings
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <Label htmlFor="vehicle_type">Vehicle Type</Label>
-            <Select onValueChange={(value) => setValue('vehicle_type', value)} defaultValue={driverProfile?.vehicle_type}>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="vehicleType">Vehicle Type</Label>
+            <Select
+              value={driverProfile?.vehicle_type || ''}
+              onValueChange={(value) => handleInputChange('vehicle_type', value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select vehicle type" />
               </SelectTrigger>
@@ -132,42 +144,44 @@ const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userProfile }
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="plate_number">Plate Number</Label>
+          <div className="space-y-2">
+            <Label htmlFor="plateNumber">Plate Number</Label>
             <Input
-              id="plate_number"
-              {...register('plate_number', { required: true })}
-              defaultValue={driverProfile?.plate_number}
-              placeholder="e.g. RAD 123A"
+              id="plateNumber"
+              placeholder="e.g., RAB 123 A"
+              value={driverProfile?.plate_number || ''}
+              onChange={(e) => handleInputChange('plate_number', e.target.value)}
             />
           </div>
+        </div>
 
-          <div>
-            <Label htmlFor="preferred_zone">Preferred Zone (Optional)</Label>
-            <Input
-              id="preferred_zone"
-              {...register('preferred_zone')}
-              defaultValue={driverProfile?.preferred_zone || ''}
-              placeholder="e.g. Kigali CBD, Nyarutarama"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="preferredZone">Preferred Zone (Optional)</Label>
+          <Input
+            id="preferredZone"
+            placeholder="e.g., Kigali City, Nyarugenge, etc."
+            value={driverProfile?.preferred_zone || ''}
+            onChange={(e) => handleInputChange('preferred_zone', e.target.value)}
+          />
+        </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="is_online">🟢 Currently Online</Label>
-              <p className="text-sm text-gray-600">Accept ride requests</p>
-            </div>
-            <Switch
-              id="is_online"
-              defaultChecked={driverProfile?.is_online}
-              onCheckedChange={(checked) => setValue('is_online', checked)}
-            />
-          </div>
-
-          <Button type="submit" className="w-full">
-            Update Settings
-          </Button>
-        </form>
+        <Button
+          onClick={handleSave}
+          disabled={isSaving || !driverProfile?.vehicle_type || !driverProfile?.plate_number}
+          className="w-full"
+        >
+          {isSaving ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Save Driver Settings
+            </>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );

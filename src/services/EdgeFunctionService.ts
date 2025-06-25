@@ -1,159 +1,210 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { isGuestMode } from "@/utils/authUtils";
 
-/**
- * Centralized service for calling Supabase Edge Functions
- * All ride platform backend operations go through these functions
- */
+interface CreateTripRequest {
+  from_location: string;
+  to_location: string;
+  from_lat?: number;
+  from_lng?: number;
+  to_lat?: number;
+  to_lng?: number;
+  vehicle_type: string;
+  scheduled_time: string;
+  role: 'passenger' | 'driver';
+  seats_available?: number;
+  fare?: number;
+  is_negotiable?: boolean;
+  description?: string;
+}
+
+interface CreateTripResponse {
+  success: boolean;
+  trip: any;
+  geocoding?: {
+    from_geocoded: boolean;
+    to_geocoded: boolean;
+  };
+  error?: string;
+}
+
+interface MatchResponse {
+  success: boolean;
+  matches?: any[];
+  passenger_trip?: any;
+  total_matches?: number;
+  booking?: any;
+  message?: string;
+  error?: string;
+}
+
 export class EdgeFunctionService {
-  
-  // Helper method to handle guest mode gracefully
-  private static async safeInvoke(functionName: string, options?: any) {
+  static async createTrip(tripData: CreateTripRequest): Promise<CreateTripResponse> {
     try {
-      const { data, error } = await supabase.functions.invoke(functionName, options);
+      const { data, error } = await supabase.functions.invoke('create-trip', {
+        body: tripData
+      });
+
       if (error) throw error;
       return data;
     } catch (error) {
-      console.warn(`EdgeFunction ${functionName} failed:`, error);
+      console.error('EdgeFunctionService.createTrip error:', error);
       throw error;
     }
   }
 
-  /**
-   * User Management & Authentication
-   */
-  static async createOrUpdateUserProfile(profileData: any) {
-    return this.safeInvoke('create-or-update-user-profile', {
-      body: { profileData }
-    });
+  static async matchPassengerDriver(
+    action: 'find_matches' | 'create_booking',
+    passengerTripId: string,
+    driverTripId?: string
+  ): Promise<MatchResponse> {
+    try {
+      const { data, error } = await supabase.functions.invoke('match-passenger-driver', {
+        body: {
+          action,
+          passengerTripId,
+          driverTripId
+        }
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('EdgeFunctionService.matchPassengerDriver error:', error);
+      throw error;
+    }
   }
 
-  static async resolveReferral(referralCode: string, refereeId: string, refereeRole: string) {
-    return this.safeInvoke('resolve-referral', {
-      body: { referralCode, refereeId, refereeRole }
-    });
+  static async getLiveDrivers(params: {
+    lat: number;
+    lng: number;
+    radius?: number;
+    vehicleType?: string;
+  }) {
+    try {
+      const searchParams = new URLSearchParams({
+        lat: params.lat.toString(),
+        lng: params.lng.toString(),
+        radius: (params.radius || 10).toString(),
+        ...(params.vehicleType && { vehicleType: params.vehicleType })
+      });
+
+      const { data, error } = await supabase.functions.invoke('get-live-drivers', {
+        body: { searchParams: searchParams.toString() }
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('EdgeFunctionService.getLiveDrivers error:', error);
+      throw error;
+    }
   }
 
-  /**
-   * Geolocation & Trip Management
-   */
-  static async getLiveDrivers(lat: number, lng: number, radius = 10, vehicleType?: string) {
-    const params = new URLSearchParams({
-      lat: lat.toString(),
-      lng: lng.toString(),
-      radius: radius.toString(),
-      ...(vehicleType && { vehicleType })
-    });
+  static async getNearbyOpenTrips(params: {
+    lat: number;
+    lng: number;
+    radius?: number;
+    vehicleType?: string;
+    limit?: number;
+  }) {
+    try {
+      const searchParams = new URLSearchParams({
+        lat: params.lat.toString(),
+        lng: params.lng.toString(),
+        radius: (params.radius || 10).toString(),
+        limit: (params.limit || 20).toString(),
+        ...(params.vehicleType && { vehicleType: params.vehicleType })
+      });
 
-    return this.safeInvoke(`get-live-drivers?${params}`);
+      const { data, error } = await supabase.functions.invoke('get-nearby-open-trips', {
+        body: { searchParams: searchParams.toString() }
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('EdgeFunctionService.getNearbyOpenTrips error:', error);
+      throw error;
+    }
   }
 
-  static async createTrip(tripData: any) {
-    return this.safeInvoke('create-trip', {
-      body: tripData
-    });
+  static async createOrUpdateUserProfile(profileData: {
+    role: 'passenger' | 'driver';
+    language?: string;
+    location_enabled?: boolean;
+    notifications_enabled?: boolean;
+    onboarding_completed?: boolean;
+    referred_by?: string;
+    vehicleData?: {
+      vehicle_type: string;
+      plate_number: string;
+      preferred_zone?: string;
+    };
+  }) {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-or-update-user-profile', {
+        body: { profileData }
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('EdgeFunctionService.createOrUpdateUserProfile error:', error);
+      throw error;
+    }
   }
 
-  static async getNearbyOpenTrips(lat: number, lng: number, radius = 10, vehicleType?: string, limit = 20) {
-    const params = new URLSearchParams({
-      lat: lat.toString(),
-      lng: lng.toString(),
-      radius: radius.toString(),
-      limit: limit.toString(),
-      ...(vehicleType && { vehicleType })
-    });
-
-    return this.safeInvoke(`get-nearby-open-trips?${params}`);
+  static async getMapsApiKey() {
+    try {
+      const { data, error } = await supabase.functions.invoke('maps-sig');
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('EdgeFunctionService.getMapsApiKey error:', error);
+      throw error;
+    }
   }
 
-  static async matchPassengerDriver(action: 'find_matches' | 'create_booking', passengerTripId: string, driverTripId?: string) {
-    return this.safeInvoke('match-passenger-driver', {
-      body: { action, passengerTripId, driverTripId }
-    });
-  }
-
-  /**
-   * AI & Smart Features
-   */
-  static async callAIRouter(taskType: string, prompt: string, context?: any, preferredModel?: string, complexity?: 'simple' | 'medium' | 'complex') {
-    return this.safeInvoke('ai-router', {
-      body: { taskType, prompt, context, preferredModel, complexity }
-    });
-  }
-
-  static async checkFraud(userBehavior: any, deviceData: any, bookingPattern: any) {
-    return this.safeInvoke('ai-fraud-check', {
-      body: { userBehavior, deviceData, bookingPattern }
-    });
-  }
-
-  /**
-   * Rewards & Referrals
-   */
-  static async validateReferralPoints() {
-    return this.safeInvoke('validate-referral-points');
-  }
-
-  /**
-   * Communication
-   */
-  static async sendWhatsAppInvite(phoneNumber: string, messageType: string, tripData?: any, promoCode?: string, language = 'en') {
-    return this.safeInvoke('send-whatsapp-invite', {
-      body: { phoneNumber, messageType, tripData, promoCode, language }
-    });
-  }
-
-  /**
-   * Utilities
-   */
   static async reverseGeocode(lat: number, lng: number) {
-    const params = new URLSearchParams({
-      lat: lat.toString(),
-      lng: lng.toString()
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('reverse-geocode', {
+        body: { lat, lng }
+      });
 
-    return this.safeInvoke(`reverse-geocode?${params}`);
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('EdgeFunctionService.reverseGeocode error:', error);
+      throw error;
+    }
   }
 
-  static async getAppConfig() {
-    return this.safeInvoke('get-app-config');
+  static async sendWhatsAppInvite(phoneNumber: string, message: string) {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-whatsapp-invite', {
+        body: { phoneNumber, message }
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('EdgeFunctionService.sendWhatsAppInvite error:', error);
+      throw error;
+    }
   }
 
-  /**
-   * Safety & Maintenance
-   */
-  static async submitIncidentReport(type: string, message: string, tripId?: string, metadata?: any) {
-    return this.safeInvoke('submit-incident-report', {
-      body: { type, message, tripId, metadata }
-    });
-  }
+  static async resolveReferral(promoCode: string, refereeRole: 'passenger' | 'driver') {
+    try {
+      const { data, error } = await supabase.functions.invoke('resolve-referral', {
+        body: { promoCode, refereeRole }
+      });
 
-  static async autoExpireTrips() {
-    return this.safeInvoke('auto-expire-trips');
-  }
-
-  /**
-   * Convenience methods for common AI tasks
-   */
-  static async explainError(errorMessage: string, context?: any) {
-    return this.callAIRouter('explain-error', 
-      `Explain this error and provide actionable solutions: ${errorMessage}`, 
-      context
-    );
-  }
-
-  static async localizeCopy(text: string, targetLanguage: 'kn' | 'fr' | 'en', context?: string) {
-    return this.callAIRouter('localize', 
-      `Translate this text to ${targetLanguage} for a Rwandan ride-booking app: "${text}"${context ? ` Context: ${context}` : ''}`,
-      { targetLanguage, originalText: text }
-    );
-  }
-
-  static async generateUXSuggestions(currentPage: string, userFeedback?: string) {
-    return this.callAIRouter('ux-recommendations',
-      `Provide UX improvements for ${currentPage} page in a Kigali ride-booking app.${userFeedback ? ` User feedback: ${userFeedback}` : ''}`,
-      { page: currentPage, platform: 'mobile-pwa' }
-    );
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('EdgeFunctionService.resolveReferral error:', error);
+      throw error;
+    }
   }
 }
