@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DriverOnboarding from "./pages/onboarding/Driver";
 import PassengerOnboarding from "./pages/onboarding/Passenger";
+import PassengerHome from "./pages/home/Passenger";
 import AIDevTools from "./pages/AIDevTools";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/onboarding/driver" element={<DriverOnboarding />} />
           <Route path="/onboarding/passenger" element={<PassengerOnboarding />} />
+          <Route path="/home/passenger" element={<PassengerHome />} />
           <Route path="/ai-dev-tools" element={<AIDevTools />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
