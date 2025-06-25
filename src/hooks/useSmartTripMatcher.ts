@@ -11,6 +11,7 @@ interface MatchedTrip {
   vehicle_type: string;
   scheduled_time: string;
   fare?: number;
+  seats_available: number;
   match_score: number;
   from_distance_km: number;
   to_distance_km: number;

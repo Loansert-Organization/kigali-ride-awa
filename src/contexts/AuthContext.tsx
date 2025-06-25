@@ -9,8 +9,9 @@ interface AuthContextType {
   session: Session | null;
   userProfile: UserProfile | null;
   loading: boolean;
-  refreshUserProfile: () => Promise<void>;
-  updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  refreshUserProfile: () => Promise<UserProfile | null>;
+  updateUserProfile: (updates: Partial<UserProfile>) => Promise<UserProfile | null>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

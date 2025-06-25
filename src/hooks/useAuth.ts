@@ -42,14 +42,26 @@ export const useAuth = () => {
             throw createError;
           }
           
-          setUserProfile(newProfile);
-          return newProfile;
+          // Type assertion to ensure proper role type
+          const typedProfile = {
+            ...newProfile,
+            role: newProfile.role as 'passenger' | 'driver' | null
+          } as UserProfile;
+          
+          setUserProfile(typedProfile);
+          return typedProfile;
         }
         throw error;
       }
 
-      setUserProfile(data);
-      return data;
+      // Type assertion to ensure proper role type
+      const typedProfile = {
+        ...data,
+        role: data.role as 'passenger' | 'driver' | null
+      } as UserProfile;
+
+      setUserProfile(typedProfile);
+      return typedProfile;
     } catch (error) {
       console.error('Failed to load user profile:', error);
       setUserProfile(null);
@@ -57,14 +69,14 @@ export const useAuth = () => {
     }
   }, []);
 
-  const refreshUserProfile = useCallback(async () => {
+  const refreshUserProfile = useCallback(async (): Promise<UserProfile | null> => {
     if (user?.id) {
       return await loadUserProfile(user.id);
     }
     return null;
   }, [user?.id, loadUserProfile]);
 
-  const updateUserProfile = useCallback(async (updates: Partial<UserProfile>) => {
+  const updateUserProfile = useCallback(async (updates: Partial<UserProfile>): Promise<UserProfile | null> => {
     if (!userProfile) return null;
 
     try {
@@ -80,15 +92,21 @@ export const useAuth = () => {
 
       if (error) throw error;
 
-      setUserProfile(data);
-      return data;
+      // Type assertion to ensure proper role type
+      const typedProfile = {
+        ...data,
+        role: data.role as 'passenger' | 'driver' | null
+      } as UserProfile;
+
+      setUserProfile(typedProfile);
+      return typedProfile;
     } catch (error) {
       console.error('Error updating user profile:', error);
       return null;
     }
   }, [userProfile]);
 
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(async (): Promise<void> => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
