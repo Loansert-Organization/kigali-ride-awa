@@ -1,6 +1,13 @@
 import { Loader } from '@googlemaps/js-api-loader';
 import { config } from '@/config/environment';
 
+/**
+ * @deprecated This service uses hardcoded API keys and is less secure.
+ * Use SecureGoogleMapsService and SmartMap component instead for production.
+ * 
+ * This class is kept for backward compatibility with existing components
+ * that haven't been migrated to the secure implementation yet.
+ */
 class GoogleMapsService {
   private loader: Loader;
   private map: google.maps.Map | null = null;
@@ -11,6 +18,7 @@ class GoogleMapsService {
   private isInitialized: boolean = false;
 
   constructor() {
+    console.warn('⚠️ GoogleMapsService is deprecated. Use SecureGoogleMapsService instead.');
     console.log('🗺️ Initializing GoogleMapsService with API key:', config.googleMaps.apiKey ? 'Present' : 'Missing');
     
     if (!config.googleMaps.apiKey) {
