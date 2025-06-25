@@ -3,12 +3,27 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, Calendar, Globe } from 'lucide-react';
-import { useAuth } from "@/contexts/AuthContext";
 import { isGuestMode, getDisplayName } from "@/utils/authUtils";
 
-const UserSummaryBlock = () => {
-  const { userProfile } = useAuth();
+interface UserProfile {
+  id: string;
+  auth_user_id: string | null;
+  role: 'passenger' | 'driver' | null;
+  language: string;
+  location_enabled: boolean;
+  notifications_enabled: boolean;
+  promo_code: string;
+  referred_by: string | null;
+  onboarding_completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
+interface UserSummaryBlockProps {
+  userProfile: UserProfile;
+}
+
+const UserSummaryBlock: React.FC<UserSummaryBlockProps> = ({ userProfile }) => {
   if (!userProfile) return null;
 
   const isGuest = isGuestMode(userProfile);
