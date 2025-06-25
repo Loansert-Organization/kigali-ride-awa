@@ -1,1 +1,44 @@
+
 project_id = "ldbzarwjnnsoyoengheg"
+
+[functions.create-or-update-user-profile]
+verify_jwt = true
+
+[functions.resolve-referral]
+verify_jwt = true
+
+[functions.get-live-drivers]
+verify_jwt = false
+
+[functions.create-trip]
+verify_jwt = true
+
+[functions.get-nearby-open-trips]
+verify_jwt = false
+
+[functions.match-passenger-driver]
+verify_jwt = true
+
+[functions.validate-referral-points]
+verify_jwt = false
+
+[functions.send-whatsapp-invite]
+verify_jwt = false
+
+[functions.reverse-geocode]
+verify_jwt = false
+
+[functions.auto-expire-trips]
+verify_jwt = false
+
+[functions.submit-incident-report]
+verify_jwt = true
+
+[functions.get-app-config]
+verify_jwt = false
+
+[functions.ai-router]
+verify_jwt = false
+
+[functions.ai-fraud-check]
+verify_jwt = false

@@ -19,7 +19,11 @@ function selectModel(taskType: string, complexity: 'simple' | 'medium' | 'comple
     'docs': 'claude',
     'localize': 'gemini',
     'fraud-check': 'gemini',
-    'ui-suggestions': 'claude'
+    'ui-suggestions': 'claude',
+    'explain-error': 'gpt-4o',
+    'categorize-incident': 'claude',
+    'generate-suggestions': 'claude',
+    'ux-recommendations': 'claude'
   };
   
   return modelMap[taskType as keyof typeof modelMap] || 'gpt-4o';
@@ -33,12 +37,13 @@ async function callOpenAI(prompt: string, context: any) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'You are an expert developer assistant specializing in React, TypeScript, and Supabase.' },
+        { role: 'system', content: 'You are an expert developer and AI assistant specializing in React, TypeScript, Supabase, and mobile-first PWA development for African markets.' },
         { role: 'user', content: prompt }
       ],
       temperature: 0.1,
+      max_tokens: 4000,
     }),
   });
   
