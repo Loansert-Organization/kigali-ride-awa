@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from "@/hooks/use-toast";
@@ -20,6 +21,15 @@ interface Trip {
   is_negotiable?: boolean;
   description?: string;
   role: string;
+  // Additional fields for matched trips
+  match_score?: number;
+  from_distance_km?: number;
+  to_distance_km?: number;
+  time_diff_minutes?: number;
+  users?: {
+    phone_number?: string;
+    promo_code: string;
+  };
 }
 
 interface Filters {
@@ -86,7 +96,14 @@ export const useRideMatches = () => {
       });
 
       if (matchResult) {
-        setMatchingTrips(matchResult.matches);
+        // Convert MatchedTrip[] to Trip[] by adding required fields
+        const convertedMatches: Trip[] = matchResult.matches.map(match => ({
+          ...match,
+          role: 'driver', // All matched trips are driver trips
+          users: match.users
+        }));
+        
+        setMatchingTrips(convertedMatches);
       }
 
     } catch (error) {
