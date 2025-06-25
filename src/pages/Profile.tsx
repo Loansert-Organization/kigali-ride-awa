@@ -1,113 +1,209 @@
 
-import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNavigation from '@/components/navigation/BottomNavigation';
-import UserSummaryBlock from '@/components/profile/UserSummaryBlock';
-import LanguageSelectorBlock from '@/components/profile/LanguageSelectorBlock';
-import PromoCodeBlock from '@/components/profile/PromoCodeBlock';
-import PermissionsStatusBlock from '@/components/profile/PermissionsStatusBlock';
-import RoleResetBlock from '@/components/profile/RoleResetBlock';
-import DriverSettingsBlock from '@/components/profile/DriverSettingsBlock';
-import AppResetButtonBlock from '@/components/profile/AppResetButtonBlock';
-import StaticLinksBlock from '@/components/profile/StaticLinksBlock';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
-import { isGuestMode } from '@/utils/authUtils';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, User, Settings, Bell, Gift, Copy } from 'lucide-react';
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import NotificationSettings from '@/components/settings/NotificationSettings';
 
 const Profile = () => {
-  const { userProfile, loading } = useAuth();
   const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleBackClick = () => {
-    // Navigate back to the appropriate home page based on user role
-    if (userProfile?.role === 'driver') {
-      navigate('/home/driver');
-    } else if (userProfile?.role === 'passenger') {
-      navigate('/home/passenger');
-    } else {
-      navigate('/');
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const { data: userRecord } = await supabase
+          .from('users')
+          .select('*')
+          .eq('auth_user_id', authUser.id)
+          .single();
+        
+        setUser(userRecord);
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
     }
   };
 
-  if (loading) {
+  const handleCopyPromoCode = () => {
+    if (user?.promo_code) {
+      navigator.clipboard.writeText(user.promo_code);
+      toast({
+        title: "Promo Code Copied!",
+        description: "Share it with friends to earn rewards"
+      });
+    }
+  };
+
+  const handleSignOut = async () => {
+    setIsLoading(true);
+    try {
+      await supabase.auth.signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading profile...</p>
         </div>
       </div>
     );
   }
 
-  if (!userProfile) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Unable to load profile</p>
-          <Button onClick={() => navigate('/')}>Go Home</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const isDriver = userProfile.role === 'driver';
-  const isGuest = isGuestMode(userProfile);
-
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="flex items-center px-4 py-3">
+      <div className="bg-white border-b p-4">
+        <div className="flex items-center">
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleBackClick}
-            className="mr-2 hover:bg-gray-100 active:bg-gray-200"
+            onClick={() => navigate(-1)}
+            className="mr-3"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h1 className="text-xl font-semibold text-gray-900">👤 My Profile</h1>
+          <h1 className="text-xl font-bold">Profile</h1>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-4 py-6 space-y-6 max-w-md mx-auto">
-        {/* User Summary */}
-        <UserSummaryBlock userProfile={userProfile} />
+      <div className="p-4 max-w-2xl mx-auto">
+        <Tabs defaultValue="profile" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="profile">
+              <User className="w-4 h-4 mr-2" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="notifications">
+              <Bell className="w-4 h-4 mr-2" />
+              Notifications
+            </TabsTrigger>
+            <TabsTrigger value="referrals">
+              <Gift className="w-4 h-4 mr-2" />
+              Referrals
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Promo Code */}
-        <PromoCodeBlock promoCode={userProfile.promo_code} />
+          <TabsContent value="profile" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Role</Label>
+                  <div className="p-2 bg-gray-50 rounded capitalize">
+                    {user.role || 'Not set'}
+                  </div>
+                </div>
 
-        {/* Language & Preferences */}
-        <LanguageSelectorBlock currentLanguage={userProfile.language} />
-        
-        <PermissionsStatusBlock 
-          locationEnabled={userProfile.location_enabled}
-          notificationsEnabled={userProfile.notifications_enabled}
-        />
+                <div>
+                  <Label>Language</Label>
+                  <div className="p-2 bg-gray-50 rounded">
+                    {user.language === 'en' ? 'English' : 
+                     user.language === 'fr' ? 'Français' : 
+                     user.language === 'kn' ? 'Kinyarwanda' : 'English'}
+                  </div>
+                </div>
 
-        {/* Role Management */}
-        <RoleResetBlock currentRole={userProfile.role} />
+                <div>
+                  <Label>Member Since</Label>
+                  <div className="p-2 bg-gray-50 rounded">
+                    {new Date(user.created_at).toLocaleDateString()}
+                  </div>
+                </div>
 
-        {/* Driver-Only Settings */}
-        {isDriver && (
-          <DriverSettingsBlock userId={userProfile.id} />
-        )}
+                <Button
+                  onClick={handleSignOut}
+                  disabled={isLoading}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {isLoading ? 'Signing out...' : 'Sign Out'}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Account Management */}
-        <AppResetButtonBlock isGuest={isGuest} />
+          <TabsContent value="notifications">
+            <NotificationSettings />
+          </TabsContent>
 
-        {/* Static Links */}
-        <StaticLinksBlock />
+          <TabsContent value="referrals" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Referral Code</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                  <div className="flex-1">
+                    <code className="text-lg font-bold text-purple-900">
+                      {user.promo_code}
+                    </code>
+                    <p className="text-sm text-purple-700 mt-1">
+                      Share this code with friends to earn rewards
+                    </p>
+                  </div>
+                  <Button onClick={handleCopyPromoCode} size="sm">
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>How Referrals Work</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-sm font-bold">1</div>
+                  <div>
+                    <h4 className="font-medium">Share Your Code</h4>
+                    <p className="text-sm text-gray-600">Give your promo code to friends</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-sm font-bold">2</div>
+                  <div>
+                    <h4 className="font-medium">They Sign Up</h4>
+                    <p className="text-sm text-gray-600">Friends use your code when joining</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-sm font-bold">3</div>
+                  <div>
+                    <h4 className="font-medium">Earn Rewards</h4>
+                    <p className="text-sm text-gray-600">Get points when they complete rides</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      {/* Bottom Navigation */}
-      {userProfile.role && (
-        <BottomNavigation role={userProfile.role} />
-      )}
     </div>
   );
 };

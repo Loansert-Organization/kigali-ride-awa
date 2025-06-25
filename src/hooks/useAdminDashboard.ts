@@ -1,16 +1,15 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 
-interface AdminDashboardData {
+export interface AdminDashboardData {
   kpis: {
     totalUsers: number;
     totalTrips: number;
-    completedBookings: number;
-    referralsActivated: number;
+    totalBookings: number;
+    totalReferrals: number;
     weeklyActiveUsers: number;
-    usersDelta?: number;
-    tripsDelta?: number;
+    totalRewards: number;
   };
   users: any[];
   trips: any[];
@@ -18,92 +17,90 @@ interface AdminDashboardData {
 }
 
 export const useAdminDashboard = (refreshTrigger: number) => {
-  return useQuery({
-    queryKey: ['admin-dashboard', refreshTrigger],
-    queryFn: async () => {
-      // Fetch KPIs
-      const { data: usersData, error: usersError } = await supabase
+  const [data, setData] = useState<AdminDashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [refreshTrigger]);
+
+  const loadDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Load KPI data
+      const [
+        { count: totalUsers },
+        { count: totalTrips },
+        { count: totalBookings },
+        { count: totalReferrals },
+        { data: recentUsers },
+        { data: trips },
+        { data: rewards }
+      ] = await Promise.all([
+        supabase.from('users').select('*', { count: 'exact', head: true }),
+        supabase.from('trips').select('*', { count: 'exact', head: true }),
+        supabase.from('bookings').select('*', { count: 'exact', head: true }),
+        supabase.from('user_referrals').select('*', { count: 'exact', head: true }),
+        supabase.from('users').select('*').gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from('trips').select('*, users(promo_code)').order('created_at', { ascending: false }).limit(50),
+        supabase.from('user_rewards').select('points').eq('reward_issued', true)
+      ]);
+
+      const totalRewardsIssued = rewards?.reduce((sum, r) => sum + (r.points || 0), 0) || 0;
+
+      const kpis = {
+        totalUsers: totalUsers || 0,
+        totalTrips: totalTrips || 0,
+        totalBookings: totalBookings || 0,
+        totalReferrals: totalReferrals || 0,
+        weeklyActiveUsers: recentUsers?.length || 0,
+        totalRewards: totalRewardsIssued
+      };
+
+      // Load user data
+      const { data: users } = await supabase
         .from('users')
-        .select('id, role, created_at, updated_at');
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-      if (usersError) throw usersError;
-
-      const { data: tripsData, error: tripsError } = await supabase
-        .from('trips')
-        .select('id, role, status, created_at, from_location, to_location, scheduled_time, fare, user_id');
-
-      if (tripsError) throw tripsError;
-
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from('bookings')
-        .select('id, confirmed, created_at');
-
-      if (bookingsError) throw bookingsError;
-
-      const { data: referralsData, error: referralsError } = await supabase
-        .from('user_referrals')
-        .select('id, validation_status, created_at');
-
-      if (referralsError) throw referralsError;
-
-      // Calculate KPIs
-      const totalUsers = usersData?.length || 0;
-      const totalTrips = tripsData?.length || 0;
-      const completedBookings = bookingsData?.filter(b => b.confirmed).length || 0;
-      const referralsActivated = referralsData?.filter(r => r.validation_status === 'validated').length || 0;
-
-      // Weekly active users (users who created a trip in the last 7 days)
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      
-      const weeklyActiveUsers = tripsData?.filter(trip => 
-        new Date(trip.created_at) >= weekAgo
-      ).length || 0;
-
-      // Process users data for table
-      const processedUsers = usersData?.map(user => {
-        const userTrips = tripsData?.filter(trip => trip.user_id === user.id) || [];
-        
-        return {
-          id: user.id,
-          name: `User ${user.id.slice(0, 8)}`,
-          phone: '+250788123456', // Mock phone - in real app would come from profile
-          role: user.role || 'passenger',
-          dateJoined: user.created_at,
-          tripsCount: userTrips.length,
-          lastSeen: new Date(user.updated_at) > new Date(Date.now() - 24*60*60*1000) ? 'today' : 
-                   new Date(user.updated_at).toLocaleDateString(),
-          status: new Date(user.updated_at) > new Date(Date.now() - 7*24*60*60*1000) ? 'active' : 'inactive'
-        };
-      }) || [];
-
-      // Process trips data for table
-      const processedTrips = tripsData?.map(trip => ({
-        id: trip.id,
-        role: trip.role,
-        status: trip.status,
-        fromLocation: trip.from_location,
-        toLocation: trip.to_location,
-        scheduledTime: trip.scheduled_time,
-        fare: trip.fare,
-        createdBy: `User ${trip.user_id?.slice(0, 8)}`
-      })) || [];
-
-      return {
-        kpis: {
-          totalUsers,
-          totalTrips,
-          completedBookings,
-          referralsActivated,
-          weeklyActiveUsers,
-          usersDelta: 5, // Mock delta
-          tripsDelta: 12  // Mock delta
+      // Mock AI logs for now
+      const aiLogs = [
+        {
+          id: '1',
+          timestamp: new Date().toISOString(),
+          agent: 'trip-matcher',
+          action: 'match_found',
+          details: 'Matched passenger with driver',
+          status: 'success'
         },
-        users: processedUsers,
-        trips: processedTrips,
-        aiLogs: [] // Will be populated by AI logs service
-      } as AdminDashboardData;
-    },
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
+        {
+          id: '2',
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          agent: 'referral-validator',
+          action: 'validate_referral',
+          details: 'Processed weekly referral rewards',
+          status: 'success'
+        }
+      ];
+
+      setData({
+        kpis,
+        users: users || [],
+        trips: trips || [],
+        aiLogs
+      });
+
+    } catch (err) {
+      console.error('Error loading admin dashboard:', err);
+      setError(err as Error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { data, isLoading, error, refetch: loadDashboardData };
 };

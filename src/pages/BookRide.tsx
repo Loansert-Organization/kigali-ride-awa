@@ -1,309 +1,139 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import LocationInputBlock from "@/components/booking/LocationInputBlock";
-import VehicleSelectBlock from "@/components/booking/VehicleSelectBlock";
-import TimePickerBlock from "@/components/booking/TimePickerBlock";
-import CommentsBlock from "@/components/booking/CommentsBlock";
-import BookRideHeader from "@/components/booking/BookRideHeader";
-import ProgressSteps from "@/components/booking/ProgressSteps";
-import BookRideActions from "@/components/booking/BookRideActions";
-import BookingSummary from "@/components/booking/BookingSummary";
-
-interface Favorite {
-  id: string;
-  label: string;
-  address: string;
-  lat?: number;
-  lng?: number;
-}
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import RouteInputBlock from '@/components/trip/RouteInputBlock';
+import VehicleSelectionBlock from '@/components/trip/VehicleSelectionBlock';
+import TripDetailsBlock from '@/components/trip/TripDetailsBlock';
+import { useBookingFlow, TripData } from '@/hooks/useBookingFlow';
+import { MapPickerModal } from '@/components/maps/MapPickerModal';
 
 const BookRide = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const { createPassengerTrip, isLoading } = useBookingFlow();
+  const [showMapPicker, setShowMapPicker] = useState<'pickup' | 'destination' | null>(null);
   
-  // Form state
-  const [fromLocation, setFromLocation] = useState('');
-  const [fromCoords, setFromCoords] = useState<{lat: number; lng: number} | null>(null);
-  const [toLocation, setToLocation] = useState('');
-  const [toCoords, setToCoords] = useState<{lat: number; lng: number} | null>(null);
-  const [vehicleType, setVehicleType] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('now');
-  const [customTime, setCustomTime] = useState('');
-  const [comments, setComments] = useState('');
+  const [tripData, setTripData] = useState<TripData>({
+    fromLocation: '',
+    toLocation: '',
+    scheduledTime: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes from now
+    vehicleType: 'car',
+    description: ''
+  });
 
-  const steps = [
-    'Pickup Location',
-    'Drop-off Location', 
-    'Time & Vehicle',
-    'Notes & Confirm'
-  ];
-
+  // Get current location on mount
   useEffect(() => {
-    // Load favorites and handle pre-filled data
-    loadFavorites();
-    
-    // Handle pre-filled data from "Book Again" or destination
-    if (location.state?.bookingData) {
-      const { bookingData } = location.state;
-      setFromLocation(bookingData.fromLocation || '');
-      setFromCoords(bookingData.fromCoords || null);
-      setToLocation(bookingData.toLocation || '');
-      setToCoords(bookingData.toCoords || null);
-      setVehicleType(bookingData.vehicleType || '');
-      setComments(bookingData.comments || '');
-      // Adjust time to 5 minutes from now for rebooking
-      const newTime = new Date();
-      newTime.setMinutes(newTime.getMinutes() + 5);
-      setCustomTime(newTime.toISOString().slice(0, 16));
-      setScheduledTime('custom');
-    } else if (location.state?.destination) {
-      setToLocation(location.state.destination.address);
-    }
-  }, [location.state]);
-
-  const loadFavorites = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: userRecord } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_user_id', user.id)
-          .single();
-
-        if (userRecord) {
-          const { data } = await supabase
-            .from('favorites')
-            .select('*')
-            .eq('user_id', userRecord.id)
-            .limit(5);
-          
-          if (data) setFavorites(data);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setTripData(prev => ({
+            ...prev,
+            fromLocation: 'Current Location',
+            fromLat: position.coords.latitude,
+            fromLng: position.coords.longitude
+          }));
+        },
+        (error) => {
+          console.warn('Location access denied:', error);
         }
-      }
-    } catch (error) {
-      console.error('Error loading favorites:', error);
+      );
     }
+  }, []);
+
+  const handleUpdate = (updates: Partial<TripData>) => {
+    setTripData(prev => ({ ...prev, ...updates }));
   };
 
-  const handleFromLocationChange = (value: string, coords?: {lat: number; lng: number}) => {
-    setFromLocation(value);
-    setFromCoords(coords || null);
-  };
-
-  const handleToLocationChange = (value: string, coords?: {lat: number; lng: number}) => {
-    setToLocation(value);
-    setToCoords(coords || null);
-  };
-
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      handleSubmit();
-    }
-  };
-
-  const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    } else {
-      navigate(-1);
-    }
-  };
-
-  const calculateScheduledDateTime = () => {
-    const now = new Date();
-    switch (scheduledTime) {
-      case 'now':
-        return now.toISOString();
-      case 'in15':
-        return new Date(now.getTime() + 15 * 60000).toISOString();
-      case 'in30':
-        return new Date(now.getTime() + 30 * 60000).toISOString();
-      case 'in1h':
-        return new Date(now.getTime() + 60 * 60000).toISOString();
-      case 'custom':
-        return new Date(customTime).toISOString();
-      default:
-        return now.toISOString();
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Please sign in",
-          description: "You need to be signed in to book a ride",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const { data: userRecord } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_user_id', user.id)
-        .single();
-
-      if (!userRecord) {
-        toast({
-          title: "Profile not found",
-          description: "Please complete your profile setup",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const tripData = {
-        user_id: userRecord.id,
-        role: 'passenger',
-        from_location: fromLocation,
-        from_lat: fromCoords?.lat || null,
-        from_lng: fromCoords?.lng || null,
-        to_location: toLocation,
-        to_lat: toCoords?.lat || null,
-        to_lng: toCoords?.lng || null,
-        vehicle_type: vehicleType,
-        scheduled_time: calculateScheduledDateTime(),
-        description: comments || null,
-        status: 'pending'
-      };
-
-      const { data, error } = await supabase
-        .from('trips')
-        .insert([tripData])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast({
-        title: "🎉 Ride requested!",
-        description: "Looking for available drivers...",
+  const handleMapPickerSelect = (location: { lat: number; lng: number; address: string }) => {
+    if (showMapPicker === 'pickup') {
+      handleUpdate({
+        fromLocation: location.address,
+        fromLat: location.lat,
+        fromLng: location.lng
       });
-
-      // Navigate to matches page with the created trip
-      navigate('/matches', { 
-        state: { trip: data }
-      });
-    } catch (error) {
-      console.error('Error creating trip:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create ride request. Please try again.",
-        variant: "destructive"
+    } else if (showMapPicker === 'destination') {
+      handleUpdate({
+        toLocation: location.address,
+        toLat: location.lat,
+        toLng: location.lng
       });
     }
+    setShowMapPicker(null);
   };
 
-  const canProceed = (): boolean => {
-    switch (currentStep) {
-      case 0:
-        return Boolean(fromLocation.trim());
-      case 1:
-        return Boolean(toLocation.trim());
-      case 2:
-        return Boolean(vehicleType && (scheduledTime !== 'custom' || customTime));
-      case 3:
-        return true;
-      default:
-        return false;
+  const handleBookRide = async () => {
+    if (!tripData.fromLocation || !tripData.toLocation) {
+      return;
     }
+
+    await createPassengerTrip(tripData);
   };
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          <LocationInputBlock
-            label="📍 Where are you now?"
-            value={fromLocation}
-            onChange={handleFromLocationChange}
-            favorites={favorites}
-            showGPS={true}
-            placeholder="Enter pickup location"
-          />
-        );
-
-      case 1:
-        return (
-          <LocationInputBlock
-            label="📍 Where are you going?"
-            value={toLocation}
-            onChange={handleToLocationChange}
-            favorites={favorites}
-            showGPS={false}
-            placeholder="Enter destination"
-          />
-        );
-
-      case 2:
-        return (
-          <div className="space-y-4">
-            <TimePickerBlock
-              scheduledTime={scheduledTime}
-              onTimeChange={setScheduledTime}
-              customTime={customTime}
-              onCustomTimeChange={setCustomTime}
-            />
-            <VehicleSelectBlock
-              selectedVehicle={vehicleType}
-              onVehicleSelect={setVehicleType}
-            />
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-4">
-            <CommentsBlock
-              comments={comments}
-              onCommentsChange={setComments}
-            />
-            
-            <BookingSummary
-              fromLocation={fromLocation}
-              toLocation={toLocation}
-              vehicleType={vehicleType}
-              scheduledTime={scheduledTime}
-              customTime={customTime}
-              comments={comments}
-            />
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
+  const canBookRide = tripData.fromLocation && tripData.toLocation;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BookRideHeader
-        onBack={handleBack}
-        currentStep={currentStep}
-        totalSteps={steps.length}
-      />
-
-      <ProgressSteps steps={steps} currentStep={currentStep} />
-
-      {/* Step Content */}
-      <div className="p-4 pb-24">
-        {renderStep()}
+      {/* Header */}
+      <div className="bg-white border-b p-4">
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="mr-3"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <h1 className="text-xl font-bold">Book a Ride</h1>
+        </div>
       </div>
 
-      <BookRideActions
-        onNext={handleNext}
-        canProceed={canProceed()}
-        isLastStep={currentStep === steps.length - 1}
+      <div className="p-4 max-w-md mx-auto space-y-4">
+        <RouteInputBlock
+          {...tripData}
+          onUpdate={handleUpdate}
+          onPickupMapOpen={() => setShowMapPicker('pickup')}
+          onDestinationMapOpen={() => setShowMapPicker('destination')}
+        />
+
+        <VehicleSelectionBlock
+          vehicleType={tripData.vehicleType}
+          onUpdate={handleUpdate}
+        />
+
+        <TripDetailsBlock
+          scheduledTime={tripData.scheduledTime}
+          description={tripData.description}
+          onUpdate={handleUpdate}
+        />
+
+        <Button
+          onClick={handleBookRide}
+          disabled={!canBookRide || isLoading}
+          className="w-full bg-purple-600 hover:bg-purple-700"
+          size="lg"
+        >
+          {isLoading ? 'Finding Drivers...' : '🚗 Book Ride'}
+        </Button>
+
+        {!canBookRide && (
+          <p className="text-center text-sm text-gray-500">
+            Please enter pickup and destination locations
+          </p>
+        )}
+      </div>
+
+      <MapPickerModal
+        isOpen={!!showMapPicker}
+        onClose={() => setShowMapPicker(null)}
+        onLocationSelect={handleMapPickerSelect}
+        title={showMapPicker === 'pickup' ? 'Select Pickup Location' : 'Select Destination'}
+        initialLocation={
+          showMapPicker === 'pickup' 
+            ? (tripData.fromLat && tripData.fromLng ? { lat: tripData.fromLat, lng: tripData.fromLng } : undefined)
+            : (tripData.toLat && tripData.toLng ? { lat: tripData.toLat, lng: tripData.toLng } : undefined)
+        }
       />
     </div>
   );

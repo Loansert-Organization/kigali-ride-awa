@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Navigation, Clock } from 'lucide-react';
+import { MapPin, Navigation, Map } from 'lucide-react';
 import DateTimeBlock from './DateTimeBlock';
 
 interface RouteInputBlockProps {
@@ -15,7 +15,8 @@ interface RouteInputBlockProps {
   toLng?: number;
   scheduledTime: string;
   onUpdate: (updates: any) => void;
-  quickStartLocation?: { lat: number; lng: number };
+  onPickupMapOpen?: () => void;
+  onDestinationMapOpen?: () => void;
 }
 
 const RouteInputBlock: React.FC<RouteInputBlockProps> = ({
@@ -23,9 +24,10 @@ const RouteInputBlock: React.FC<RouteInputBlockProps> = ({
   toLocation,
   scheduledTime,
   onUpdate,
-  quickStartLocation
+  onPickupMapOpen,
+  onDestinationMapOpen
 }) => {
-  const [useCurrentLocation, setUseCurrentLocation] = useState(!!quickStartLocation);
+  const [useCurrentLocation, setUseCurrentLocation] = useState(!!fromLocation.includes('Current'));
 
   const handleUseCurrentLocation = async () => {
     if (navigator.geolocation) {
@@ -75,14 +77,26 @@ const RouteInputBlock: React.FC<RouteInputBlockProps> = ({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 w-5 h-5 text-green-600" />
-                    <Input
-                      placeholder="Enter pickup location"
-                      value={fromLocation}
-                      onChange={(e) => onUpdate({ fromLocation: e.target.value })}
-                      className="pl-10"
-                    />
+                  <div className="flex space-x-2">
+                    <div className="relative flex-1">
+                      <MapPin className="absolute left-3 top-3 w-5 h-5 text-green-600" />
+                      <Input
+                        placeholder="Enter pickup location"
+                        value={fromLocation}
+                        onChange={(e) => onUpdate({ fromLocation: e.target.value })}
+                        className="pl-10"
+                      />
+                    </div>
+                    {onPickupMapOpen && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onPickupMapOpen}
+                        className="px-3"
+                      >
+                        <Map className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                   <Button
                     variant="outline"
@@ -101,14 +115,26 @@ const RouteInputBlock: React.FC<RouteInputBlockProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Going to
               </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 w-5 h-5 text-red-600" />
-                <Input
-                  placeholder="Enter destination"
-                  value={toLocation}
-                  onChange={(e) => onUpdate({ toLocation: e.target.value })}
-                  className="pl-10"
-                />
+              <div className="flex space-x-2">
+                <div className="relative flex-1">
+                  <MapPin className="absolute left-3 top-3 w-5 h-5 text-red-600" />
+                  <Input
+                    placeholder="Enter destination"
+                    value={toLocation}
+                    onChange={(e) => onUpdate({ toLocation: e.target.value })}
+                    className="pl-10"
+                  />
+                </div>
+                {onDestinationMapOpen && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onDestinationMapOpen}
+                    className="px-3"
+                  >
+                    <Map className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>
