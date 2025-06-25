@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DriverOnboarding from "./pages/onboarding/Driver";
 import PassengerOnboarding from "./pages/onboarding/Passenger";
+import AIDevTools from "./pages/AIDevTools";
 
 const queryClient = new QueryClient();
 
