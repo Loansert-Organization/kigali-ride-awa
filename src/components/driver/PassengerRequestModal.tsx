@@ -2,7 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { useMediaQuery } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import TripSummaryBlock from "./modal/TripSummaryBlock";
 import DetailsBlock from "./modal/DetailsBlock";
 import AcceptRequestButtonBlock from "./modal/AcceptRequestButtonBlock";
@@ -37,7 +37,7 @@ const PassengerRequestModal: React.FC<PassengerRequestModalProps> = ({
   onAccept,
   onWhatsAppContact
 }) => {
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isMobile = useIsMobile();
 
   if (!trip) return null;
 
