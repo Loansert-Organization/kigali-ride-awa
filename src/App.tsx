@@ -11,6 +11,7 @@ import PassengerOnboarding from "./pages/onboarding/Passenger";
 import PassengerHome from "./pages/home/Passenger";
 import DriverHome from "./pages/home/Driver";
 import BookRide from "./pages/BookRide";
+import RideMatches from "./pages/RideMatches";
 import CreateTrip from "./pages/CreateTrip";
 import AIDevTools from "./pages/AIDevTools";
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/home/passenger" element={<PassengerHome />} />
           <Route path="/home/driver" element={<DriverHome />} />
           <Route path="/book-ride" element={<BookRide />} />
+          <Route path="/matches" element={<RideMatches />} />
           <Route path="/create-trip" element={<CreateTrip />} />
           <Route path="/ai-dev-tools" element={<AIDevTools />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

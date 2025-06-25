@@ -173,9 +173,9 @@ const BookRide = () => {
         description: "Looking for available drivers...",
       });
 
-      // TODO: Navigate to booking confirmation or matches page
-      navigate('/home/passenger', { 
-        state: { message: 'Ride booked successfully!' }
+      // Navigate to matches page with the created trip
+      navigate('/matches', { 
+        state: { trip: data }
       });
     } catch (error) {
       console.error('Error creating trip:', error);
