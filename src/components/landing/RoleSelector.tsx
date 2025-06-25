@@ -1,101 +1,118 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Car, User } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import PromoCodeSection from './PromoCodeSection';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
-interface RoleSelectorProps {
-  selectedLanguage: 'en' | 'kn' | 'fr';
-  promoCode: string;
-  setPromoCode: (code: string) => void;
-  urlPromo: string;
-  setCurrentStep: (step: 'welcome' | 'role' | 'location' | 'final') => void;
-  t: any;
-}
+const RoleSelector = () => {
+  const navigate = useNavigate();
+  const { userProfile, refreshUserProfile } = useAuth();
+  const [isLoading, setIsLoading] = React.useState(false);
 
-const RoleSelector: React.FC<RoleSelectorProps> = ({
-  selectedLanguage,
-  promoCode,
-  setPromoCode,
-  urlPromo,
-  setCurrentStep,
-  t
-}) => {
-  const handleRoleSelect = async (role: 'driver' | 'passenger') => {
-    // Create anonymous user session if needed
+  const selectRole = async (role: 'passenger' | 'driver') => {
+    if (!userProfile) {
+      toast({
+        title: "Error",
+        description: "Please wait for your profile to load.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        await supabase.auth.signInAnonymously();
+      console.log('Selecting role:', role, 'for user:', userProfile.id);
+      
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          role: role,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userProfile.id);
+
+      if (error) {
+        console.error('Error updating user role:', error);
+        toast({
+          title: "Error",
+          description: "Failed to save your role. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
+
+      console.log('Role updated successfully');
+      
+      // Refresh the user profile to get the updated data
+      await refreshUserProfile();
+      
+      // Navigate to appropriate onboarding
+      if (role === 'passenger') {
+        navigate('/onboarding/passenger');
+      } else {
+        navigate('/onboarding/driver');
+      }
+      
+      toast({
+        title: "Role Selected",
+        description: `Welcome as a ${role}! Let's complete your setup.`,
+      });
     } catch (error) {
-      console.error('Auth error:', error);
+      console.error('Error in selectRole:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-
-    // Save to localStorage
-    localStorage.setItem('user_role', role);
-    localStorage.setItem('language', selectedLanguage);
-    
-    if (promoCode) {
-      localStorage.setItem('promo_code', promoCode);
-    }
-
-    setCurrentStep('location');
-    
-    toast({
-      title: "Role Selected",
-      description: `You selected: ${role === 'driver' ? t.driver : t.passenger}`,
-    });
   };
 
   return (
-    <Card className="bg-white/95 backdrop-blur-sm animate-fade-in">
+    <Card className="mx-auto max-w-md">
       <CardContent className="p-6">
-        <h2 className="text-xl font-semibold text-center mb-6">{t.selectRole}</h2>
+        <h2 className="text-xl font-semibold text-center mb-6">
+          Choose your role
+        </h2>
+        
         <div className="space-y-4">
-          <Button
-            onClick={() => handleRoleSelect('driver')}
-            className="w-full h-24 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white relative overflow-hidden group transform transition-transform hover:scale-105"
+          <Button 
+            onClick={() => selectRole('passenger')}
+            disabled={isLoading}
+            className="w-full h-16 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-3"
           >
-            <div className="flex items-center justify-center w-full">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mr-4">
-                <Car className="w-6 h-6" />
-              </div>
-              <div className="text-left">
-                <div className="font-bold text-lg">{t.driver}</div>
-                <div className="text-sm text-blue-100">{t.driverDesc}</div>
-              </div>
+            <User className="w-6 h-6" />
+            <div className="text-left">
+              <div className="font-semibold">I'm a Passenger</div>
+              <div className="text-sm opacity-90">Book rides across Kigali</div>
             </div>
           </Button>
           
-          <Button
-            onClick={() => handleRoleSelect('passenger')}
-            className="w-full h-24 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white relative overflow-hidden group transform transition-transform hover:scale-105"
+          <Button 
+            onClick={() => selectRole('driver')}
+            disabled={isLoading}
+            className="w-full h-16 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-3"
           >
-            <div className="flex items-center justify-center w-full">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mr-4">
-                <User className="w-6 h-6" />
-              </div>
-              <div className="text-left">
-                <div className="font-bold text-lg">{t.passenger}</div>
-                <div className="text-sm text-purple-100">{t.passengerDesc}</div>
-              </div>
+            <Car className="w-6 h-6" />
+            <div className="text-left">
+              <div className="font-semibold">I'm a Driver</div>
+              <div className="text-sm opacity-90">Offer rides and earn money</div>
             </div>
           </Button>
         </div>
-
-        <PromoCodeSection
-          promoCode={promoCode}
-          setPromoCode={setPromoCode}
-          urlPromo={urlPromo}
-          t={t}
-        />
+        
+        <p className="text-sm text-gray-500 text-center mt-4">
+          You can change this later in your profile settings
+        </p>
       </CardContent>
     </Card>
   );
 };
 
-export default RoleSelector;
+export { RoleSelector };

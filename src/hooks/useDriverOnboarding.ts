@@ -5,13 +5,15 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/contexts/AuthContext';
 
-export const usePassengerOnboarding = () => {
+export const useDriverOnboarding = () => {
   const navigate = useNavigate();
   const { userProfile, refreshUserProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [language, setLanguage] = useState<'en' | 'kn' | 'fr'>('en');
   const [locationGranted, setLocationGranted] = useState(false);
   const [notificationsGranted, setNotificationsGranted] = useState(false);
+  const [vehicleType, setVehicleType] = useState<'moto' | 'car' | 'tuktuk' | 'minibus'>('moto');
+  const [plateNumber, setPlateNumber] = useState('');
   const [existingPromo, setExistingPromo] = useState('');
 
   useEffect(() => {
@@ -33,10 +35,20 @@ export const usePassengerOnboarding = () => {
       return;
     }
 
+    if (!plateNumber.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter your vehicle plate number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      console.log('Finishing passenger onboarding for user:', userProfile.id);
+      console.log('Finishing driver onboarding for user:', userProfile.id);
       
-      const { error } = await supabase
+      // Update user profile
+      const { error: userError } = await supabase
         .from('users')
         .update({
           language: language,
@@ -48,34 +60,44 @@ export const usePassengerOnboarding = () => {
         })
         .eq('id', userProfile.id);
 
-      if (error) {
-        console.error('Error updating user profile:', error);
-        toast({
-          title: "Error",
-          description: "Failed to complete onboarding. Please try again.",
-          variant: "destructive",
+      if (userError) {
+        console.error('Error updating user profile:', userError);
+        throw userError;
+      }
+
+      // Create driver profile
+      const { error: driverError } = await supabase
+        .from('driver_profiles')
+        .insert({
+          user_id: userProfile.id,
+          vehicle_type: vehicleType,
+          plate_number: plateNumber.trim(),
+          is_online: false
         });
-        return;
+
+      if (driverError) {
+        console.error('Error creating driver profile:', driverError);
+        throw driverError;
       }
 
       // Store onboarding completion in localStorage as backup
-      localStorage.setItem('passenger_onboarding_completed', 'true');
+      localStorage.setItem('driver_onboarding_completed', 'true');
       
       // Refresh user profile
       await refreshUserProfile();
 
       toast({
         title: "Welcome to Kigali Ride!",
-        description: "Your passenger account is ready to use.",
+        description: "Your driver account is ready. Start earning today!",
       });
 
-      // Redirect to passenger home
-      navigate('/home/passenger');
+      // Redirect to driver home
+      navigate('/home/driver');
     } catch (error) {
       console.error('Error in finishOnboarding:', error);
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: "Failed to complete onboarding. Please try again.",
         variant: "destructive",
       });
     }
@@ -89,6 +111,10 @@ export const usePassengerOnboarding = () => {
     setLocationGranted,
     notificationsGranted,
     setNotificationsGranted,
+    vehicleType,
+    setVehicleType,
+    plateNumber,
+    setPlateNumber,
     existingPromo,
     finishOnboarding
   };
