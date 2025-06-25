@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -186,14 +185,8 @@ const WelcomeLanding = () => {
         description: "Perfect! Now we can find rides near you",
       });
 
-      // Auto-complete onboarding flow
-      setTimeout(() => {
-        if (selectedRole === 'passenger') {
-          navigate('/onboarding/passenger');
-        } else {
-          navigate('/onboarding/driver');
-        }
-      }, 1500);
+      // Navigate to appropriate onboarding page
+      navigateToOnboarding();
       
     } catch (error) {
       toast({
@@ -203,22 +196,27 @@ const WelcomeLanding = () => {
       });
       
       // Still proceed to onboarding
-      setTimeout(() => {
-        if (selectedRole === 'passenger') {
-          navigate('/onboarding/passenger');
-        } else {
-          navigate('/onboarding/driver');
-        }
-      }, 1000);
+      navigateToOnboarding();
+    }
+  };
+
+  const navigateToOnboarding = () => {
+    if (selectedRole === 'passenger') {
+      navigate('/onboarding/passenger');
+    } else if (selectedRole === 'driver') {
+      navigate('/onboarding/driver');
+    } else {
+      console.error('No role selected for navigation');
+      toast({
+        title: "Error",
+        description: "Please select your role first",
+        variant: "destructive"
+      });
     }
   };
 
   const skipLocation = () => {
-    if (selectedRole === 'passenger') {
-      navigate('/onboarding/passenger');
-    } else {
-      navigate('/onboarding/driver');
-    }
+    navigateToOnboarding();
   };
 
   // Welcome Step
