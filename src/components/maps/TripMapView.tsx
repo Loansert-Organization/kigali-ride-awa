@@ -52,25 +52,25 @@ const TripMapView: React.FC<TripMapViewProps> = ({
       mapInstanceRef.current = map;
 
       // Add pickup marker
-      new google.maps.Marker({
+      new window.google.maps.Marker({
         position: fromLocation,
         map: map,
         icon: {
           url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMxMEI5ODEiLz4KPHN2ZyB4PSI4IiB5PSI4IiB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAyQzggNCA2IDcgNiAxMGMwIDUgNiAxMSA2IDExczYtNiA2LTExYzAtMy0yLTYtNi04WiIgZmlsbD0id2hpdGUiLz4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMCIgcj0iMyIgZmlsbD0iIzEwQjk4MSIvPgo8L3N2Zz4KPC9zdmc+',
-          scaledSize: new google.maps.Size(32, 32),
-          anchor: new google.maps.Point(16, 32)
+          scaledSize: new window.google.maps.Size(32, 32),
+          anchor: new window.google.maps.Point(16, 32)
         },
         title: `Pickup: ${fromLocation.address}`
       });
 
       // Add destination marker
-      new google.maps.Marker({
+      new window.google.maps.Marker({
         position: toLocation,
         map: map,
         icon: {
           url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNFRjQ0NDQiLz4KPHN2ZyB4PSI4IiB5PSI4IiB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAyQzggNCA2IDcgNiAxMGMwIDUgNiAxMSA2IDExczYtNiA2LTExYzAtMy0yLTYtNi04WiIgZmlsbD0id2hpdGUiLz4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMCIgcj0iMyIgZmlsbD0iI0VGNDQzNCIvPgo8L3N2Zz4KPC9zdmc+',
-          scaledSize: new google.maps.Size(32, 32),
-          anchor: new google.maps.Point(16, 32)
+          scaledSize: new window.google.maps.Size(32, 32),
+          anchor: new window.google.maps.Point(16, 32)
         },
         title: `Destination: ${toLocation.address}`
       });
@@ -79,8 +79,8 @@ const TripMapView: React.FC<TripMapViewProps> = ({
         // Calculate and display route
         try {
           await googleMapsService.calculateAndDisplayRoute(
-            new google.maps.LatLng(fromLocation.lat, fromLocation.lng),
-            new google.maps.LatLng(toLocation.lat, toLocation.lng)
+            new window.google.maps.LatLng(fromLocation.lat, fromLocation.lng),
+            new window.google.maps.LatLng(toLocation.lat, toLocation.lng)
           );
         } catch (error) {
           console.error('Error calculating route:', error);
@@ -88,7 +88,7 @@ const TripMapView: React.FC<TripMapViewProps> = ({
       }
 
       // Fit bounds to show both markers
-      const bounds = new google.maps.LatLngBounds();
+      const bounds = new window.google.maps.LatLngBounds();
       bounds.extend(fromLocation);
       bounds.extend(toLocation);
       map.fitBounds(bounds);

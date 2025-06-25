@@ -38,14 +38,14 @@ const LocationInputBlock: React.FC<LocationInputBlockProps> = ({
 }) => {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [manualInput, setManualInput] = useState(false);
-  const [showMapPicker, setShowMapPickerDialog] = useState(false);
+  const [showMapPickerDialog, setShowMapPickerDialog] = useState(false);
 
   const handleUseMyLocation = async () => {
     setIsGettingLocation(true);
     try {
       const location = await googleMapsService.getCurrentLocation();
       const address = await googleMapsService.geocodeLocation(
-        new google.maps.LatLng(location.lat, location.lng)
+        new window.google.maps.LatLng(location.lat, location.lng)
       );
       
       onChange(address, location);
@@ -98,7 +98,7 @@ const LocationInputBlock: React.FC<LocationInputBlockProps> = ({
             )}
             
             {showMapPicker && (
-              <Dialog open={showMapPicker} onOpenChange={setShowMapPickerDialog}>
+              <Dialog open={showMapPickerDialog} onOpenChange={setShowMapPickerDialog}>
                 <DialogTrigger asChild>
                   <Button
                     className="w-full justify-start h-12"

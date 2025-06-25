@@ -1,3 +1,4 @@
+
 import { Loader } from '@googlemaps/js-api-loader';
 import { config } from '@/config/environment';
 
@@ -20,8 +21,8 @@ class GoogleMapsService {
   async loadGoogleMaps(): Promise<void> {
     try {
       await this.loader.load();
-      this.directionsService = new google.maps.DirectionsService();
-      this.directionsRenderer = new google.maps.DirectionsRenderer({
+      this.directionsService = new window.google.maps.DirectionsService();
+      this.directionsRenderer = new window.google.maps.DirectionsRenderer({
         suppressMarkers: false,
         polylineOptions: {
           strokeColor: '#8b5cf6',
@@ -67,13 +68,13 @@ class GoogleMapsService {
       fullscreenControl: false
     };
 
-    this.map = new google.maps.Map(container, { ...defaultOptions, ...options });
+    this.map = new window.google.maps.Map(container, { ...defaultOptions, ...options });
     
     if (this.directionsRenderer) {
       this.directionsRenderer.setMap(this.map);
     }
 
-    this.placesService = new google.maps.places.PlacesService(this.map);
+    this.placesService = new window.google.maps.places.PlacesService(this.map);
     
     return this.map;
   }
@@ -105,7 +106,7 @@ class GoogleMapsService {
   }
 
   async geocodeLocation(latLng: google.maps.LatLng): Promise<string> {
-    const geocoder = new google.maps.Geocoder();
+    const geocoder = new window.google.maps.Geocoder();
     
     return new Promise((resolve, reject) => {
       geocoder.geocode({ location: latLng }, (results, status) => {
@@ -123,16 +124,16 @@ class GoogleMapsService {
 
     const icon = {
       url: this.getVehicleIconUrl(driver.vehicle_type),
-      scaledSize: new google.maps.Size(40, 40),
-      anchor: new google.maps.Point(20, 20)
+      scaledSize: new window.google.maps.Size(40, 40),
+      anchor: new window.google.maps.Point(20, 20)
     };
 
-    const marker = new google.maps.Marker({
+    const marker = new window.google.maps.Marker({
       position: { lat: driver.lat, lng: driver.lng },
       map: this.map,
       icon: icon,
       title: `${driver.vehicle_type} Driver`,
-      animation: google.maps.Animation.DROP
+      animation: window.google.maps.Animation.DROP
     });
 
     this.markers.push(marker);
@@ -165,7 +166,7 @@ class GoogleMapsService {
       this.directionsService!.route({
         origin: start,
         destination: end,
-        travelMode: google.maps.TravelMode.DRIVING
+        travelMode: window.google.maps.TravelMode.DRIVING
       }, (result, status) => {
         if (status === 'OK' && result) {
           this.directionsRenderer!.setDirections(result);

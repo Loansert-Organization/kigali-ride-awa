@@ -106,13 +106,13 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
     if (!mapInstanceRef.current || !currentLocation) return;
 
     // Add user location marker
-    new google.maps.Marker({
+    new window.google.maps.Marker({
       position: currentLocation,
       map: mapInstanceRef.current,
       icon: {
         url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiIGZpbGw9IiMzQjgyRjYiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIvPgo8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI0IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K',
-        scaledSize: new google.maps.Size(24, 24),
-        anchor: new google.maps.Point(12, 12)
+        scaledSize: new window.google.maps.Size(24, 24),
+        anchor: new window.google.maps.Point(12, 12)
       },
       title: 'Your Location',
       zIndex: 1000
@@ -132,16 +132,16 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
     // Add new driver markers
     drivers.forEach(driver => {
       if (driver.is_online) {
-        const marker = new google.maps.Marker({
+        const marker = new window.google.maps.Marker({
           position: { lat: driver.lat, lng: driver.lng },
           map: mapInstanceRef.current,
           icon: {
             url: getVehicleIconDataUrl(driver.vehicle_type),
-            scaledSize: new google.maps.Size(40, 40),
-            anchor: new google.maps.Point(20, 20)
+            scaledSize: new window.google.maps.Size(40, 40),
+            anchor: new window.google.maps.Point(20, 20)
           },
           title: `${driver.vehicle_type} Driver${driver.name ? ` - ${driver.name}` : ''}`,
-          animation: google.maps.Animation.DROP
+          animation: window.google.maps.Animation.DROP
         });
 
         // Add click listener

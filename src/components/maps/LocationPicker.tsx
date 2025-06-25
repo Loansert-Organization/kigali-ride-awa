@@ -57,10 +57,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       mapInstanceRef.current = map;
 
       // Initialize autocomplete
-      autocompleteRef.current = new google.maps.places.Autocomplete(searchInputRef.current, {
-        bounds: new google.maps.LatLngBounds(
-          new google.maps.LatLng(-2.5, 28.8), // SW bounds for Rwanda
-          new google.maps.LatLng(-1.0, 31.2)  // NE bounds for Rwanda
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(searchInputRef.current, {
+        bounds: new window.google.maps.LatLngBounds(
+          new window.google.maps.LatLng(-2.5, 28.8), // SW bounds for Rwanda
+          new window.google.maps.LatLng(-1.0, 31.2)  // NE bounds for Rwanda
         ),
         strictBounds: false,
         types: ['establishment', 'geocode']
@@ -126,15 +126,15 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     }
 
     if (mapInstanceRef.current) {
-      markerRef.current = new google.maps.Marker({
+      markerRef.current = new window.google.maps.Marker({
         position: { lat: location.lat, lng: location.lng },
         map: mapInstanceRef.current,
         icon: {
           url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiM4QjVDRjYiLz4KPHN2ZyB4PSI4IiB5PSI4IiB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAyQzggNCA2IDcgNiAxMGMwIDUgNiAxMSA2IDExczYtNiA2LTExYzAtMy0yLTYtNi04WiIgZmlsbD0id2hpdGUiLz4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMCIgcj0iMyIgZmlsbD0iIzhCNUNGNiIvPgo8L3N2Zz4KPC9zdmc+',
-          scaledSize: new google.maps.Size(32, 32),
-          anchor: new google.maps.Point(16, 32)
+          scaledSize: new window.google.maps.Size(32, 32),
+          anchor: new window.google.maps.Point(16, 32)
         },
-        animation: google.maps.Animation.DROP,
+        animation: window.google.maps.Animation.DROP,
         title: location.address
       });
     }
@@ -144,7 +144,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     try {
       const location = await googleMapsService.getCurrentLocation();
       const address = await googleMapsService.geocodeLocation(
-        new google.maps.LatLng(location.lat, location.lng)
+        new window.google.maps.LatLng(location.lat, location.lng)
       );
       
       const locationData = { ...location, address };
