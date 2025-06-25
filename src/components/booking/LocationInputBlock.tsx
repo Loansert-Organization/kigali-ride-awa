@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { MapPin, Navigation, Map, Keyboard } from 'lucide-react';
+import { MapPin, Navigation, Map, Plus } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import LocationPicker from '@/components/maps/LocationPicker';
 import { googleMapsService } from '@/services/GoogleMapsService';
@@ -78,6 +78,19 @@ const LocationInputBlock: React.FC<LocationInputBlockProps> = ({
     setShowMapPickerDialog(false);
   };
 
+  const getEmojiForLabel = (label: string) => {
+    const lowercaseLabel = label.toLowerCase();
+    if (lowercaseLabel.includes('home') || lowercaseLabel.includes('house')) return '🏠';
+    if (lowercaseLabel.includes('work') || lowercaseLabel.includes('office')) return '🏢';
+    if (lowercaseLabel.includes('church') || lowercaseLabel.includes('cathedral')) return '⛪';
+    if (lowercaseLabel.includes('market') || lowercaseLabel.includes('shop')) return '🛒';
+    if (lowercaseLabel.includes('school') || lowercaseLabel.includes('university')) return '🎓';
+    if (lowercaseLabel.includes('hospital') || lowercaseLabel.includes('clinic')) return '🏥';
+    if (lowercaseLabel.includes('gym') || lowercaseLabel.includes('fitness')) return '💪';
+    if (lowercaseLabel.includes('restaurant') || lowercaseLabel.includes('cafe')) return '🍽️';
+    return '⭐';
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -126,23 +139,36 @@ const LocationInputBlock: React.FC<LocationInputBlockProps> = ({
               className="w-full justify-start h-12"
               variant="outline"
             >
-              <Keyboard className="w-5 h-5 mr-3" />
+              <Plus className="w-5 h-5 mr-3" />
               ⌨️ Type manually
             </Button>
             
             {favorites.length > 0 && (
               <div className="mt-4">
-                <p className="text-sm text-gray-600 mb-2">Recent & Favorites</p>
-                <div className="space-y-2">
-                  {favorites.slice(0, 3).map((favorite) => (
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-gray-600">⭐ Your Favorites</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open('/favorites', '_blank')}
+                    className="text-xs text-purple-600 hover:text-purple-700"
+                  >
+                    Manage →
+                  </Button>
+                </div>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {favorites.slice(0, 4).map((favorite) => (
                     <Button
                       key={favorite.id}
                       onClick={() => handleFavoriteSelect(favorite)}
-                      className="w-full justify-start h-10"
+                      className="w-full justify-start h-auto p-3 text-left"
                       variant="ghost"
                     >
-                      <MapPin className="w-4 h-4 mr-2 text-purple-600" />
-                      {favorite.label}: {favorite.address}
+                      <span className="text-lg mr-2">{getEmojiForLabel(favorite.label)}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{favorite.label}</p>
+                        <p className="text-xs text-gray-500 truncate">{favorite.address}</p>
+                      </div>
                     </Button>
                   ))}
                 </div>
