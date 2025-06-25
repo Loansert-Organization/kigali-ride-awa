@@ -441,6 +441,36 @@ export type Database = {
           },
         ]
       }
+      otp_codes: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          otp_code: string
+          phone_number: string
+          updated_at: string
+          used: boolean
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          otp_code: string
+          phone_number: string
+          updated_at?: string
+          used?: boolean
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          phone_number?: string
+          updated_at?: string
+          used?: boolean
+        }
+        Relationships: []
+      }
       push_tokens: {
         Row: {
           created_at: string | null
