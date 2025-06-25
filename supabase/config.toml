@@ -42,3 +42,9 @@ verify_jwt = false
 
 [functions.ai-fraud-check]
 verify_jwt = false
+
+[functions.maps-sig]
+verify_jwt = false
+
+[functions.fix-user-policies]
+verify_jwt = false

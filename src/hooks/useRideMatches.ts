@@ -21,6 +21,7 @@ interface Trip {
   is_negotiable?: boolean;
   description?: string;
   role: string;
+  seats_available?: number;
   // Additional fields for matched trips
   match_score?: number;
   from_distance_km?: number;
@@ -90,20 +91,28 @@ export const useRideMatches = () => {
       }
 
       // Use smart trip matcher for better results
-      const matchResult = await findMatches(currentTrip.id, {
-        maxDistance: 5,
-        maxTimeDiff: 30
-      });
+      try {
+        const matchResult = await findMatches(currentTrip.id, {
+          maxDistance: 5,
+          maxTimeDiff: 30
+        });
 
-      if (matchResult) {
-        // Convert MatchedTrip[] to Trip[] by adding required fields
-        const convertedMatches: Trip[] = matchResult.matches.map(match => ({
-          ...match,
-          role: 'driver', // All matched trips are driver trips
-          users: match.users
-        }));
-        
-        setMatchingTrips(convertedMatches);
+        if (matchResult?.matches) {
+          // Convert MatchedTrip[] to Trip[] by adding required fields
+          const convertedMatches: Trip[] = matchResult.matches.map(match => ({
+            ...match,
+            role: 'driver', // All matched trips are driver trips
+            users: match.users,
+            seats_available: match.seats_available || 1
+          }));
+          
+          setMatchingTrips(convertedMatches);
+        } else {
+          setMatchingTrips([]);
+        }
+      } catch (matchError) {
+        console.error('Error finding matches:', matchError);
+        setMatchingTrips([]);
       }
 
     } catch (error) {
@@ -141,11 +150,17 @@ export const useRideMatches = () => {
       });
 
       // Send notification to driver
-      await sendNotification(driverTrip.user_id, {
-        title: "New Booking Confirmed",
-        body: `Passenger booked your trip from ${driverTrip.from_location} to ${driverTrip.to_location}`,
-        type: 'booking_confirmed'
-      });
+      if (sendNotification) {
+        try {
+          await sendNotification(driverTrip.user_id, {
+            title: "New Booking Confirmed",
+            body: `Passenger booked your trip from ${driverTrip.from_location} to ${driverTrip.to_location}`,
+            type: 'booking_confirmed'
+          });
+        } catch (notificationError) {
+          console.error('Error sending notification:', notificationError);
+        }
+      }
 
       loadMatchingTrips();
     } catch (error) {

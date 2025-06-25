@@ -17,7 +17,9 @@ interface Trip {
   fare?: number;
   seats_available: number;
   description?: string;
-  user?: {
+  user_id?: string;
+  users?: {
+    phone_number?: string;
     promo_code: string;
   };
 }

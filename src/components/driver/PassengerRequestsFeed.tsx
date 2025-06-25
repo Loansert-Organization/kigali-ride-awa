@@ -40,12 +40,32 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
 
   // Wrapper function to handle the Promise<boolean> return and convert to Promise<void>
   const handleAcceptWrapper = async (tripId: string): Promise<void> => {
-    await handleAcceptRequest(tripId);
+    try {
+      await handleAcceptRequest(tripId);
+    } catch (error) {
+      console.error('Error accepting request:', error);
+    }
   };
 
   // Wrapper function for modal accept that also returns Promise<void>
   const handleModalAccept = async (tripId: string): Promise<void> => {
-    await handleAcceptRequest(tripId);
+    try {
+      await handleAcceptRequest(tripId);
+      setIsModalOpen(false);
+      setSelectedTrip(null);
+    } catch (error) {
+      console.error('Error accepting request:', error);
+    }
+  };
+
+  const handleModalWhatsAppContact = (trip: any) => {
+    try {
+      handleWhatsAppContact(trip);
+      setIsModalOpen(false);
+      setSelectedTrip(null);
+    } catch (error) {
+      console.error('Error launching WhatsApp:', error);
+    }
   };
 
   if (!isOnline) {
@@ -113,10 +133,13 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
 
       <PassengerRequestModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedTrip(null);
+        }}
         trip={selectedTrip}
         onAccept={handleModalAccept}
-        onWhatsAppContact={handleWhatsAppContact}
+        onWhatsAppContact={handleModalWhatsAppContact}
       />
     </>
   );

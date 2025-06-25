@@ -1,3 +1,4 @@
+
 // Performance monitoring and optimization service
 export class PerformanceMonitor {
   private static instance: PerformanceMonitor;
@@ -11,7 +12,7 @@ export class PerformanceMonitor {
     return PerformanceMonitor.instance;
   }
 
-  // Track page load performance
+  // Track page load performance  
   trackPageLoad(pageName: string) {
     const loadTime = performance.now() - this.loadStartTime;
     this.recordMetric(`page_load_${pageName}`, loadTime);
@@ -85,6 +86,12 @@ export class PerformanceMonitor {
     
     return false;
   }
+
+  // Reset all metrics
+  reset() {
+    this.metrics.clear();
+    this.loadStartTime = performance.now();
+  }
 }
 
 // React hook for performance tracking
@@ -118,3 +125,6 @@ export const usePerformanceTracking = (componentName: string) => {
   
   return { trackRender, trackAPI };
 };
+
+// Export the singleton instance for easy access
+export const performanceMonitor = PerformanceMonitor.getInstance();

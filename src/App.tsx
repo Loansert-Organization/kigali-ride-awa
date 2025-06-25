@@ -41,6 +41,7 @@ import AdminUsers from "@/pages/admin/Users";
 import AdminTrips from "@/pages/admin/Trips";
 import UserDetails from "@/pages/admin/UserDetails";
 import DriverDetails from "@/pages/admin/DriverDetails";
+import ProductionReadiness from "@/pages/admin/ProductionReadiness";
 
 // Booking pages
 import BookRide from "@/pages/BookRide";
@@ -110,6 +111,7 @@ const App = () => {
                 <Route path="/admin/trips" element={<AdminTrips />} />
                 <Route path="/admin/user-details" element={<UserDetails />} />
                 <Route path="/admin/driver-details" element={<DriverDetails />} />
+                <Route path="/admin/production-readiness" element={<ProductionReadiness />} />
               </Routes>
             </BrowserRouter>
             
