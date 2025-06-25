@@ -35,6 +35,9 @@ export const useAuth = () => {
       promo_code: generatePromoCode(),
       location_enabled: false,
       notifications_enabled: false,
+      phone_number: null,
+      phone_verified: false,
+      auth_method: 'anonymous',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
