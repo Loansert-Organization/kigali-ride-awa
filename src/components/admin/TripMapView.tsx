@@ -96,10 +96,10 @@ export const TripMapView: React.FC<TripMapViewProps> = ({
                     {trip.id.slice(0, 8)}...
                   </div>
                   <div className="flex space-x-2">
-                    <Badge className={getRoleColor(trip.role)} size="sm">
+                    <Badge className={getRoleColor(trip.role)}>
                       {trip.role}
                     </Badge>
-                    <Badge className={getStatusColor(trip.status)} size="sm">
+                    <Badge className={getStatusColor(trip.status)}>
                       {trip.status}
                     </Badge>
                   </div>
