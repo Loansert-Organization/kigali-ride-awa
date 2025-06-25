@@ -9,6 +9,9 @@ interface AdminUsersParams {
   statusFilter: string;
 }
 
+type UserRole = 'passenger' | 'driver' | 'admin';
+type UserStatus = 'active' | 'banned' | 'flagged';
+
 export const useAdminUsers = ({ refreshTrigger, searchQuery, roleFilter, statusFilter }: AdminUsersParams) => {
   return useQuery({
     queryKey: ['admin-users', refreshTrigger, searchQuery, roleFilter, statusFilter],
@@ -38,13 +41,16 @@ export const useAdminUsers = ({ refreshTrigger, searchQuery, roleFilter, statusF
         const userTrips = tripsData?.filter(trip => trip.user_id === user.id) || [];
         
         // Mock status - in real implementation this would come from a user_status table
-        const status = Math.random() > 0.9 ? 'flagged' : Math.random() > 0.95 ? 'banned' : 'active';
+        const status: UserStatus = Math.random() > 0.9 ? 'flagged' : Math.random() > 0.95 ? 'banned' : 'active';
+        
+        // Ensure role is properly typed, with fallback to 'passenger'
+        const role: UserRole = (user.role === 'driver' || user.role === 'admin') ? user.role : 'passenger';
         
         const processedUser = {
           id: user.id,
           name: `User ${user.id.slice(0, 8)}`, // Mock name - in real app would come from profile
           phone: '+250788123456', // Mock phone - in real app would come from profile
-          role: user.role || 'passenger',
+          role,
           tripsCount: userTrips.length,
           lastSeen: new Date(user.updated_at) > new Date(Date.now() - 24*60*60*1000) ? 'today' : 
                    new Date(user.updated_at).toLocaleDateString(),
