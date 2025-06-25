@@ -297,7 +297,12 @@ const BookRide = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" onClick={handleBack}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleBack}
+            className="p-2 hover:bg-gray-100 rounded-md"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
