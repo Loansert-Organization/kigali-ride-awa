@@ -1,27 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Globe, Check } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 
-interface LanguageSelectorProps {
-  selectedLanguage: 'en' | 'kn' | 'fr';
-  onLanguageChange: (lang: 'en' | 'kn' | 'fr') => void;
-  showLanguageSelector: boolean;
-  setShowLanguageSelector: (show: boolean) => void;
-  t: any;
-}
+const LanguageSelector = () => {
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'kn' | 'fr'>('en');
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
 
-const LanguageSelector: React.FC<LanguageSelectorProps> = ({
-  selectedLanguage,
-  onLanguageChange,
-  showLanguageSelector,
-  setShowLanguageSelector,
-  t
-}) => {
   const handleLanguageChange = (lang: 'en' | 'kn' | 'fr') => {
-    onLanguageChange(lang);
+    setSelectedLanguage(lang);
     localStorage.setItem('language', lang);
     setShowLanguageSelector(false);
     toast({
@@ -48,7 +37,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-sm animate-scale-in">
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">{t.languageSelect}</h3>
+              <h3 className="text-lg font-semibold mb-4">Select Language</h3>
               <div className="space-y-2">
                 {[
                   { code: 'en', name: 'English', flag: '🇺🇸' },

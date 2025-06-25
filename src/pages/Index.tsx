@@ -2,11 +2,11 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { LanguageSelector } from "@/components/landing/LanguageSelector";
+import LanguageSelector from "@/components/landing/LanguageSelector";
 import { RoleSelector } from "@/components/landing/RoleSelector";
-import { LocationPermission } from "@/components/landing/LocationPermission";
-import { PromoCodeSection } from "@/components/landing/PromoCodeSection";
-import { PWAInstallPrompt } from "@/components/landing/PWAInstallPrompt";
+import LocationPermission from "@/components/landing/LocationPermission";
+import PromoCodeSection from "@/components/landing/PromoCodeSection";
+import PWAInstallPrompt from "@/components/landing/PWAInstallPrompt";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
@@ -67,29 +67,9 @@ const Index = () => {
             </p>
           </div>
 
-          {/* Language Selection */}
-          <div className="mb-8">
-            <LanguageSelector />
-          </div>
-
           {/* Role Selection */}
           <div className="mb-8">
             <RoleSelector />
-          </div>
-
-          {/* Location Permission */}
-          <div className="mb-8">
-            <LocationPermission />
-          </div>
-
-          {/* Promo Code Section */}
-          <div className="mb-8">
-            <PromoCodeSection />
-          </div>
-
-          {/* PWA Install Prompt */}
-          <div className="mb-8">
-            <PWAInstallPrompt />
           </div>
 
           {/* Footer */}
