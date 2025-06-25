@@ -9,6 +9,8 @@ export interface SchemaAuditResult {
   fix?: string;
 }
 
+type DatabaseTable = 'users' | 'driver_profiles' | 'trips' | 'bookings' | 'favorites' | 'user_referrals' | 'user_rewards' | 'incidents' | 'trip_heatmap_logs' | 'admin_trip_flags';
+
 export class SchemaAuditService {
   static async performFullAudit(): Promise<{
     results: SchemaAuditResult[];
@@ -135,10 +137,10 @@ export class SchemaAuditService {
         });
       }
 
-      // Check other tables
-      const tables = ['favorites', 'user_referrals', 'user_rewards', 'incidents', 'trip_heatmap_logs'];
+      // Check other tables with proper typing
+      const tablesToCheck: DatabaseTable[] = ['favorites', 'user_referrals', 'user_rewards', 'incidents', 'trip_heatmap_logs'];
       
-      for (const table of tables) {
+      for (const table of tablesToCheck) {
         try {
           const { error } = await supabase
             .from(table)

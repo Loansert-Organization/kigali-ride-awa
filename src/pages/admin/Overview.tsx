@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -12,6 +13,11 @@ export default function Overview() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { data, isLoading, error, refetch } = useAdminDashboard(refreshTrigger);
 
+  const handleRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+    refetch();
+  };
+
   useEffect(() => {
     if (error) {
       console.error('Error loading admin dashboard:', error);
@@ -20,7 +26,7 @@ export default function Overview() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <AdminHeader />
+      <AdminHeader onRefresh={handleRefresh} />
       
       <Tabs defaultValue="kpis" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
@@ -35,21 +41,15 @@ export default function Overview() {
           <KPIStatsCards data={data?.kpis} />
           
           {/* AI Agent Logs */}
-          <AIAgentLogsTable logs={data?.aiLogs || []} />
+          <AIAgentLogsTable />
         </TabsContent>
 
         <TabsContent value="users" className="space-y-6">
-          <UsersTableBlock 
-            users={data?.users || []} 
-            onRefresh={() => refetch()} 
-          />
+          <UsersTableBlock users={data?.users || []} />
         </TabsContent>
 
         <TabsContent value="trips" className="space-y-6">
-          <TripsTableBlock 
-            trips={data?.trips || []} 
-            onRefresh={() => refetch()} 
-          />
+          <TripsTableBlock trips={data?.trips || []} />
         </TabsContent>
 
         <TabsContent value="schema" className="space-y-6">

@@ -5,7 +5,7 @@ import { RefreshCw, Settings, Users, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface AdminHeaderProps {
-  onRefresh: () => void;
+  onRefresh?: () => void;
 }
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ onRefresh }) => {
@@ -24,15 +24,17 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onRefresh }) => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefresh}
-              className="flex items-center space-x-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
+            {onRefresh && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefresh}
+                className="flex items-center space-x-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span className="hidden sm:inline">Refresh</span>
+              </Button>
+            )}
 
             <Button
               variant="outline"
