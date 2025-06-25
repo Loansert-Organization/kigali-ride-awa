@@ -73,23 +73,72 @@ const WelcomeLanding = () => {
   };
 
   const handleRoleSelect = async (role: 'passenger' | 'driver') => {
-    if (!userProfile) return;
+    console.log('Role selection clicked:', role);
     
+    if (isProcessing) {
+      console.log('Already processing, ignoring click');
+      return;
+    }
+    
+    if (!user) {
+      console.log('No user found, cannot select role');
+      toast({
+        title: "Error",
+        description: "Please wait for authentication to complete",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSelectedRole(role);
     setIsProcessing(true);
 
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ 
-          role: role,
-          language: selectedLanguage,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userProfile.id);
+      console.log('Updating user role to:', role, 'for user ID:', user.id);
 
-      if (error) throw error;
+      // First check if we have a user profile
+      if (!userProfile) {
+        console.log('No user profile found, creating one first');
+        // Create profile first
+        const { data: newProfile, error: createError } = await supabase
+          .from('users')
+          .insert({
+            auth_user_id: user.id,
+            role: role,
+            language: selectedLanguage,
+            location_enabled: false,
+            notifications_enabled: false,
+            onboarding_completed: false
+          })
+          .select()
+          .single();
 
+        if (createError) {
+          console.error('Error creating user profile:', createError);
+          throw createError;
+        }
+
+        console.log('User profile created successfully:', newProfile);
+      } else {
+        // Update existing profile
+        const { error } = await supabase
+          .from('users')
+          .update({ 
+            role: role,
+            language: selectedLanguage,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userProfile.id);
+
+        if (error) {
+          console.error('Error updating user role:', error);
+          throw error;
+        }
+
+        console.log('User profile updated successfully');
+      }
+
+      // Refresh the user profile to get the updated data
       await refreshUserProfile();
       
       // Micro-interaction: pulse effect
@@ -253,11 +302,13 @@ const WelcomeLanding = () => {
               <Button 
                 onClick={() => handleRoleSelect('driver')}
                 disabled={isProcessing}
-                className="w-full h-16 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white hover-scale"
+                className="w-full h-16 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white hover-scale disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Car className="w-8 h-8 mr-3" />
                 <div className="text-left">
-                  <div className="font-bold text-lg">🚗 I'm a Driver</div>
+                  <div className="font-bold text-lg">
+                    {isProcessing && selectedRole === 'driver' ? '⏳ Setting up...' : '🚗 I\'m a Driver'}
+                  </div>
                   <div className="text-sm opacity-90">Offer rides and earn money</div>
                 </div>
               </Button>
@@ -265,11 +316,13 @@ const WelcomeLanding = () => {
               <Button 
                 onClick={() => handleRoleSelect('passenger')}
                 disabled={isProcessing}
-                className="w-full h-16 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover-scale"
+                className="w-full h-16 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover-scale disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <User className="w-8 h-8 mr-3" />
                 <div className="text-left">
-                  <div className="font-bold text-lg">🧑🏾 I'm a Passenger</div>
+                  <div className="font-bold text-lg">
+                    {isProcessing && selectedRole === 'passenger' ? '⏳ Setting up...' : '🧑🏾 I\'m a Passenger'}
+                  </div>
                   <div className="text-sm opacity-90">Book rides across Kigali</div>
                 </div>
               </Button>
@@ -289,6 +342,7 @@ const WelcomeLanding = () => {
                   size="sm"
                   onClick={() => setShowPromoInput(!showPromoInput)}
                   className="mb-2"
+                  disabled={isProcessing}
                 >
                   <Gift className="w-4 h-4 mr-2" />
                   💬 Have a code?
@@ -301,6 +355,7 @@ const WelcomeLanding = () => {
                     onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center font-mono"
                     maxLength={10}
+                    disabled={isProcessing}
                   />
                 )}
               </div>
