@@ -6,9 +6,10 @@ import { Users, Car, CheckCircle, Gift, Activity } from 'lucide-react';
 interface KPIData {
   totalUsers: number;
   totalTrips: number;
-  completedBookings: number;
-  referralsActivated: number;
+  totalBookings: number;
+  totalReferrals: number;
   weeklyActiveUsers: number;
+  totalRewards: number;
   usersDelta?: number;
   tripsDelta?: number;
 }
@@ -36,16 +37,16 @@ export const KPIStatsCards: React.FC<KPIStatsCardsProps> = ({ data }) => {
       bgColor: 'bg-green-50'
     },
     {
-      title: 'Completed Bookings',
-      value: data?.completedBookings || 0,
+      title: 'Total Bookings',
+      value: data?.totalBookings || 0,
       delta: 0,
       icon: CheckCircle,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50'
     },
     {
-      title: 'Referrals Activated',
-      value: data?.referralsActivated || 0,
+      title: 'Total Referrals',
+      value: data?.totalReferrals || 0,
       delta: 0,
       icon: Gift,
       color: 'text-orange-600',

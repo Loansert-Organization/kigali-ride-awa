@@ -17,6 +17,7 @@ interface RouteInputBlockProps {
   onUpdate: (updates: any) => void;
   onPickupMapOpen?: () => void;
   onDestinationMapOpen?: () => void;
+  quickStartLocation?: { lat: number; lng: number };
 }
 
 const RouteInputBlock: React.FC<RouteInputBlockProps> = ({
@@ -25,12 +26,20 @@ const RouteInputBlock: React.FC<RouteInputBlockProps> = ({
   scheduledTime,
   onUpdate,
   onPickupMapOpen,
-  onDestinationMapOpen
+  onDestinationMapOpen,
+  quickStartLocation
 }) => {
   const [useCurrentLocation, setUseCurrentLocation] = useState(!!fromLocation.includes('Current'));
 
   const handleUseCurrentLocation = async () => {
-    if (navigator.geolocation) {
+    if (quickStartLocation) {
+      onUpdate({
+        fromLocation: 'Current Location',
+        fromLat: quickStartLocation.lat,
+        fromLng: quickStartLocation.lng
+      });
+      setUseCurrentLocation(true);
+    } else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           onUpdate({
