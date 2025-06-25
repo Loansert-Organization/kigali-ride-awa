@@ -1,44 +1,51 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { RefreshCw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from '@/hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, AlertTriangle } from 'lucide-react';
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-interface RoleResetBlockProps {
-  currentRole: string;
-}
-
-const RoleResetBlock: React.FC<RoleResetBlockProps> = ({ currentRole }) => {
-  const navigate = useNavigate();
+const RoleResetBlock = () => {
+  const { userProfile, updateUserProfile } = useAuth();
   const [isResetting, setIsResetting] = useState(false);
 
   const handleRoleReset = async () => {
+    if (!userProfile) return;
+
     setIsResetting(true);
-    
     try {
-      // Clear role-specific data from localStorage
-      localStorage.removeItem('onboarding_completed');
-      localStorage.removeItem('user_role');
-      
-      toast({
-        title: "Role reset successful",
-        description: "You'll now select a new role and restart setup",
+      await updateUserProfile({
+        role: null,
+        onboarding_completed: false
       });
 
-      // Navigate to role selection
+      toast({
+        title: "Role reset successful",
+        description: "You can now select a new role. Redirecting to onboarding...",
+      });
+
+      // Redirect to home page to start role selection again
       setTimeout(() => {
-        navigate('/', { replace: true });
-        window.location.reload();
-      }, 1000);
+        window.location.href = '/';
+      }, 1500);
 
     } catch (error) {
       console.error('Error resetting role:', error);
       toast({
         title: "Reset failed",
-        description: "There was an error resetting your role. Please try again.",
+        description: "Failed to reset your role. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -46,48 +53,70 @@ const RoleResetBlock: React.FC<RoleResetBlockProps> = ({ currentRole }) => {
     }
   };
 
+  if (!userProfile?.role) return null;
+
   return (
-    <Card>
+    <Card className="border-orange-200 bg-orange-50">
       <CardHeader>
-        <CardTitle className="text-lg">🔄 Account Settings</CardTitle>
+        <CardTitle className="flex items-center text-orange-800">
+          <RefreshCw className="w-5 h-5 mr-2" />
+          🔄 Change Role
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <p className="text-sm text-orange-800 mb-3">
-              <strong>Switch Role:</strong> Currently set as {currentRole === 'driver' ? '🚗 Driver' : '🧍 Passenger'}
-            </p>
-            <p className="text-xs text-orange-700 mb-3">
-              Changing your role will clear your current app data and restart the setup process.
-            </p>
-            
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full">
+        <p className="text-sm text-orange-700 mb-4">
+          Want to switch between being a passenger and driver? You can reset your role and go through onboarding again.
+        </p>
+        
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="w-full border-orange-300 text-orange-700 hover:bg-orange-100"
+              disabled={isResetting}
+            >
+              {isResetting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                <>
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Switch Role
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Switch Role?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will clear your current app data and restart the setup process. 
-                    You'll be able to choose between Driver or Passenger again.
-                    
-                    Are you sure you want to continue?
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleRoleReset} disabled={isResetting}>
-                    {isResetting ? 'Resetting...' : 'Yes, Switch Role'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
+                  Reset My Role
+                </>
+              )}
+            </Button>
+          </AlertDialogTrigger>
+          
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center">
+                <AlertTriangle className="w-5 h-5 mr-2 text-orange-500" />
+                Reset Your Role?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will reset your role and onboarding status. You'll be redirected to select a new role.
+                
+                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Note:</strong> Your trip history and referral points will be preserved.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleRoleReset}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                Reset Role
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );

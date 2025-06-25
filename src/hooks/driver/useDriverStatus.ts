@@ -3,60 +3,68 @@ import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
+interface DriverStatusData {
+  todayTrips: number;
+  todayEarnings: number;
+  weeklyPoints: number;
+  leaderboardRank: undefined;
+  lastTripSummary: undefined;
+}
+
 export const useDriverStatus = () => {
-  const [statusData, setStatusData] = useState({
+  const [statusData, setStatusData] = useState<DriverStatusData>({
     todayTrips: 0,
     todayEarnings: 0,
     weeklyPoints: 0,
     leaderboardRank: undefined,
-    lastTripSummary: undefined
+    lastTripSummary: undefined,
   });
 
   const loadStatusData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: userRecord } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_user_id', user.id)
-          .single();
-        
-        if (userRecord) {
-          const today = new Date().toISOString().split('T')[0];
-          const { data: todayTrips } = await supabase
-            .from('trips')
-            .select('fare')
-            .eq('user_id', userRecord.id)
-            .eq('role', 'driver')
-            .eq('status', 'completed')
-            .gte('created_at', today + 'T00:00:00')
-            .lt('created_at', today + 'T23:59:59');
+      if (!user) return;
 
-          const tripCount = todayTrips?.length || 0;
-          const earnings = todayTrips?.reduce((sum, trip) => sum + (trip.fare || 0), 0) || 0;
+      // Get today's date range
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
-          const { data: rewardsData } = await supabase
-            .from('user_rewards')
-            .select('points')
-            .eq('user_id', userRecord.id)
-            .single();
+      // Get today's trips count
+      const { data: todayTrips } = await supabase
+        .from('trips')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role', 'driver')
+        .gte('created_at', today.toISOString())
+        .lt('created_at', tomorrow.toISOString());
 
-          setStatusData({
-            todayTrips: tripCount,
-            todayEarnings: earnings,
-            weeklyPoints: rewardsData?.points || 0,
-            leaderboardRank: undefined,
-            lastTripSummary: undefined
-          });
-        }
-      }
+      // Get current week's points
+      const currentWeek = new Date();
+      const monday = new Date(currentWeek.setDate(currentWeek.getDate() - currentWeek.getDay() + 1));
+      monday.setHours(0, 0, 0, 0);
+
+      const { data: weeklyRewards } = await supabase
+        .from('user_rewards')
+        .select('points')
+        .eq('user_id', user.id)
+        .eq('week', monday.toISOString().split('T')[0])
+        .single();
+
+      setStatusData({
+        todayTrips: todayTrips?.length || 0,
+        todayEarnings: 0, // This would need actual earnings calculation
+        weeklyPoints: weeklyRewards?.points || 0,
+        leaderboardRank: undefined,
+        lastTripSummary: undefined,
+      });
     } catch (error) {
-      console.error('Error loading status data:', error);
+      console.error('Error loading driver status:', error);
     }
   };
 
-  const toggleOnlineStatus = async (newStatus: boolean, driverProfile: any) => {
+  const toggleOnlineStatus = async (newStatus: boolean, driverProfile: any): Promise<boolean> => {
     if (!driverProfile) return false;
 
     try {
@@ -68,22 +76,18 @@ export const useDriverStatus = () => {
       if (error) throw error;
 
       toast({
-        title: newStatus ? "You're now online! ✅" : "You're now offline ❌",
+        title: newStatus ? "You're now online" : "You're now offline",
         description: newStatus 
           ? "You'll receive ride requests from passengers" 
-          : "You won't receive new ride requests",
+          : "You won't receive any ride requests",
       });
-
-      if (navigator.vibrate) {
-        navigator.vibrate(200);
-      }
 
       return true;
     } catch (error) {
       console.error('Error updating online status:', error);
       toast({
         title: "Error",
-        description: "Failed to update status. Please try again.",
+        description: "Failed to update your status. Please try again.",
         variant: "destructive"
       });
       return false;
@@ -96,7 +100,7 @@ export const useDriverStatus = () => {
 
   return {
     statusData,
-    loadStatusData,
-    toggleOnlineStatus
+    toggleOnlineStatus,
+    loadStatusData
   };
 };
