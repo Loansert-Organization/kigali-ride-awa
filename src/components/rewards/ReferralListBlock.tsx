@@ -1,0 +1,121 @@
+
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+const ReferralListBlock = () => {
+  const { user } = useAuth();
+
+  const { data: referrals, isLoading } = useQuery({
+    queryKey: ['user-referrals', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('user_referrals')
+        .select(`
+          *,
+          referee:users!user_referrals_referee_id_fkey(promo_code, role)
+        `)
+        .eq('referrer_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id
+  });
+
+  const getStatusInfo = (referral: any) => {
+    switch (referral.validation_status) {
+      case 'valid':
+        return { icon: '✅', text: 'Completed', color: 'text-green-600' };
+      case 'pending':
+        if (referral.referee_role === 'passenger') {
+          return { icon: '⏳', text: '0/1 trips', color: 'text-yellow-600' };
+        } else {
+          return { icon: '⏳', text: `${Math.min(referral.points_awarded, 4)}/5 trips`, color: 'text-yellow-600' };
+        }
+      case 'rejected':
+        return { icon: '❌', text: 'Invalid', color: 'text-red-600' };
+      default:
+        return { icon: '⏳', text: 'Pending', color: 'text-gray-600' };
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Users className="w-5 h-5 mr-2" />
+            👥 People You Referred
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">
+            <div className="animate-pulse">Loading referrals...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center">
+          <Users className="w-5 h-5 mr-2" />
+          👥 People You Referred ({referrals?.length || 0})
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {!referrals || referrals.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <p className="text-sm">No referrals yet</p>
+            <p className="text-xs mt-1">Share your code to start earning points!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {referrals.map((referral, index) => {
+              const status = getStatusInfo(referral);
+              const roleIcon = referral.referee_role === 'passenger' ? '👩' : '🚗';
+              
+              return (
+                <div
+                  key={referral.id}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">{roleIcon}</span>
+                    <div>
+                      <p className="font-medium text-sm">
+                        {referral.referee?.promo_code || `Referral #${index + 1}`}
+                      </p>
+                      <p className="text-xs text-gray-500 capitalize">
+                        {referral.referee_role}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">{status.icon}</span>
+                    <span className={`text-xs font-medium ${status.color}`}>
+                      {status.text}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default ReferralListBlock;
