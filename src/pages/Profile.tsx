@@ -20,6 +20,17 @@ const Profile = () => {
   const { userProfile, loading } = useAuth();
   const navigate = useNavigate();
 
+  const handleBackClick = () => {
+    // Navigate back to the appropriate home page based on user role
+    if (userProfile?.role === 'driver') {
+      navigate('/home/driver');
+    } else if (userProfile?.role === 'passenger') {
+      navigate('/home/passenger');
+    } else {
+      navigate('/');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -53,8 +64,8 @@ const Profile = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(-1)}
-            className="mr-2"
+            onClick={handleBackClick}
+            className="mr-2 hover:bg-gray-100 active:bg-gray-200"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
