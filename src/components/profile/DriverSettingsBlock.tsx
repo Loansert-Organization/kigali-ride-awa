@@ -39,7 +39,7 @@ const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userProfile }
       if (data) {
         // Ensure we have all required fields for DriverProfile, including ID
         const completeProfile: DriverProfile = {
-          id: data.id || crypto.randomUUID(), // Generate ID if missing
+          id: data.id || data.user_id, // Use existing ID or fallback to user_id
           user_id: data.user_id,
           vehicle_type: data.vehicle_type,
           plate_number: data.plate_number,
