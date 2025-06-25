@@ -14,6 +14,7 @@ import DriverHome from "./pages/home/Driver";
 import BookRide from "./pages/BookRide";
 import RideMatches from "./pages/RideMatches";
 import CreateTrip from "./pages/CreateTrip";
+import PastTrips from "./pages/PastTrips";
 import AIDevTools from "./pages/AIDevTools";
 
 const queryClient = new QueryClient();
