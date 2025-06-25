@@ -42,11 +42,6 @@ export const useWhatsAppAuth = () => {
     if (!userProfile) return { success: false };
 
     try {
-      // If user is already verified, just update phone
-      if (userProfile.auth_user_id) {
-        return await verifyWhatsAppPhone(phoneNumber);
-      }
-
       // For anonymous users, we need to create a verified account
       // This is a simplified flow - in production you'd want proper verification
       await updateUserProfile({

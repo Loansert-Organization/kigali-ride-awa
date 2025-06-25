@@ -5,15 +5,19 @@ import { Button } from "@/components/ui/button";
 import { MessageCircle, Shield, CheckCircle, AlertCircle } from 'lucide-react';
 import { WhatsAppAuthModal } from "@/components/modals/WhatsAppAuthModal";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 const WhatsAppStatusBlock: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { isWhatsAppVerified, phoneNumber, upgradeAnonymousToWhatsApp } = useWhatsAppAuth();
+  const { userProfile, refreshUserProfile } = useAuth();
 
   const handleWhatsAppAuth = async (phone: string) => {
     const result = await upgradeAnonymousToWhatsApp(phone);
     if (result.success) {
       setShowAuthModal(false);
+      // Refresh user profile to get updated verification status
+      await refreshUserProfile();
     }
   };
 
@@ -68,6 +72,7 @@ const WhatsAppStatusBlock: React.FC = () => {
         onSuccess={handleWhatsAppAuth}
         title="Connect WhatsApp"
         description="Link your WhatsApp to enable chat with drivers and sync your account across devices"
+        userProfile={userProfile}
       />
     </>
   );

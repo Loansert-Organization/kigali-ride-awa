@@ -8,21 +8,17 @@ import { MessageCircle, Phone, Loader2, X, CheckCircle } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-interface WhatsAppAuthModalProps {
+interface WhatsAppOTPModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (phoneNumber: string) => void;
-  title?: string;
-  description?: string;
-  userProfile?: any;
+  userProfile: any;
 }
 
-export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
+export const WhatsAppOTPModal: React.FC<WhatsAppOTPModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  title = "Verify with WhatsApp",
-  description = "Connect your WhatsApp to secure your account and enable driver communication",
   userProfile
 }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -54,20 +50,20 @@ export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
       const { data, error } = await supabase.functions.invoke('send-wa-code', {
         body: {
           phone: formattedPhone,
-          userId: userProfile?.id
+          userId: userProfile.id
         }
       });
 
       if (error) throw error;
 
-      if (data?.success) {
+      if (data.success) {
         toast({
           title: "Code sent!",
           description: "Check your WhatsApp for the verification code",
         });
         setStep('otp');
       } else {
-        throw new Error(data?.error || 'Failed to send code');
+        throw new Error(data.error || 'Failed to send code');
       }
 
     } catch (error) {
@@ -98,14 +94,14 @@ export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
       // Call edge function to verify code
       const { data, error } = await supabase.functions.invoke('verify-wa-code', {
         body: {
-          userId: userProfile?.id,
+          userId: userProfile.id,
           inputCode: otpCode
         }
       });
 
       if (error) throw error;
 
-      if (data?.success) {
+      if (data.success) {
         setStep('success');
         toast({
           title: "Verified!",
@@ -117,7 +113,7 @@ export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
           onSuccess(data.phoneNumber);
         }, 1500);
       } else {
-        throw new Error(data?.message || 'Verification failed');
+        throw new Error(data.message || 'Verification failed');
       }
 
     } catch (error) {
@@ -147,8 +143,10 @@ export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
           <div className="space-y-4">
             <div className="text-center py-4">
               <MessageCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">{title}</h3>
-              <p className="text-gray-600 text-sm">{description}</p>
+              <h3 className="text-lg font-semibold mb-2">Verify with WhatsApp</h3>
+              <p className="text-gray-600 text-sm">
+                We'll send you a verification code on WhatsApp to secure your account
+              </p>
             </div>
 
             <div className="space-y-3">

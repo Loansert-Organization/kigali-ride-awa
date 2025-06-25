@@ -796,6 +796,8 @@ export type Database = {
           referred_by: string | null
           role: string | null
           updated_at: string
+          verification_code: string | null
+          verification_code_sent_at: string | null
         }
         Insert: {
           auth_method?: string | null
@@ -812,6 +814,8 @@ export type Database = {
           referred_by?: string | null
           role?: string | null
           updated_at?: string
+          verification_code?: string | null
+          verification_code_sent_at?: string | null
         }
         Update: {
           auth_method?: string | null
@@ -828,6 +832,8 @@ export type Database = {
           referred_by?: string | null
           role?: string | null
           updated_at?: string
+          verification_code?: string | null
+          verification_code_sent_at?: string | null
         }
         Relationships: []
       }
