@@ -18,6 +18,7 @@ import PastTrips from "./pages/PastTrips";
 import AIDevTools from "./pages/AIDevTools";
 import Favorites from "./pages/Favorites";
 import Rewards from "./pages/Rewards";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/past-trips" element={<PastTrips />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/rewards" element={<Rewards />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/ai-dev-tools" element={<AIDevTools />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
