@@ -9,6 +9,373 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          confirmed: boolean | null
+          created_at: string
+          driver_trip_id: string
+          id: string
+          passenger_trip_id: string
+          updated_at: string
+          whatsapp_launched: boolean | null
+        }
+        Insert: {
+          confirmed?: boolean | null
+          created_at?: string
+          driver_trip_id: string
+          id?: string
+          passenger_trip_id: string
+          updated_at?: string
+          whatsapp_launched?: boolean | null
+        }
+        Update: {
+          confirmed?: boolean | null
+          created_at?: string
+          driver_trip_id?: string
+          id?: string
+          passenger_trip_id?: string
+          updated_at?: string
+          whatsapp_launched?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_driver_trip_id_fkey"
+            columns: ["driver_trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_passenger_trip_id_fkey"
+            columns: ["passenger_trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_profiles: {
+        Row: {
+          created_at: string
+          is_online: boolean | null
+          plate_number: string
+          preferred_zone: string | null
+          updated_at: string
+          user_id: string
+          vehicle_type: string
+        }
+        Insert: {
+          created_at?: string
+          is_online?: boolean | null
+          plate_number: string
+          preferred_zone?: string | null
+          updated_at?: string
+          user_id: string
+          vehicle_type: string
+        }
+        Update: {
+          created_at?: string
+          is_online?: boolean | null
+          plate_number?: string
+          preferred_zone?: string | null
+          updated_at?: string
+          user_id?: string
+          vehicle_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      favorites: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          label: string
+          lat: number | null
+          lng: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          label: string
+          lat?: number | null
+          lng?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          label?: string
+          lat?: number | null
+          lng?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incidents: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          trip_id: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          trip_id?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          trip_id?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incidents_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_heatmap_logs: {
+        Row: {
+          created_at: string
+          id: string
+          lat: number
+          lng: number
+          role: string
+          trip_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lat: number
+          lng: number
+          role: string
+          trip_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lat?: number
+          lng?: number
+          role?: string
+          trip_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_heatmap_logs_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trips: {
+        Row: {
+          created_at: string
+          description: string | null
+          fare: number | null
+          from_lat: number | null
+          from_lng: number | null
+          from_location: string
+          id: string
+          is_negotiable: boolean | null
+          role: string
+          scheduled_time: string
+          seats_available: number | null
+          status: string | null
+          to_lat: number | null
+          to_lng: number | null
+          to_location: string
+          updated_at: string
+          user_id: string
+          vehicle_type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          fare?: number | null
+          from_lat?: number | null
+          from_lng?: number | null
+          from_location: string
+          id?: string
+          is_negotiable?: boolean | null
+          role: string
+          scheduled_time?: string
+          seats_available?: number | null
+          status?: string | null
+          to_lat?: number | null
+          to_lng?: number | null
+          to_location: string
+          updated_at?: string
+          user_id: string
+          vehicle_type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          fare?: number | null
+          from_lat?: number | null
+          from_lng?: number | null
+          from_location?: string
+          id?: string
+          is_negotiable?: boolean | null
+          role?: string
+          scheduled_time?: string
+          seats_available?: number | null
+          status?: string | null
+          to_lat?: number | null
+          to_lng?: number | null
+          to_location?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_referrals: {
+        Row: {
+          created_at: string
+          id: string
+          points_awarded: number | null
+          referee_id: string
+          referee_role: string
+          referrer_id: string
+          reward_week: string | null
+          updated_at: string
+          validation_status: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_awarded?: number | null
+          referee_id: string
+          referee_role: string
+          referrer_id: string
+          reward_week?: string | null
+          updated_at?: string
+          validation_status?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_awarded?: number | null
+          referee_id?: string
+          referee_role?: string
+          referrer_id?: string
+          reward_week?: string | null
+          updated_at?: string
+          validation_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_referrals_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_rewards: {
+        Row: {
+          created_at: string
+          id: string
+          points: number | null
+          reward_issued: boolean | null
+          reward_type: string | null
+          updated_at: string
+          user_id: string
+          week: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points?: number | null
+          reward_issued?: boolean | null
+          reward_type?: string | null
+          updated_at?: string
+          user_id: string
+          week: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points?: number | null
+          reward_issued?: boolean | null
+          reward_type?: string | null
+          updated_at?: string
+          user_id?: string
+          week?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           auth_user_id: string | null
