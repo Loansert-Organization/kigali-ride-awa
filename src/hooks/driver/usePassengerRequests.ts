@@ -1,117 +1,126 @@
 
 import { useState, useEffect } from 'react';
-import { toast } from "@/hooks/use-toast";
-import { EdgeFunctionService } from '@/services/EdgeFunctionService';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from '@/hooks/useAuth';
 
-export const usePassengerRequests = (
-  driverLocation?: { lat: number; lng: number },
-  vehicleType: string = 'car',
-  isOnline: boolean = false
-) => {
-  const [requests, setRequests] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+interface PassengerRequest {
+  id: string;
+  user_id: string;
+  from_location: string;
+  to_location: string;
+  scheduled_time: string;
+  vehicle_type: string;
+  fare?: number;
+  is_negotiable: boolean;
+  seats_available: number;
+  description?: string;
+  status: string;
+  created_at: string;
+  from_lat?: number;
+  from_lng?: number;
+  to_lat?: number;
+  to_lng?: number;
+}
+
+export const usePassengerRequests = () => {
+  const { user } = useAuth();
+  const [requests, setRequests] = useState<PassengerRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadPassengerRequests = async () => {
-    if (!isOnline || !driverLocation) {
-      setRequests([]);
-      return;
-    }
+    if (!user) return;
 
-    setLoading(true);
+    setIsLoading(true);
+    setError(null);
+
     try {
-      // Get nearby passenger trips using edge function
-      const data = await EdgeFunctionService.getNearbyOpenTrips(
-        driverLocation.lat,
-        driverLocation.lng,
-        5, // 5km radius
-        vehicleType,
-        10 // limit to 10 requests
-      );
+      // Get passenger requests - RLS will ensure only pending passenger trips are visible
+      const { data, error: requestsError } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('role', 'passenger')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
 
-      // Filter for passenger trips only
-      const passengerRequests = data.trips?.filter((trip: any) => 
-        trip.role === 'passenger' && trip.status === 'pending'
-      ) || [];
+      if (requestsError) {
+        console.error('Error loading passenger requests:', requestsError);
+        setError('Failed to load passenger requests');
+        return;
+      }
 
-      setRequests(passengerRequests);
-      setLastRefresh(new Date());
-    } catch (error) {
-      console.error('Error loading passenger requests:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load passenger requests",
-        variant: "destructive"
-      });
+      setRequests(data || []);
+    } catch (err) {
+      console.error('Error in loadPassengerRequests:', err);
+      setError('An unexpected error occurred');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleAcceptRequest = async (tripId: string) => {
+  const acceptRequest = async (requestId: string) => {
+    if (!user) return;
+
     try {
-      // Create booking between driver and passenger
-      const result = await EdgeFunctionService.matchPassengerDriver(
-        'create_booking',
-        tripId
-      );
+      // Get the current user's profile
+      const { data: userProfile, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .single();
 
-      if (result.success) {
-        toast({
-          title: "Request Accepted!",
-          description: "Opening WhatsApp to coordinate pickup",
-        });
-
-        // Remove the accepted request from the list
-        setRequests(prev => prev.filter(req => req.id !== tripId));
+      if (userError || !userProfile) {
+        throw new Error('User profile not found');
       }
-    } catch (error) {
-      console.error('Error accepting request:', error);
-      toast({
-        title: "Error",
-        description: "Failed to accept request. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
 
-  const handleWhatsAppContact = async (trip: any) => {
-    try {
-      const result = await EdgeFunctionService.sendWhatsAppInvite(
-        '+250123456789', // This would be the actual passenger's phone
-        'booking_request',
-        trip,
-        undefined,
-        'en'
-      );
+      // Get the driver's current trip (if any)
+      const { data: driverTrip, error: driverTripError } = await supabase
+        .from('trips')
+        .select('id')
+        .eq('user_id', userProfile.id)
+        .eq('role', 'driver')
+        .eq('status', 'pending')
+        .single();
+
+      if (driverTripError && driverTripError.code !== 'PGRST116') {
+        throw driverTripError;
+      }
+
+      // Create a booking between the passenger request and driver trip
+      if (driverTrip) {
+        const { error: bookingError } = await supabase
+          .from('bookings')
+          .insert({
+            passenger_trip_id: requestId,
+            driver_trip_id: driverTrip.id,
+            confirmed: false
+          });
+
+        if (bookingError) throw bookingError;
+      }
+
+      // Refresh the requests list
+      await loadPassengerRequests();
       
-      if (result.whatsapp_url) {
-        window.open(result.whatsapp_url, '_blank');
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to open WhatsApp. Please try again.",
-        variant: "destructive",
-      });
+      return true;
+    } catch (err) {
+      console.error('Error accepting request:', err);
+      setError('Failed to accept request');
+      return false;
     }
   };
 
-  // Auto-refresh every 30 seconds when online
   useEffect(() => {
-    if (isOnline) {
+    if (user) {
       loadPassengerRequests();
-      const interval = setInterval(loadPassengerRequests, 30000);
-      return () => clearInterval(interval);
     }
-  }, [isOnline, driverLocation, vehicleType]);
+  }, [user]);
 
   return {
     requests,
-    loading,
-    lastRefresh,
-    loadPassengerRequests,
-    handleAcceptRequest,
-    handleWhatsAppContact
+    isLoading,
+    error,
+    acceptRequest,
+    refetch: loadPassengerRequests
   };
 };

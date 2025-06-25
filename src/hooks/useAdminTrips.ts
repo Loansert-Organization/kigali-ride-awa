@@ -29,7 +29,7 @@ export const useAdminTrips = ({
   return useQuery({
     queryKey: ['admin-trips', refreshTrigger, searchQuery, roleFilter, statusFilter, dateFromFilter, dateToFilter, fareMinFilter, fareMaxFilter],
     queryFn: async () => {
-      // Fetch trips with user information
+      // Fetch trips with user information - RLS will handle admin access
       let query = supabase
         .from('trips')
         .select(`
@@ -45,7 +45,11 @@ export const useAdminTrips = ({
           user_id,
           vehicle_type,
           description,
-          is_negotiable
+          is_negotiable,
+          users!inner(
+            id,
+            promo_code
+          )
         `);
 
       // Apply role filter
@@ -77,13 +81,6 @@ export const useAdminTrips = ({
       const { data: tripsData, error: tripsError } = await query.order('created_at', { ascending: false });
       if (tripsError) throw tripsError;
 
-      // Fetch users data for creator information
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('id, promo_code');
-
-      if (usersError) throw usersError;
-
       // Fetch bookings data for match information
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
@@ -93,7 +90,6 @@ export const useAdminTrips = ({
 
       // Process trips data
       const processedTrips = tripsData?.map(trip => {
-        const creator = usersData?.find(user => user.id === trip.user_id);
         const relatedBookings = bookingsData?.filter(
           booking => booking.driver_trip_id === trip.id || booking.passenger_trip_id === trip.id
         ) || [];
@@ -114,7 +110,7 @@ export const useAdminTrips = ({
           fare: trip.fare || 0,
           seatsAvailable: trip.seats_available || 1,
           createdAt: trip.created_at,
-          createdBy: creator?.promo_code || `User ${trip.user_id.slice(0, 8)}`,
+          createdBy: trip.users?.promo_code || `User ${trip.user_id.slice(0, 8)}`,
           vehicleType: trip.vehicle_type,
           description: trip.description,
           isNegotiable: trip.is_negotiable,

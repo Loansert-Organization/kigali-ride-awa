@@ -30,7 +30,7 @@ export const useAdminDashboard = (refreshTrigger: number) => {
       setIsLoading(true);
       setError(null);
 
-      // Load KPI data
+      // Load KPI data - RLS will handle admin access
       const [
         { count: totalUsers },
         { count: totalTrips },
@@ -45,7 +45,12 @@ export const useAdminDashboard = (refreshTrigger: number) => {
         supabase.from('bookings').select('*', { count: 'exact', head: true }),
         supabase.from('user_referrals').select('*', { count: 'exact', head: true }),
         supabase.from('users').select('*').gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-        supabase.from('trips').select('*, users(promo_code)').order('created_at', { ascending: false }).limit(50),
+        supabase.from('trips').select(`
+          *, 
+          users!inner(
+            promo_code
+          )
+        `).order('created_at', { ascending: false }).limit(50),
         supabase.from('user_rewards').select('points').eq('reward_issued', true)
       ]);
 

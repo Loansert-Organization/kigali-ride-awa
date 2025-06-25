@@ -16,17 +16,24 @@ export const useAdminUsers = ({ refreshTrigger, searchQuery, roleFilter, statusF
   return useQuery({
     queryKey: ['admin-users', refreshTrigger, searchQuery, roleFilter, statusFilter],
     queryFn: async () => {
-      // Fetch users with optional filtering
+      // Fetch users with optional filtering - RLS will handle admin access
       let query = supabase
         .from('users')
-        .select('id, role, created_at, updated_at, promo_code');
+        .select(`
+          id, 
+          role, 
+          created_at, 
+          updated_at, 
+          promo_code,
+          auth_user_id
+        `);
 
       // Apply role filter
       if (roleFilter !== 'all') {
         query = query.eq('role', roleFilter);
       }
 
-      const { data: usersData, error: usersError } = await query;
+      const { data: usersData, error: usersError } = await query.order('created_at', { ascending: false });
       if (usersError) throw usersError;
 
       // Fetch trips data to calculate trip counts
@@ -55,7 +62,8 @@ export const useAdminUsers = ({ refreshTrigger, searchQuery, roleFilter, statusF
           lastSeen: new Date(user.updated_at) > new Date(Date.now() - 24*60*60*1000) ? 'today' : 
                    new Date(user.updated_at).toLocaleDateString(),
           status,
-          dateJoined: user.created_at
+          dateJoined: user.created_at,
+          promoCode: user.promo_code
         };
 
         // Apply search filter
@@ -64,7 +72,7 @@ export const useAdminUsers = ({ refreshTrigger, searchQuery, roleFilter, statusF
           const matchesSearch = 
             processedUser.name.toLowerCase().includes(searchLower) ||
             processedUser.phone.includes(searchQuery) ||
-            (user.promo_code && user.promo_code.toLowerCase().includes(searchLower));
+            (processedUser.promoCode && processedUser.promoCode.toLowerCase().includes(searchLower));
           
           if (!matchesSearch) return null;
         }
