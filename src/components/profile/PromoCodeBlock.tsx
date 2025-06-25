@@ -3,15 +3,15 @@ import React from 'react';
 import PromoCodeDisplayBlock from '@/components/rewards/PromoCodeDisplayBlock';
 
 interface PromoCodeBlockProps {
-  promoCode: string;
+  userProfile: any;
 }
 
-const PromoCodeBlock: React.FC<PromoCodeBlockProps> = ({ promoCode }) => {
-  if (!promoCode) {
+const PromoCodeBlock: React.FC<PromoCodeBlockProps> = ({ userProfile }) => {
+  if (!userProfile?.promo_code) {
     return null;
   }
 
-  return <PromoCodeDisplayBlock promoCode={promoCode} />;
+  return <PromoCodeDisplayBlock promoCode={userProfile.promo_code} />;
 };
 
 export default PromoCodeBlock;

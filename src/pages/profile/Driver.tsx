@@ -1,10 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Car, Settings, Copy } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
+import { ArrowLeft, Car } from 'lucide-react';
 import { useAuth } from "@/contexts/AuthContext";
 import UserSummaryBlock from "@/components/profile/UserSummaryBlock";
 import PromoCodeBlock from "@/components/profile/PromoCodeBlock";
@@ -58,7 +56,7 @@ const DriverProfile = () => {
         <PromoCodeBlock userProfile={userProfile} />
 
         {/* Driver-specific Settings */}
-        <DriverSettingsBlock />
+        <DriverSettingsBlock userProfile={userProfile} />
 
         {/* Permissions */}
         <PermissionsStatusBlock userProfile={userProfile} />
@@ -70,7 +68,7 @@ const DriverProfile = () => {
         <StaticLinksBlock />
 
         {/* Reset App */}
-        <AppResetButtonBlock />
+        <AppResetButtonBlock userProfile={userProfile} />
       </div>
 
       <BottomNavigation role="driver" />

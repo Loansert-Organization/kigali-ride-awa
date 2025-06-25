@@ -64,7 +64,7 @@ const PassengerProfile = () => {
         <StaticLinksBlock />
 
         {/* Reset App */}
-        <AppResetButtonBlock />
+        <AppResetButtonBlock userProfile={userProfile} />
       </div>
 
       <BottomNavigation role="passenger" />

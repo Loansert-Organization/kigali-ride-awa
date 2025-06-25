@@ -12,7 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 
 interface DriverSettingsBlockProps {
-  userId: string;
+  userProfile: any;
 }
 
 interface DriverProfile {
@@ -21,7 +21,7 @@ interface DriverProfile {
   preferred_zone?: string;
 }
 
-const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userId }) => {
+const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userProfile }) => {
   const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -37,8 +37,10 @@ const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userId }) => 
   ];
 
   useEffect(() => {
-    fetchDriverProfile();
-  }, [userId]);
+    if (userProfile?.id) {
+      fetchDriverProfile();
+    }
+  }, [userProfile?.id]);
 
   const fetchDriverProfile = async () => {
     try {
@@ -46,7 +48,7 @@ const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userId }) => 
       const { data, error } = await supabase
         .from('driver_profiles')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', userProfile.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -72,7 +74,7 @@ const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userId }) => 
       const { error } = await supabase
         .from('driver_profiles')
         .upsert({
-          user_id: userId,
+          user_id: userProfile.id,
           ...formData
         });
 

@@ -6,12 +6,12 @@ import { Globe } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface LanguageSelectorBlockProps {
-  currentLanguage: string;
+  userProfile: any;
 }
 
-const LanguageSelectorBlock: React.FC<LanguageSelectorBlockProps> = ({
-  currentLanguage
-}) => {
+const LanguageSelectorBlock: React.FC<LanguageSelectorBlockProps> = ({ userProfile }) => {
+  const currentLanguage = userProfile?.language || 'en';
+  
   const languages = [
     { value: 'en', label: '🇺🇸 English', name: 'English' },
     { value: 'kn', label: '🇷🇼 Kinyarwanda', name: 'Kinyarwanda' },

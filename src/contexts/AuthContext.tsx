@@ -109,6 +109,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      // Ensure role is properly typed
+      if (data && data.role && !['passenger', 'driver'].includes(data.role)) {
+        console.warn('Invalid role detected, setting to null:', data.role);
+        data.role = null;
+      }
+
       return data || null;
     } catch (error) {
       console.error('Failed to load user profile:', error);

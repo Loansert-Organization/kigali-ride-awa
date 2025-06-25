@@ -7,15 +7,17 @@ import { Trash2, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { isGuestMode } from '@/utils/authUtils';
 
 interface AppResetButtonBlockProps {
-  isGuest: boolean;
+  userProfile: any;
 }
 
-const AppResetButtonBlock: React.FC<AppResetButtonBlockProps> = ({ isGuest }) => {
+const AppResetButtonBlock: React.FC<AppResetButtonBlockProps> = ({ userProfile }) => {
   const navigate = useNavigate();
   const [isResetting, setIsResetting] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const isGuest = isGuestMode(userProfile);
 
   const handleClearAppData = async () => {
     setIsResetting(true);

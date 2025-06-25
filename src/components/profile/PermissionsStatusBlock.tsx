@@ -6,14 +6,13 @@ import { MapPin, Bell } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface PermissionsStatusBlockProps {
-  locationEnabled: boolean;
-  notificationsEnabled: boolean;
+  userProfile: any;
 }
 
-const PermissionsStatusBlock: React.FC<PermissionsStatusBlockProps> = ({
-  locationEnabled,
-  notificationsEnabled
-}) => {
+const PermissionsStatusBlock: React.FC<PermissionsStatusBlockProps> = ({ userProfile }) => {
+  const locationEnabled = userProfile?.location_enabled || false;
+  const notificationsEnabled = userProfile?.notifications_enabled || false;
+
   const handleLocationToggle = async (enabled: boolean) => {
     if (enabled) {
       try {
