@@ -1,4 +1,3 @@
-
 export interface UserProfile {
   id: string;
   auth_user_id: string | null;
@@ -11,6 +10,10 @@ export interface UserProfile {
   onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
+  // WhatsApp authentication fields
+  phone_number: string | null;
+  phone_verified: boolean;
+  auth_method: string;
 }
 
 export interface DriverProfile {

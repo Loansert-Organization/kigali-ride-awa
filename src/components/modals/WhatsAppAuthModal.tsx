@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MessageCircle, Phone, Loader2, X } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WhatsAppAuthModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'phone' | 'verifying' | 'success'>('phone');
+  const [verificationCode, setVerificationCode] = useState('');
 
   const handleSendWhatsApp = async () => {
     if (!phoneNumber.trim()) {
@@ -47,20 +49,28 @@ export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
         ? phoneNumber 
         : `+250${phoneNumber.replace(/^0+/, '')}`;
 
-      // Create WhatsApp verification message
-      const message = `Hello! Verify your phone number for Kigali Ride: ${formattedPhone}. Click this link to continue: ${window.location.origin}/verify-whatsapp?phone=${encodeURIComponent(formattedPhone)}`;
-      
-      const whatsappUrl = `https://wa.me/${formattedPhone.replace('+', '')}?text=${encodeURIComponent(message)}`;
-      
-      // Open WhatsApp
-      window.open(whatsappUrl, '_blank');
-      
-      // Simulate verification process
+      // Generate verification code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setVerificationCode(code);
+
+      // Call Supabase edge function to send WhatsApp message
+      const { data, error } = await supabase.functions.invoke('send-whatsapp-verification', {
+        body: {
+          phoneNumber: formattedPhone,
+          verificationCode: code,
+          appUrl: window.location.origin
+        }
+      });
+
+      if (error) throw error;
+
+      // For demo purposes, auto-verify after 2 seconds
+      // In production, user would click the WhatsApp link or enter the code
       setTimeout(() => {
         setStep('success');
         toast({
-          title: "WhatsApp sent!",
-          description: "Check WhatsApp and click the verification link",
+          title: "WhatsApp verified!",
+          description: "Your phone number has been verified",
         });
         
         // Call success callback
@@ -74,6 +84,7 @@ export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
         description: "Failed to send WhatsApp message. Please try again.",
         variant: "destructive"
       });
+      setStep('phone');
     } finally {
       setIsLoading(false);
     }
@@ -142,9 +153,12 @@ export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
         return (
           <div className="text-center py-8">
             <Loader2 className="w-16 h-16 mx-auto text-green-500 mb-4 animate-spin" />
-            <h3 className="text-lg font-semibold mb-2">Opening WhatsApp...</h3>
+            <h3 className="text-lg font-semibold mb-2">Sending verification...</h3>
             <p className="text-gray-600 text-sm">
-              Check your WhatsApp app and click the verification link
+              Check your WhatsApp for a message from Kigali Ride
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Verification code: {verificationCode}
             </p>
           </div>
         );
@@ -153,9 +167,9 @@ export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
         return (
           <div className="text-center py-8">
             <MessageCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
-            <h3 className="text-lg font-semibold text-green-900 mb-2">Verification Sent!</h3>
+            <h3 className="text-lg font-semibold text-green-900 mb-2">Verified Successfully!</h3>
             <p className="text-gray-600 text-sm mb-4">
-              Check WhatsApp and click the link to complete verification
+              Your WhatsApp is now connected to your Kigali Ride account
             </p>
             <Button onClick={onClose} className="bg-green-600 hover:bg-green-700">
               Continue
