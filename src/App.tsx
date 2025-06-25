@@ -34,6 +34,7 @@ const App = () => (
             <Route path="/book-ride" element={<BookRide />} />
             <Route path="/matches" element={<RideMatches />} />
             <Route path="/create-trip" element={<CreateTrip />} />
+            <Route path="/past-trips" element={<PastTrips />} />
             <Route path="/ai-dev-tools" element={<AIDevTools />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

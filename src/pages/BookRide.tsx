@@ -44,7 +44,22 @@ const BookRide = () => {
   useEffect(() => {
     // Load favorites and handle pre-filled data
     loadFavorites();
-    if (location.state?.destination) {
+    
+    // Handle pre-filled data from "Book Again" or destination
+    if (location.state?.bookingData) {
+      const { bookingData } = location.state;
+      setFromLocation(bookingData.fromLocation || '');
+      setFromCoords(bookingData.fromCoords || null);
+      setToLocation(bookingData.toLocation || '');
+      setToCoords(bookingData.toCoords || null);
+      setVehicleType(bookingData.vehicleType || '');
+      setComments(bookingData.comments || '');
+      // Adjust time to 5 minutes from now for rebooking
+      const newTime = new Date();
+      newTime.setMinutes(newTime.getMinutes() + 5);
+      setCustomTime(newTime.toISOString().slice(0, 16));
+      setScheduledTime('custom');
+    } else if (location.state?.destination) {
       setToLocation(location.state.destination.address);
     }
   }, [location.state]);
