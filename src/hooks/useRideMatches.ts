@@ -1,8 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSmartTripMatcher } from './useSmartTripMatcher';
+import { useNotificationService } from './useNotificationService';
 
 interface Trip {
   id: string;
@@ -37,6 +38,9 @@ export const useRideMatches = () => {
     timeRange: 'all',
     sortBy: 'best_match'
   });
+
+  const { findMatches } = useSmartTripMatcher();
+  const { sendNotification } = useNotificationService();
 
   const loadMatchingTrips = async () => {
     try {
@@ -75,54 +79,16 @@ export const useRideMatches = () => {
         return;
       }
 
-      // Build query for matching driver trips
-      let query = supabase
-        .from('trips')
-        .select('*')
-        .eq('role', 'driver')
-        .eq('status', 'pending')
-        .gte('scheduled_time', new Date().toISOString());
+      // Use smart trip matcher for better results
+      const matchResult = await findMatches(currentTrip.id, {
+        maxDistance: 5,
+        maxTimeDiff: 30
+      });
 
-      // Apply filters
-      if (filters.vehicleType.length > 0) {
-        query = query.in('vehicle_type', filters.vehicleType);
+      if (matchResult) {
+        setMatchingTrips(matchResult.matches);
       }
 
-      if (filters.timeRange !== 'all') {
-        const now = new Date();
-        let timeLimit = new Date(now);
-        
-        switch (filters.timeRange) {
-          case 'next_30min':
-            timeLimit.setMinutes(now.getMinutes() + 30);
-            break;
-          case 'next_1hour':
-            timeLimit.setHours(now.getHours() + 1);
-            break;
-          case 'today':
-            timeLimit.setHours(23, 59, 59);
-            break;
-        }
-        
-        query = query.lte('scheduled_time', timeLimit.toISOString());
-      }
-
-      const { data: driverTrips, error } = await query;
-
-      if (error) throw error;
-
-      // Sort trips
-      const sortedTrips = driverTrips?.sort((a, b) => {
-        if (filters.sortBy === 'time') {
-          return new Date(a.scheduled_time).getTime() - new Date(b.scheduled_time).getTime();
-        }
-        if (filters.sortBy === 'fare') {
-          return (a.fare || 0) - (b.fare || 0);
-        }
-        return 0;
-      }) || [];
-
-      setMatchingTrips(sortedTrips);
     } catch (error) {
       console.error('Error loading matching trips:', error);
       toast({
@@ -155,6 +121,13 @@ export const useRideMatches = () => {
       toast({
         title: "🎉 Match confirmed!",
         description: "You can now contact the driver via WhatsApp",
+      });
+
+      // Send notification to driver
+      await sendNotification(driverTrip.user_id, {
+        title: "New Booking Confirmed",
+        body: `Passenger booked your trip from ${driverTrip.from_location} to ${driverTrip.to_location}`,
+        type: 'booking_confirmed'
       });
 
       loadMatchingTrips();
