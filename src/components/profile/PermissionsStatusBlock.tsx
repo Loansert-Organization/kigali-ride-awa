@@ -5,8 +5,22 @@ import { Switch } from '@/components/ui/switch';
 import { MapPin, Bell } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
+interface UserProfile {
+  id: string;
+  auth_user_id: string | null;
+  role: 'passenger' | 'driver' | null;
+  language: string;
+  location_enabled: boolean;
+  notifications_enabled: boolean;
+  promo_code: string;
+  referred_by: string | null;
+  onboarding_completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 interface PermissionsStatusBlockProps {
-  userProfile: any;
+  userProfile: UserProfile;
 }
 
 const PermissionsStatusBlock: React.FC<PermissionsStatusBlockProps> = ({ userProfile }) => {

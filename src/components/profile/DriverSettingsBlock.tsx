@@ -11,8 +11,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 
+interface UserProfile {
+  id: string;
+  auth_user_id: string | null;
+  role: 'passenger' | 'driver' | null;
+  language: string;
+  location_enabled: boolean;
+  notifications_enabled: boolean;
+  promo_code: string;
+  referred_by: string | null;
+  onboarding_completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 interface DriverSettingsBlockProps {
-  userProfile: any;
+  userProfile: UserProfile;
 }
 
 interface DriverProfile {
