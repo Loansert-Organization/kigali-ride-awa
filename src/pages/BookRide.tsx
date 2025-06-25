@@ -204,14 +204,14 @@ const BookRide = () => {
     }
   };
 
-  const canProceed = () => {
+  const canProceed = (): boolean => {
     switch (currentStep) {
       case 0:
-        return fromLocation.trim();
+        return Boolean(fromLocation.trim());
       case 1:
-        return toLocation.trim();
+        return Boolean(toLocation.trim());
       case 2:
-        return vehicleType && (scheduledTime !== 'custom' || customTime);
+        return Boolean(vehicleType && (scheduledTime !== 'custom' || customTime));
       case 3:
         return true;
       default:
