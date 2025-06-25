@@ -9,13 +9,32 @@ import PromoCodeDisplayBlock from "@/components/rewards/PromoCodeDisplayBlock";
 import ReferralListBlock from "@/components/rewards/ReferralListBlock";
 import LeaderboardBlock from "@/components/rewards/LeaderboardBlock";
 import RewardsExplainerBlock from "@/components/rewards/RewardsExplainerBlock";
+import { Loader2 } from "lucide-react";
 
 const Rewards = () => {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { userProfile, loading } = useAuth();
 
-  if (!userProfile?.role) {
-    return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
+          <p className="text-gray-600">Loading rewards...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!userProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Please select your role first</p>
+          <a href="/" className="text-purple-600 underline">Go to Home</a>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -51,7 +70,7 @@ const Rewards = () => {
         <RewardsExplainerBlock />
       </div>
 
-      <BottomNavigation role={userProfile.role} />
+      {userProfile.role && <BottomNavigation role={userProfile.role} />}
     </div>
   );
 };

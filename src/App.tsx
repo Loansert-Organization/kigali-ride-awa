@@ -68,6 +68,10 @@ function App() {
               <Route path="/admin/rewards" element={<RewardsManagement />} />
               <Route path="/admin/heatmap" element={<TripHeatmap />} />
               
+              {/* Profile Routes */}
+              <Route path="/profile/driver" element={<Profile />} />
+              <Route path="/profile/passenger" element={<Profile />} />
+              
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
