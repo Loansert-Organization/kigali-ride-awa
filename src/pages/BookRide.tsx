@@ -2,35 +2,87 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, MapPin, Clock, Car } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import LocationInputBlock from "@/components/booking/LocationInputBlock";
+import VehicleSelectBlock from "@/components/booking/VehicleSelectBlock";
+import TimePickerBlock from "@/components/booking/TimePickerBlock";
+import CommentsBlock from "@/components/booking/CommentsBlock";
+
+interface Favorite {
+  id: string;
+  label: string;
+  address: string;
+  lat?: number;
+  lng?: number;
+}
 
 const BookRide = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  
+  // Form state
   const [fromLocation, setFromLocation] = useState('');
+  const [fromCoords, setFromCoords] = useState<{lat: number; lng: number} | null>(null);
   const [toLocation, setToLocation] = useState('');
+  const [toCoords, setToCoords] = useState<{lat: number; lng: number} | null>(null);
   const [vehicleType, setVehicleType] = useState('');
   const [scheduledTime, setScheduledTime] = useState('now');
   const [customTime, setCustomTime] = useState('');
+  const [comments, setComments] = useState('');
+
+  const steps = [
+    'Pickup Location',
+    'Drop-off Location', 
+    'Time & Vehicle',
+    'Notes & Confirm'
+  ];
 
   useEffect(() => {
-    // Pre-fill destination if passed from favorites
+    // Load favorites and handle pre-filled data
+    loadFavorites();
     if (location.state?.destination) {
       setToLocation(location.state.destination.address);
     }
   }, [location.state]);
 
-  const steps = [
-    'Pickup & Destination',
-    'Vehicle & Time',
-    'Confirm Request'
-  ];
+  const loadFavorites = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userRecord } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .single();
+
+        if (userRecord) {
+          const { data } = await supabase
+            .from('favorites')
+            .select('*')
+            .eq('user_id', userRecord.id)
+            .limit(5);
+          
+          if (data) setFavorites(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+    }
+  };
+
+  const handleFromLocationChange = (value: string, coords?: {lat: number; lng: number}) => {
+    setFromLocation(value);
+    setFromCoords(coords || null);
+  };
+
+  const handleToLocationChange = (value: string, coords?: {lat: number; lng: number}) => {
+    setToLocation(value);
+    setToCoords(coords || null);
+  };
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -45,6 +97,24 @@ const BookRide = () => {
       setCurrentStep(currentStep - 1);
     } else {
       navigate(-1);
+    }
+  };
+
+  const calculateScheduledDateTime = () => {
+    const now = new Date();
+    switch (scheduledTime) {
+      case 'now':
+        return now.toISOString();
+      case 'in15':
+        return new Date(now.getTime() + 15 * 60000).toISOString();
+      case 'in30':
+        return new Date(now.getTime() + 30 * 60000).toISOString();
+      case 'in1h':
+        return new Date(now.getTime() + 60 * 60000).toISOString();
+      case 'custom':
+        return new Date(customTime).toISOString();
+      default:
+        return now.toISOString();
     }
   };
 
@@ -79,11 +149,14 @@ const BookRide = () => {
         user_id: userRecord.id,
         role: 'passenger',
         from_location: fromLocation,
+        from_lat: fromCoords?.lat || null,
+        from_lng: fromCoords?.lng || null,
         to_location: toLocation,
+        to_lat: toCoords?.lat || null,
+        to_lng: toCoords?.lng || null,
         vehicle_type: vehicleType,
-        scheduled_time: scheduledTime === 'now' 
-          ? new Date().toISOString() 
-          : new Date(customTime).toISOString(),
+        scheduled_time: calculateScheduledDateTime(),
+        description: comments || null,
         status: 'pending'
       };
 
@@ -96,11 +169,14 @@ const BookRide = () => {
       if (error) throw error;
 
       toast({
-        title: "Ride requested!",
+        title: "🎉 Ride requested!",
         description: "Looking for available drivers...",
       });
 
-      navigate('/matches', { state: { tripId: data.id } });
+      // TODO: Navigate to booking confirmation or matches page
+      navigate('/home/passenger', { 
+        state: { message: 'Ride booked successfully!' }
+      });
     } catch (error) {
       console.error('Error creating trip:', error);
       toast({
@@ -111,162 +187,93 @@ const BookRide = () => {
     }
   };
 
+  const canProceed = () => {
+    switch (currentStep) {
+      case 0:
+        return fromLocation.trim();
+      case 1:
+        return toLocation.trim();
+      case 2:
+        return vehicleType && (scheduledTime !== 'custom' || customTime);
+      case 3:
+        return true;
+      default:
+        return false;
+    }
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 0:
         return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pickup location
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 w-5 h-5 text-green-600" />
-                <Input
-                  placeholder="Enter pickup location"
-                  value={fromLocation}
-                  onChange={(e) => setFromLocation(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Destination
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 w-5 h-5 text-red-600" />
-                <Input
-                  placeholder="Where are you going?"
-                  value={toLocation}
-                  onChange={(e) => setToLocation(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-          </div>
+          <LocationInputBlock
+            label="📍 Where are you now?"
+            value={fromLocation}
+            onChange={handleFromLocationChange}
+            favorites={favorites}
+            showGPS={true}
+            placeholder="Enter pickup location"
+          />
         );
 
       case 1:
         return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vehicle type
-              </label>
-              <Select value={vehicleType} onValueChange={setVehicleType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose vehicle type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="moto">Moto</SelectItem>
-                  <SelectItem value="car">Car</SelectItem>
-                  <SelectItem value="tuktuk">Tuktuk</SelectItem>
-                  <SelectItem value="minibus">Minibus</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                When do you need the ride?
-              </label>
-              <Select value={scheduledTime} onValueChange={setScheduledTime}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose time" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="now">Now</SelectItem>
-                  <SelectItem value="custom">Schedule for later</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {scheduledTime === 'custom' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Choose date and time
-                </label>
-                <Input
-                  type="datetime-local"
-                  value={customTime}
-                  onChange={(e) => setCustomTime(e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
-                />
-              </div>
-            )}
-          </div>
+          <LocationInputBlock
+            label="📍 Where are you going?"
+            value={toLocation}
+            onChange={handleToLocationChange}
+            favorites={favorites}
+            showGPS={false}
+            placeholder="Enter destination"
+          />
         );
 
       case 2:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Confirm your ride request</h3>
-            
-            <Card>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center space-x-3">
-                  <MapPin className="w-5 h-5 text-green-600" />
-                  <div>
-                    <div className="text-sm text-gray-500">From</div>
-                    <div className="font-medium">{fromLocation}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <MapPin className="w-5 h-5 text-red-600" />
-                  <div>
-                    <div className="text-sm text-gray-500">To</div>
-                    <div className="font-medium">{toLocation}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <Car className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <div className="text-sm text-gray-500">Vehicle</div>
-                    <div className="font-medium capitalize">{vehicleType}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <Clock className="w-5 h-5 text-purple-600" />
-                  <div>
-                    <div className="text-sm text-gray-500">Time</div>
-                    <div className="font-medium">
-                      {scheduledTime === 'now' 
-                        ? 'Now' 
-                        : new Date(customTime).toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <TimePickerBlock
+              scheduledTime={scheduledTime}
+              onTimeChange={setScheduledTime}
+              customTime={customTime}
+              onCustomTimeChange={setCustomTime}
+            />
+            <VehicleSelectBlock
+              selectedVehicle={vehicleType}
+              onVehicleSelect={setVehicleType}
+            />
+          </div>
+        );
 
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-blue-800">
-                💡 After confirming, we'll find nearby drivers and you can contact them directly via WhatsApp.
-              </p>
+      case 3:
+        return (
+          <div className="space-y-4">
+            <CommentsBlock
+              comments={comments}
+              onCommentsChange={setComments}
+            />
+            
+            {/* Booking Summary */}
+            <div className="bg-gradient-to-r from-purple-50 to-orange-50 p-4 rounded-lg border">
+              <h3 className="font-semibold text-gray-800 mb-3">Booking Summary</h3>
+              <div className="space-y-2 text-sm">
+                <div><strong>From:</strong> {fromLocation}</div>
+                <div><strong>To:</strong> {toLocation}</div>
+                <div><strong>Vehicle:</strong> {vehicleType}</div>
+                <div><strong>Time:</strong> {
+                  scheduledTime === 'now' ? 'Now' :
+                  scheduledTime === 'custom' ? new Date(customTime).toLocaleString() :
+                  scheduledTime === 'in15' ? 'In 15 minutes' :
+                  scheduledTime === 'in30' ? 'In 30 minutes' :
+                  scheduledTime === 'in1h' ? 'In 1 hour' : scheduledTime
+                }</div>
+                {comments && <div><strong>Notes:</strong> {comments}</div>}
+              </div>
             </div>
           </div>
         );
 
       default:
         return null;
-    }
-  };
-
-  const canProceed = () => {
-    switch (currentStep) {
-      case 0:
-        return fromLocation.trim() && toLocation.trim();
-      case 1:
-        return vehicleType && (scheduledTime === 'now' || customTime);
-      case 2:
-        return true;
-      default:
-        return false;
     }
   };
 
@@ -278,7 +285,10 @@ const BookRide = () => {
           <Button variant="ghost" size="sm" onClick={handleBack}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-lg font-semibold">Book a Ride</h1>
+          <div>
+            <h1 className="text-lg font-semibold">Book a Ride</h1>
+            <p className="text-sm text-gray-500">Step {currentStep + 1} of {steps.length}</p>
+          </div>
         </div>
       </div>
 
@@ -302,18 +312,11 @@ const BookRide = () => {
             </div>
           ))}
         </div>
-        <div className="text-center mt-2">
-          <h2 className="text-lg font-medium">{steps[currentStep]}</h2>
-        </div>
       </div>
 
       {/* Step Content */}
-      <div className="p-4">
-        <Card>
-          <CardContent className="p-6">
-            {renderStep()}
-          </CardContent>
-        </Card>
+      <div className="p-4 pb-24">
+        {renderStep()}
       </div>
 
       {/* Bottom Actions */}
@@ -321,9 +324,9 @@ const BookRide = () => {
         <Button
           onClick={handleNext}
           disabled={!canProceed()}
-          className="w-full bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600"
+          className="w-full h-12 bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 text-white font-semibold"
         >
-          {currentStep === steps.length - 1 ? 'Request Ride' : 'Next'}
+          {currentStep === steps.length - 1 ? '🚖 Book Ride' : 'Next →'}
         </Button>
       </div>
     </div>
