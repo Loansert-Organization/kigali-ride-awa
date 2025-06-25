@@ -1,4 +1,3 @@
-
 import { Loader } from '@googlemaps/js-api-loader';
 import { config } from '@/config/environment';
 
@@ -9,8 +8,16 @@ class GoogleMapsService {
   private directionsService: google.maps.DirectionsService | null = null;
   private directionsRenderer: google.maps.DirectionsRenderer | null = null;
   private placesService: google.maps.places.PlacesService | null = null;
+  private isInitialized: boolean = false;
 
   constructor() {
+    console.log('🗺️ Initializing GoogleMapsService with API key:', config.googleMaps.apiKey ? 'Present' : 'Missing');
+    
+    if (!config.googleMaps.apiKey) {
+      console.error('❌ Google Maps API key not found in config');
+      throw new Error('Google Maps API key is required');
+    }
+
     this.loader = new Loader({
       apiKey: config.googleMaps.apiKey,
       version: 'weekly',
@@ -19,8 +26,16 @@ class GoogleMapsService {
   }
 
   async loadGoogleMaps(): Promise<void> {
+    if (this.isInitialized) {
+      console.log('✅ Google Maps already initialized');
+      return;
+    }
+
     try {
+      console.log('🔄 Loading Google Maps API...');
       await this.loader.load();
+      console.log('✅ Google Maps API loaded successfully');
+      
       this.directionsService = new window.google.maps.DirectionsService();
       this.directionsRenderer = new window.google.maps.DirectionsRenderer({
         suppressMarkers: false,
@@ -30,70 +45,86 @@ class GoogleMapsService {
           strokeOpacity: 0.8
         }
       });
+      
+      this.isInitialized = true;
+      console.log('✅ Google Maps services initialized');
     } catch (error) {
-      console.error('Error loading Google Maps:', error);
-      throw new Error('Failed to load Google Maps');
+      console.error('❌ Error loading Google Maps:', error);
+      throw new Error(`Failed to load Google Maps: ${error}`);
     }
   }
 
   async initializeMap(container: HTMLElement, options: google.maps.MapOptions): Promise<google.maps.Map> {
-    await this.loadGoogleMaps();
+    console.log('🗺️ Initializing map container...');
     
-    const defaultOptions: google.maps.MapOptions = {
-      center: { lat: -1.9441, lng: 30.0619 }, // Kigali
-      zoom: 13,
-      styles: [
-        {
-          featureType: 'poi',
-          elementType: 'labels',
-          stylers: [{ visibility: 'on' }]
-        },
-        {
-          featureType: 'road',
-          elementType: 'geometry',
-          stylers: [{ color: '#f5f5f5' }]
-        },
-        {
-          featureType: 'water',
-          elementType: 'geometry',
-          stylers: [{ color: '#e6f3ff' }]
-        }
-      ],
-      disableDefaultUI: false,
-      zoomControl: true,
-      mapTypeControl: false,
-      scaleControl: false,
-      streetViewControl: false,
-      rotateControl: false,
-      fullscreenControl: false
-    };
+    try {
+      await this.loadGoogleMaps();
+      
+      const defaultOptions: google.maps.MapOptions = {
+        center: { lat: -1.9441, lng: 30.0619 }, // Kigali
+        zoom: 13,
+        styles: [
+          {
+            featureType: 'poi',
+            elementType: 'labels',
+            stylers: [{ visibility: 'on' }]
+          },
+          {
+            featureType: 'road',
+            elementType: 'geometry',
+            stylers: [{ color: '#f5f5f5' }]
+          },
+          {
+            featureType: 'water',
+            elementType: 'geometry',
+            stylers: [{ color: '#e6f3ff' }]
+          }
+        ],
+        disableDefaultUI: false,
+        zoomControl: true,
+        mapTypeControl: false,
+        scaleControl: false,
+        streetViewControl: false,
+        rotateControl: false,
+        fullscreenControl: false
+      };
 
-    this.map = new window.google.maps.Map(container, { ...defaultOptions, ...options });
-    
-    if (this.directionsRenderer) {
-      this.directionsRenderer.setMap(this.map);
+      this.map = new window.google.maps.Map(container, { ...defaultOptions, ...options });
+      console.log('✅ Map created successfully');
+      
+      if (this.directionsRenderer) {
+        this.directionsRenderer.setMap(this.map);
+      }
+
+      this.placesService = new window.google.maps.places.PlacesService(this.map);
+      
+      return this.map;
+    } catch (error) {
+      console.error('❌ Error initializing map:', error);
+      throw error;
     }
-
-    this.placesService = new window.google.maps.places.PlacesService(this.map);
-    
-    return this.map;
   }
 
   async getCurrentLocation(): Promise<{ lat: number; lng: number }> {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
+        console.error('❌ Geolocation not supported');
         reject(new Error('Geolocation not supported'));
         return;
       }
 
+      console.log('📍 Getting current location...');
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          resolve({
+          const location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude
-          });
+          };
+          console.log('✅ Location obtained:', location);
+          resolve(location);
         },
         (error) => {
+          console.error('❌ Geolocation error:', error);
           reject(error);
         },
         {

@@ -1,8 +1,7 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, RefreshCw } from 'lucide-react';
+import { MapPin, Navigation, RefreshCw, AlertCircle } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { googleMapsService } from '@/services/GoogleMapsService';
 
@@ -37,29 +36,37 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('🗺️ LiveDriversMap: Component mounted');
     initializeMap();
   }, []);
 
   useEffect(() => {
     if (mapInstanceRef.current) {
+      console.log('🚗 Updating driver markers:', drivers.length, 'drivers');
       updateDriverMarkers();
     }
   }, [drivers]);
 
   useEffect(() => {
     if (mapInstanceRef.current && currentLocation) {
+      console.log('📍 Updating user location:', currentLocation);
       updateUserLocation();
     }
   }, [currentLocation]);
 
   const initializeMap = async () => {
-    if (!mapRef.current) return;
+    if (!mapRef.current) {
+      console.error('❌ Map container not found');
+      return;
+    }
 
     try {
       setIsLoading(true);
       setError(null);
+      console.log('🔄 Initializing map...');
 
       const center = currentLocation || { lat: -1.9441, lng: 30.0619 }; // Default to Kigali
+      console.log('📍 Map center:', center);
       
       const map = await googleMapsService.initializeMap(mapRef.current, {
         center,
@@ -83,6 +90,7 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
       });
 
       mapInstanceRef.current = map;
+      console.log('✅ Map initialized successfully');
       
       if (currentLocation) {
         updateUserLocation();
@@ -91,12 +99,13 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
       updateDriverMarkers();
       setIsLoading(false);
     } catch (err) {
-      console.error('Error initializing map:', err);
-      setError('Failed to load map');
+      console.error('❌ Error initializing map:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load map';
+      setError(errorMessage);
       setIsLoading(false);
       toast({
         title: "Map Error",
-        description: "Could not load the map. Please check your internet connection.",
+        description: "Could not load the map. Please check your internet connection and API key.",
         variant: "destructive"
       });
     }
@@ -105,6 +114,8 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
   const updateUserLocation = () => {
     if (!mapInstanceRef.current || !currentLocation) return;
 
+    console.log('📍 Adding user location marker');
+    
     // Add user location marker
     new window.google.maps.Marker({
       position: currentLocation,
@@ -124,6 +135,8 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
 
   const updateDriverMarkers = () => {
     if (!mapInstanceRef.current) return;
+
+    console.log('🚗 Clearing existing markers and adding new ones');
 
     // Clear existing markers
     markersRef.current.forEach(marker => marker.setMap(null));
@@ -154,6 +167,8 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
         markersRef.current.push(marker);
       }
     });
+
+    console.log(`✅ Added ${markersRef.current.length} driver markers`);
   };
 
   const getVehicleIconDataUrl = (vehicleType: string): string => {
@@ -180,6 +195,7 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
   };
 
   const handleRefresh = () => {
+    console.log('🔄 Refreshing map...');
     initializeMap();
     toast({
       title: "Map Refreshed",
@@ -191,6 +207,7 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
     if (!mapInstanceRef.current) return;
 
     try {
+      console.log('📍 Getting current location...');
       const location = await googleMapsService.getCurrentLocation();
       mapInstanceRef.current.setCenter(location);
       mapInstanceRef.current.setZoom(15);
@@ -200,6 +217,7 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
         description: "Centered map on your location"
       });
     } catch (error) {
+      console.error('❌ Location error:', error);
       toast({
         title: "Location Error",
         description: "Could not get your current location",
@@ -213,8 +231,9 @@ const LiveDriversMap: React.FC<LiveDriversMapProps> = ({
       <Card style={{ height }}>
         <CardContent className="flex items-center justify-center h-full">
           <div className="text-center">
-            <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600 font-medium">Failed to load map</p>
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+            <p className="text-gray-600 font-medium">Map failed to load</p>
+            <p className="text-sm text-gray-500 mt-1">{error}</p>
             <Button onClick={initializeMap} className="mt-4">
               Try Again
             </Button>
