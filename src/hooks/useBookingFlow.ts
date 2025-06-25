@@ -26,7 +26,7 @@ export const useBookingFlow = () => {
       // Get current user
       const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
       
-      // Convert TripData to CreateTripRequest format
+      // Convert TripData to CreateTripRequest format with proper field mapping
       const tripRequest: CreateTripRequest = {
         user_id: currentUser.id,
         role: 'passenger',
