@@ -9,13 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      users: {
+        Row: {
+          auth_user_id: string | null
+          created_at: string
+          id: string
+          language: string | null
+          location_enabled: boolean | null
+          notifications_enabled: boolean | null
+          onboarding_completed: boolean | null
+          promo_code: string | null
+          referred_by: string | null
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id?: string | null
+          created_at?: string
+          id?: string
+          language?: string | null
+          location_enabled?: boolean | null
+          notifications_enabled?: boolean | null
+          onboarding_completed?: boolean | null
+          promo_code?: string | null
+          referred_by?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string | null
+          created_at?: string
+          id?: string
+          language?: string | null
+          location_enabled?: boolean | null
+          notifications_enabled?: boolean | null
+          onboarding_completed?: boolean | null
+          promo_code?: string | null
+          referred_by?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_promo_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

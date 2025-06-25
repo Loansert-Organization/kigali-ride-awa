@@ -151,7 +151,7 @@ const PassengerOnboarding = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           await supabase.from('users').upsert({
-            id: user.id,
+            auth_user_id: user.id,
             location_enabled: true
           });
         }
@@ -230,10 +230,11 @@ const PassengerOnboarding = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.from('users').upsert({
-          id: user.id,
+          auth_user_id: user.id,
           role: 'passenger',
           language: language,
           location_enabled: locationGranted,
+          notifications_enabled: notificationsGranted,
           referred_by: existingPromo || promoCode || null,
           onboarding_completed: true
         });
