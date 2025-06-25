@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInAnonymously();
       if (error) throw error;
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.warn('Anonymous sign in failed, proceeding with guest mode:', error.message);
       return null;
     }
@@ -109,15 +109,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      // Ensure role is properly typed - fix the TypeScript error
-      if (data && data.role) {
-        if (!['passenger', 'driver'].includes(data.role)) {
+      if (data) {
+        // Ensure role is properly typed - validate and set to null if invalid
+        const validRoles = ['passenger', 'driver'];
+        const validatedRole = data.role && validRoles.includes(data.role) ? data.role as 'passenger' | 'driver' : null;
+        
+        if (data.role && !validRoles.includes(data.role)) {
           console.warn('Invalid role detected, setting to null:', data.role);
-          data.role = null;
         }
+
+        return {
+          ...data,
+          role: validatedRole
+        } as UserProfile;
       }
 
-      return data || null;
+      return null;
     } catch (error) {
       console.error('Failed to load user profile:', error);
       return null;
