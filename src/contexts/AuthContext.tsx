@@ -84,8 +84,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const createGuestProfile = async () => {
+    console.log('Creating guest profile without authentication...');
+    
+    try {
+      // Generate a temporary guest ID
+      const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Create a mock user profile for guest usage
+      const guestProfile = {
+        id: guestId,
+        auth_user_id: null,
+        language: localStorage.getItem('language') || 'en',
+        referred_by: localStorage.getItem('promo_code') || null,
+        onboarding_completed: false,
+        role: null,
+        promo_code: `GUEST-${guestId.substr(-5).toUpperCase()}`,
+        location_enabled: false,
+        notifications_enabled: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Store guest profile in localStorage for persistence
+      localStorage.setItem('guest_profile', JSON.stringify(guestProfile));
+      
+      console.log('Created guest profile:', guestProfile);
+      return guestProfile;
+    } catch (error) {
+      console.error('Error creating guest profile:', error);
+      return null;
+    }
+  };
+
   const refreshUserProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      // Try to load guest profile from localStorage
+      const storedGuestProfile = localStorage.getItem('guest_profile');
+      if (storedGuestProfile) {
+        try {
+          const guestProfile = JSON.parse(storedGuestProfile);
+          setUserProfile(guestProfile);
+          return;
+        } catch (error) {
+          console.error('Error parsing guest profile:', error);
+        }
+      }
+      return;
+    }
 
     try {
       const { data: profile, error } = await supabase
@@ -120,12 +166,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signInAnonymously();
       
       if (error) {
-        console.error('Anonymous sign in error:', error);
+        console.warn('Anonymous sign in failed, proceeding with guest mode:', error.message);
+        
+        // If anonymous signup fails, create a guest profile instead
+        const guestProfile = await createGuestProfile();
+        setUserProfile(guestProfile);
+        setUser(null);
+        setSession(null);
+        
         toast({
-          title: "Connection Error",
-          description: "Please check your internet connection and try again.",
-          variant: "destructive",
+          title: "Welcome to Kigali Ride",
+          description: "You're browsing in guest mode. Some features may be limited.",
         });
+        
         return;
       }
 
@@ -143,10 +196,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Error in signInAnonymously:', error);
+      
+      // Fallback to guest mode
+      const guestProfile = await createGuestProfile();
+      setUserProfile(guestProfile);
+      setUser(null);
+      setSession(null);
+      
       toast({
-        title: "Authentication Error",
-        description: "Please check your internet connection and try again.",
-        variant: "destructive",
+        title: "Welcome to Kigali Ride",
+        description: "You're browsing in guest mode. Some features may be limited.",
       });
     } finally {
       setLoading(false);
@@ -171,7 +230,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUserProfile(profile);
           }, 0);
         } else if (!session?.user) {
-          setUserProfile(null);
+          // Check if we have a guest profile
+          setTimeout(async () => {
+            await refreshUserProfile();
+          }, 0);
         }
       }
     );
@@ -195,7 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await refreshUserProfile();
           }, 0);
         } else {
-          console.log('No existing session, signing in anonymously...');
+          console.log('No existing session, attempting anonymous sign in...');
           await signInAnonymously();
         }
       } catch (error) {

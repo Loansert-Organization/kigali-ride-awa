@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { isGuestMode } from "@/utils/authUtils";
 
 /**
  * Centralized service for calling Supabase Edge Functions
@@ -7,25 +8,31 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export class EdgeFunctionService {
   
+  // Helper method to handle guest mode gracefully
+  private static async safeInvoke(functionName: string, options?: any) {
+    try {
+      const { data, error } = await supabase.functions.invoke(functionName, options);
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.warn(`EdgeFunction ${functionName} failed:`, error);
+      throw error;
+    }
+  }
+
   /**
    * User Management & Authentication
    */
   static async createOrUpdateUserProfile(profileData: any) {
-    const { data, error } = await supabase.functions.invoke('create-or-update-user-profile', {
+    return this.safeInvoke('create-or-update-user-profile', {
       body: { profileData }
     });
-    
-    if (error) throw error;
-    return data;
   }
 
   static async resolveReferral(referralCode: string, refereeId: string, refereeRole: string) {
-    const { data, error } = await supabase.functions.invoke('resolve-referral', {
+    return this.safeInvoke('resolve-referral', {
       body: { referralCode, refereeId, refereeRole }
     });
-    
-    if (error) throw error;
-    return data;
   }
 
   /**
@@ -39,19 +46,13 @@ export class EdgeFunctionService {
       ...(vehicleType && { vehicleType })
     });
 
-    const { data, error } = await supabase.functions.invoke(`get-live-drivers?${params}`);
-    
-    if (error) throw error;
-    return data;
+    return this.safeInvoke(`get-live-drivers?${params}`);
   }
 
   static async createTrip(tripData: any) {
-    const { data, error } = await supabase.functions.invoke('create-trip', {
+    return this.safeInvoke('create-trip', {
       body: tripData
     });
-    
-    if (error) throw error;
-    return data;
   }
 
   static async getNearbyOpenTrips(lat: number, lng: number, radius = 10, vehicleType?: string, limit = 20) {
@@ -63,62 +64,44 @@ export class EdgeFunctionService {
       ...(vehicleType && { vehicleType })
     });
 
-    const { data, error } = await supabase.functions.invoke(`get-nearby-open-trips?${params}`);
-    
-    if (error) throw error;
-    return data;
+    return this.safeInvoke(`get-nearby-open-trips?${params}`);
   }
 
   static async matchPassengerDriver(action: 'find_matches' | 'create_booking', passengerTripId: string, driverTripId?: string) {
-    const { data, error } = await supabase.functions.invoke('match-passenger-driver', {
+    return this.safeInvoke('match-passenger-driver', {
       body: { action, passengerTripId, driverTripId }
     });
-    
-    if (error) throw error;
-    return data;
   }
 
   /**
    * AI & Smart Features
    */
   static async callAIRouter(taskType: string, prompt: string, context?: any, preferredModel?: string, complexity?: 'simple' | 'medium' | 'complex') {
-    const { data, error } = await supabase.functions.invoke('ai-router', {
+    return this.safeInvoke('ai-router', {
       body: { taskType, prompt, context, preferredModel, complexity }
     });
-    
-    if (error) throw error;
-    return data;
   }
 
   static async checkFraud(userBehavior: any, deviceData: any, bookingPattern: any) {
-    const { data, error } = await supabase.functions.invoke('ai-fraud-check', {
+    return this.safeInvoke('ai-fraud-check', {
       body: { userBehavior, deviceData, bookingPattern }
     });
-    
-    if (error) throw error;
-    return data;
   }
 
   /**
    * Rewards & Referrals
    */
   static async validateReferralPoints() {
-    const { data, error } = await supabase.functions.invoke('validate-referral-points');
-    
-    if (error) throw error;
-    return data;
+    return this.safeInvoke('validate-referral-points');
   }
 
   /**
    * Communication
    */
   static async sendWhatsAppInvite(phoneNumber: string, messageType: string, tripData?: any, promoCode?: string, language = 'en') {
-    const { data, error } = await supabase.functions.invoke('send-whatsapp-invite', {
+    return this.safeInvoke('send-whatsapp-invite', {
       body: { phoneNumber, messageType, tripData, promoCode, language }
     });
-    
-    if (error) throw error;
-    return data;
   }
 
   /**
@@ -130,36 +113,24 @@ export class EdgeFunctionService {
       lng: lng.toString()
     });
 
-    const { data, error } = await supabase.functions.invoke(`reverse-geocode?${params}`);
-    
-    if (error) throw error;
-    return data;
+    return this.safeInvoke(`reverse-geocode?${params}`);
   }
 
   static async getAppConfig() {
-    const { data, error } = await supabase.functions.invoke('get-app-config');
-    
-    if (error) throw error;
-    return data;
+    return this.safeInvoke('get-app-config');
   }
 
   /**
    * Safety & Maintenance
    */
   static async submitIncidentReport(type: string, message: string, tripId?: string, metadata?: any) {
-    const { data, error } = await supabase.functions.invoke('submit-incident-report', {
+    return this.safeInvoke('submit-incident-report', {
       body: { type, message, tripId, metadata }
     });
-    
-    if (error) throw error;
-    return data;
   }
 
   static async autoExpireTrips() {
-    const { data, error } = await supabase.functions.invoke('auto-expire-trips');
-    
-    if (error) throw error;
-    return data;
+    return this.safeInvoke('auto-expire-trips');
   }
 
   /**

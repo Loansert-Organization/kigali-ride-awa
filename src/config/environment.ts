@@ -5,24 +5,20 @@ export const config = {
     apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyCePJuN1t2y41ra4FSJHDSbnixMxGotrYU',
   },
   supabase: {
-    url: import.meta.env.VITE_SUPABASE_URL || '',
-    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+    url: 'https://ldbzarwjnnsoyoengheg.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkYnphcndqbm5zb3lvZW5naGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzA4OTIsImV4cCI6MjA2NjQ0Njg5Mn0.iN-Viuf5Vg07aGyAnGgqW3DKFUcqxn8U2KAUeAMk9uY',
   }
 };
 
 // Enhanced validation with more detailed logging
 if (!config.googleMaps.apiKey || config.googleMaps.apiKey === '') {
-  console.error('❌ Google Maps API key is missing. Map features will not work.');
-  console.log('🔧 Please set VITE_GOOGLE_MAPS_API_KEY in your environment variables');
+  console.warn('⚠️ Google Maps API key is missing. Map features may not work properly.');
 } else {
   console.log('✅ Google Maps API key loaded successfully');
 }
 
-if (!config.supabase.url || !config.supabase.anonKey) {
-  console.error('❌ Supabase configuration is missing.');
-} else {
-  console.log('✅ Supabase configuration loaded successfully');
-}
+// Supabase is now hardcoded and always available
+console.log('✅ Supabase configuration loaded successfully');
 
 // Debug logging for development
 if (import.meta.env.DEV) {
