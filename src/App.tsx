@@ -12,6 +12,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 // Import all pages
 import Index from "@/pages/Index";
+import WelcomeLanding from "@/pages/WelcomeLanding";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -73,6 +74,7 @@ const App = () => {
               <Routes>
                 {/* Landing and Auth */}
                 <Route path="/" element={<Index />} />
+                <Route path="/welcome" element={<WelcomeLanding />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 

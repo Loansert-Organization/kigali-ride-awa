@@ -2,11 +2,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import LanguageSelector from "@/components/landing/LanguageSelector";
-import { RoleSelector } from "@/components/landing/RoleSelector";
-import LocationPermission from "@/components/landing/LocationPermission";
-import PromoCodeSection from "@/components/landing/PromoCodeSection";
-import PWAInstallPrompt from "@/components/landing/PWAInstallPrompt";
+import WelcomeLanding from "./WelcomeLanding";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
@@ -52,33 +48,14 @@ const Index = () => {
     );
   }
 
-  // Show main landing page if user is authenticated but hasn't selected a role
+  // Show unified landing experience for users who need role selection
   if (user && userProfile && !userProfile.role) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-        <div className="container mx-auto px-4 py-8">
-          {/* App Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              🚗 Kigali Ride
-            </h1>
-            <p className="text-lg text-gray-600">
-              Fast, reliable rides across Kigali
-            </p>
-          </div>
+    return <WelcomeLanding />;
+  }
 
-          {/* Role Selection */}
-          <div className="mb-8">
-            <RoleSelector />
-          </div>
-
-          {/* Footer */}
-          <div className="text-center text-sm text-gray-500 mt-12">
-            <p>Welcome to Kigali Ride - Your journey starts here!</p>
-          </div>
-        </div>
-      </div>
-    );
+  // Show unified landing for unauthenticated users
+  if (!user) {
+    return <WelcomeLanding />;
   }
 
   // Fallback - show minimal loading state
