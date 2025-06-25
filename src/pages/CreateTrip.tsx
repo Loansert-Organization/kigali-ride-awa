@@ -1,37 +1,139 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, MapPin, Clock, Car, Users, DollarSign } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import RouteInputBlock from "@/components/trip/RouteInputBlock";
+import DateTimeBlock from "@/components/trip/DateTimeBlock";
+import VehicleDetailsBlock from "@/components/trip/VehicleDetailsBlock";
+import FareInputBlock from "@/components/trip/FareInputBlock";
+import TripConfirmationBlock from "@/components/trip/TripConfirmationBlock";
+import CreateTripProgressIndicator from "@/components/trip/CreateTripProgressIndicator";
+import { EdgeFunctionService } from "@/services/EdgeFunctionService";
+
+interface TripData {
+  fromLocation: string;
+  fromLat?: number;
+  fromLng?: number;
+  toLocation: string;
+  toLat?: number;
+  toLng?: number;
+  scheduledTime: string;
+  vehicleType: string;
+  seatsAvailable: number;
+  fare: number | null;
+  isNegotiable: boolean;
+  description: string;
+  broadcastToNearby: boolean;
+}
 
 const CreateTrip = () => {
   const navigate = useNavigate();
-  const [fromLocation, setFromLocation] = useState('');
-  const [toLocation, setToLocation] = useState('');
-  const [vehicleType, setVehicleType] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
-  const [seatsAvailable, setSeatsAvailable] = useState('1');
-  const [fare, setFare] = useState('');
-  const [isNegotiable, setIsNegotiable] = useState(true);
-  const [description, setDescription] = useState('');
+  const location = useLocation();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [driverProfile, setDriverProfile] = useState<any>(null);
+  
+  const [tripData, setTripData] = useState<TripData>({
+    fromLocation: '',
+    toLocation: '',
+    scheduledTime: new Date().toISOString().slice(0, 16),
+    vehicleType: '',
+    seatsAvailable: 1,
+    fare: null,
+    isNegotiable: true,
+    description: '',
+    broadcastToNearby: true
+  });
+
+  // Handle quick start from driver home
+  useEffect(() => {
+    if (location.state?.quickStart && location.state?.currentLocation) {
+      setTripData(prev => ({
+        ...prev,
+        fromLat: location.state.currentLocation.lat,
+        fromLng: location.state.currentLocation.lng,
+        fromLocation: 'Current Location'
+      }));
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    loadDriverProfile();
+  }, []);
+
+  const loadDriverProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userRecord } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .single();
+        
+        if (userRecord) {
+          const { data: profile } = await supabase
+            .from('driver_profiles')
+            .select('*')
+            .eq('user_id', userRecord.id)
+            .single();
+          
+          if (profile) {
+            setDriverProfile(profile);
+            setTripData(prev => ({
+              ...prev,
+              vehicleType: profile.vehicle_type || ''
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading driver profile:', error);
+    }
+  };
+
+  const updateTripData = (updates: Partial<TripData>) => {
+    setTripData(prev => ({ ...prev, ...updates }));
+  };
+
+  const canProceedToNextStep = () => {
+    switch (currentStep) {
+      case 1:
+        return tripData.fromLocation && tripData.toLocation && tripData.scheduledTime;
+      case 2:
+        return tripData.vehicleType && tripData.seatsAvailable > 0;
+      case 3:
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  const handleNext = () => {
+    if (canProceedToNextStep() && currentStep < 3) {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
+    } else {
+      navigate(-1);
+    }
+  };
 
   const handleSubmit = async () => {
+    if (!canProceedToNextStep()) return;
+
+    setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast({
-          title: "Please sign in",
-          description: "You need to be signed in to create a trip",
-          variant: "destructive"
-        });
-        return;
+        throw new Error('User not authenticated');
       }
 
       const { data: userRecord } = await supabase
@@ -41,227 +143,174 @@ const CreateTrip = () => {
         .single();
 
       if (!userRecord) {
+        throw new Error('User profile not found');
+      }
+
+      // Validate scheduled time is not in the past
+      const scheduledDate = new Date(tripData.scheduledTime);
+      if (scheduledDate < new Date()) {
         toast({
-          title: "Profile not found",
-          description: "Please complete your profile setup",
+          title: "Invalid Time",
+          description: "Trip time cannot be in the past",
           variant: "destructive"
         });
         return;
       }
 
-      const tripData = {
+      // Use Edge Function to create trip with geocoding
+      const tripPayload = {
         user_id: userRecord.id,
         role: 'driver',
-        from_location: fromLocation,
-        to_location: toLocation,
-        vehicle_type: vehicleType,
-        scheduled_time: new Date(scheduledTime).toISOString(),
-        seats_available: parseInt(seatsAvailable),
-        fare: fare ? parseFloat(fare) : null,
-        is_negotiable: isNegotiable,
-        description: description || null,
-        status: 'pending'
+        from_location: tripData.fromLocation,
+        from_lat: tripData.fromLat,
+        from_lng: tripData.fromLng,
+        to_location: tripData.toLocation,
+        to_lat: tripData.toLat,
+        to_lng: tripData.toLng,
+        vehicle_type: tripData.vehicleType,
+        scheduled_time: tripData.scheduledTime,
+        seats_available: tripData.seatsAvailable,
+        fare: tripData.fare,
+        is_negotiable: tripData.isNegotiable,
+        description: tripData.description || null
       };
 
-      const { data, error } = await supabase
-        .from('trips')
-        .insert([tripData])
-        .select()
-        .single();
+      const result = await EdgeFunctionService.createTrip(tripPayload);
 
-      if (error) throw error;
+      if (result.success) {
+        // Confetti effect for first trip
+        if (navigator.vibrate) {
+          navigator.vibrate([200, 100, 200]);
+        }
 
-      toast({
-        title: "Trip created!",
-        description: "Your trip is now visible to passengers",
-      });
+        toast({
+          title: "🎉 Trip Created!",
+          description: "Your trip is now visible to passengers nearby",
+        });
 
-      navigate('/home/driver');
+        // Broadcast to nearby passengers if enabled
+        if (tripData.broadcastToNearby) {
+          try {
+            // This would trigger notifications to nearby passengers
+            console.log('Broadcasting trip to nearby passengers...');
+          } catch (error) {
+            console.warn('Failed to broadcast trip:', error);
+          }
+        }
+
+        navigate('/home/driver');
+      } else {
+        throw new Error(result.details || 'Failed to create trip');
+      }
     } catch (error) {
       console.error('Error creating trip:', error);
       toast({
         title: "Error",
-        description: "Failed to create trip. Please try again.",
+        description: error.message || "Failed to create trip. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const canSubmit = fromLocation && toLocation && vehicleType && scheduledTime && seatsAvailable;
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <RouteInputBlock
+            fromLocation={tripData.fromLocation}
+            toLocation={tripData.toLocation}
+            fromLat={tripData.fromLat}
+            fromLng={tripData.fromLng}
+            toLat={tripData.toLat}
+            toLng={tripData.toLng}
+            scheduledTime={tripData.scheduledTime}
+            onUpdate={updateTripData}
+            quickStartLocation={location.state?.currentLocation}
+          />
+        );
+      case 2:
+        return (
+          <>
+            <VehicleDetailsBlock
+              vehicleType={tripData.vehicleType}
+              seatsAvailable={tripData.seatsAvailable}
+              description={tripData.description}
+              onUpdate={updateTripData}
+              driverProfile={driverProfile}
+            />
+            <FareInputBlock
+              fare={tripData.fare}
+              isNegotiable={tripData.isNegotiable}
+              onUpdate={updateTripData}
+            />
+          </>
+        );
+      case 3:
+        return (
+          <TripConfirmationBlock
+            tripData={tripData}
+            broadcastToNearby={tripData.broadcastToNearby}
+            onUpdate={updateTripData}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+      <div className="bg-white border-b border-gray-200 p-4 sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={handleBack}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-lg font-semibold">Create Trip</h1>
+          <h1 className="text-lg font-semibold">📍 Create Trip</h1>
+          <div className="w-10" /> {/* Spacer */}
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Route */}
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            <h3 className="font-semibold text-gray-800">Route Details</h3>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Starting from
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 w-5 h-5 text-green-600" />
-                <Input
-                  placeholder="Where are you starting from?"
-                  value={fromLocation}
-                  onChange={(e) => setFromLocation(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Going to
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 w-5 h-5 text-red-600" />
-                <Input
-                  placeholder="Where are you going?"
-                  value={toLocation}
-                  onChange={(e) => setToLocation(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Progress Indicator */}
+      <CreateTripProgressIndicator currentStep={currentStep} />
 
-        {/* Vehicle & Schedule */}
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            <h3 className="font-semibold text-gray-800">Trip Details</h3>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vehicle type
-              </label>
-              <Select value={vehicleType} onValueChange={setVehicleType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your vehicle" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="moto">Moto</SelectItem>
-                  <SelectItem value="car">Car</SelectItem>
-                  <SelectItem value="tuktuk">Tuktuk</SelectItem>
-                  <SelectItem value="minibus">Minibus</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Content */}
+      <div className="p-4 space-y-6 pb-32">
+        {renderStepContent()}
+      </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Departure time
-              </label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-3 w-5 h-5 text-blue-600" />
-                <Input
-                  type="datetime-local"
-                  value={scheduledTime}
-                  onChange={(e) => setScheduledTime(e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Available seats
-              </label>
-              <div className="relative">
-                <Users className="absolute left-3 top-3 w-5 h-5 text-purple-600" />
-                <Select value={seatsAvailable} onValueChange={setSeatsAvailable}>
-                  <SelectTrigger className="pl-10">
-                    <SelectValue placeholder="Number of seats" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 passenger</SelectItem>
-                    <SelectItem value="2">2 passengers</SelectItem>
-                    <SelectItem value="3">3 passengers</SelectItem>
-                    <SelectItem value="4">4 passengers</SelectItem>
-                    <SelectItem value="5">5+ passengers</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pricing */}
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            <h3 className="font-semibold text-gray-800">Pricing</h3>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fare per passenger (RWF)
-              </label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-3 w-5 h-5 text-green-600" />
-                <Input
-                  type="number"
-                  placeholder="Enter fare amount"
-                  value={fare}
-                  onChange={(e) => setFare(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium">Negotiable price</div>
-                <div className="text-sm text-gray-500">Allow passengers to negotiate the fare</div>
-              </div>
-              <Switch
-                checked={isNegotiable}
-                onCheckedChange={setIsNegotiable}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Additional Details */}
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            <h3 className="font-semibold text-gray-800">Additional Details</h3>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description (optional)
-              </label>
-              <Textarea
-                placeholder="Any additional information for passengers..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="min-h-20"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Submit Button */}
-        <div className="pb-8">
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="w-full bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
-          >
-            Create Trip
-          </Button>
+      {/* Bottom Actions */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+        <div className="flex space-x-3">
+          {currentStep > 1 && (
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              className="flex-1"
+            >
+              Back
+            </Button>
+          )}
+          
+          {currentStep < 3 ? (
+            <Button
+              onClick={handleNext}
+              disabled={!canProceedToNextStep()}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
+            >
+              Next <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              disabled={!canProceedToNextStep() || isSubmitting}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
+            >
+              {isSubmitting ? 'Creating...' : '📢 Publish Trip'}
+            </Button>
+          )}
         </div>
       </div>
     </div>
