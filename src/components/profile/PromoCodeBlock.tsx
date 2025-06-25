@@ -1,20 +1,7 @@
 
 import React from 'react';
 import PromoCodeDisplayBlock from '@/components/rewards/PromoCodeDisplayBlock';
-
-interface UserProfile {
-  id: string;
-  auth_user_id: string | null;
-  role: 'passenger' | 'driver' | null;
-  language: string;
-  location_enabled: boolean;
-  notifications_enabled: boolean;
-  promo_code: string;
-  referred_by: string | null;
-  onboarding_completed: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { UserProfile } from '@/types/user';
 
 interface PromoCodeBlockProps {
   userProfile: UserProfile;

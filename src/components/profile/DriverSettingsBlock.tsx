@@ -1,64 +1,33 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Car, Edit } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Car, Truck, Bike } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
-
-interface UserProfile {
-  id: string;
-  auth_user_id: string | null;
-  role: 'passenger' | 'driver' | null;
-  language: string;
-  location_enabled: boolean;
-  notifications_enabled: boolean;
-  promo_code: string;
-  referred_by: string | null;
-  onboarding_completed: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { UserProfile, DriverProfile } from '@/types/user';
 
 interface DriverSettingsBlockProps {
   userProfile: UserProfile;
 }
 
-interface DriverProfile {
-  vehicle_type: string;
-  plate_number: string;
-  preferred_zone?: string;
-}
-
 const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userProfile }) => {
   const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const { register, handleSubmit, setValue, watch, reset } = useForm<DriverProfile>();
-
-  const vehicleTypes = [
-    { value: 'moto', label: '🏍️ Moto' },
-    { value: 'car', label: '🚗 Car' },
-    { value: 'tuktuk', label: '🛺 Tuktuk' },
-    { value: 'minibus', label: '🚌 Minibus' }
-  ];
+  const [loading, setLoading] = useState(true);
+  const { register, handleSubmit, setValue, watch } = useForm();
 
   useEffect(() => {
-    if (userProfile?.id) {
-      fetchDriverProfile();
-    }
-  }, [userProfile?.id]);
+    loadDriverProfile();
+  }, [userProfile]);
 
-  const fetchDriverProfile = async () => {
+  const loadDriverProfile = async () => {
+    if (!userProfile?.id) return;
+
     try {
-      setIsLoading(true);
       const { data, error } = await supabase
         .from('driver_profiles')
         .select('*')
@@ -66,170 +35,139 @@ const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userProfile }
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching driver profile:', error);
+        console.error('Error loading driver profile:', error);
         return;
       }
 
-      setDriverProfile(data);
       if (data) {
-        reset(data);
+        setDriverProfile(data);
+        setValue('vehicle_type', data.vehicle_type);
+        setValue('plate_number', data.plate_number);
+        setValue('preferred_zone', data.preferred_zone);
+        setValue('is_online', data.is_online);
       }
     } catch (error) {
-      console.error('Error fetching driver profile:', error);
+      console.error('Error loading driver profile:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const onSubmit = async (formData: DriverProfile) => {
+  const onSubmit = async (formData: any) => {
+    if (!userProfile?.id) return;
+
     try {
-      setIsSaving(true);
+      const profileData = {
+        user_id: userProfile.id,
+        vehicle_type: formData.vehicle_type,
+        plate_number: formData.plate_number,
+        preferred_zone: formData.preferred_zone || null,
+        is_online: formData.is_online || false,
+        updated_at: new Date().toISOString()
+      };
 
       const { error } = await supabase
         .from('driver_profiles')
-        .upsert({
-          user_id: userProfile.id,
-          ...formData
-        });
+        .upsert(profileData);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      setDriverProfile(formData);
-      setIsDialogOpen(false);
-      
       toast({
-        title: "Vehicle info updated",
-        description: "Your vehicle information has been saved successfully.",
+        title: "Settings updated",
+        description: "Your driver profile has been updated successfully.",
       });
 
+      // Reload profile
+      loadDriverProfile();
     } catch (error) {
       console.error('Error updating driver profile:', error);
       toast({
         title: "Update failed",
-        description: "There was an error updating your vehicle information.",
+        description: "There was an error updating your profile.",
         variant: "destructive"
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  if (isLoading) {
+  const vehicleTypes = [
+    { value: 'moto', label: '🏍️ Moto', icon: Bike },
+    { value: 'car', label: '🚗 Car', icon: Car },
+    { value: 'tuktuk', label: '🛺 Tuktuk', icon: Truck },
+    { value: 'minibus', label: '🚐 Minibus', icon: Truck }
+  ];
+
+  if (loading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center text-lg">
-            <Car className="w-5 h-5 mr-2" />
-            🚗 Driver Settings
-          </CardTitle>
+          <CardTitle>🚗 Driver Settings</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600">Loading vehicle information...</p>
+          <p className="text-gray-500">Loading driver settings...</p>
         </CardContent>
       </Card>
     );
   }
 
-  const selectedVehicleType = vehicleTypes.find(v => v.value === driverProfile?.vehicle_type);
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center text-lg">
-          <Car className="w-5 h-5 mr-2" />
-          🚗 Driver Settings
-        </CardTitle>
+        <CardTitle className="text-lg">🚗 Driver Settings</CardTitle>
       </CardHeader>
       <CardContent>
-        {driverProfile ? (
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm text-gray-600">Vehicle Type</p>
-              <p className="font-medium">{selectedVehicleType?.label || driverProfile.vehicle_type}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Plate Number</p>
-              <p className="font-medium">{driverProfile.plate_number}</p>
-            </div>
-            {driverProfile.preferred_zone && (
-              <div>
-                <p className="text-sm text-gray-600">Preferred Zone</p>
-                <p className="font-medium">{driverProfile.preferred_zone}</p>
-              </div>
-            )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <Label htmlFor="vehicle_type">Vehicle Type</Label>
+            <Select onValueChange={(value) => setValue('vehicle_type', value)} defaultValue={driverProfile?.vehicle_type}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select vehicle type" />
+              </SelectTrigger>
+              <SelectContent>
+                {vehicleTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        ) : (
-          <p className="text-gray-600 mb-4">No vehicle information set up yet.</p>
-        )}
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="w-full mt-4">
-              <Edit className="w-4 h-4 mr-2" />
-              ✏️ Edit Vehicle Info
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Vehicle Information</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <Label htmlFor="vehicle_type">Vehicle Type</Label>
-                <Select
-                  value={watch('vehicle_type')}
-                  onValueChange={(value) => setValue('vehicle_type', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select vehicle type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vehicleTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <div>
+            <Label htmlFor="plate_number">Plate Number</Label>
+            <Input
+              id="plate_number"
+              {...register('plate_number', { required: true })}
+              defaultValue={driverProfile?.plate_number}
+              placeholder="e.g. RAD 123A"
+            />
+          </div>
 
-              <div>
-                <Label htmlFor="plate_number">Plate Number</Label>
-                <Input
-                  id="plate_number"
-                  {...register('plate_number', { required: true })}
-                  placeholder="e.g., RAE-123C"
-                  className="uppercase"
-                />
-              </div>
+          <div>
+            <Label htmlFor="preferred_zone">Preferred Zone (Optional)</Label>
+            <Input
+              id="preferred_zone"
+              {...register('preferred_zone')}
+              defaultValue={driverProfile?.preferred_zone || ''}
+              placeholder="e.g. Kigali CBD, Nyarutarama"
+            />
+          </div>
 
-              <div>
-                <Label htmlFor="preferred_zone">Preferred Zone (Optional)</Label>
-                <Input
-                  id="preferred_zone"
-                  {...register('preferred_zone')}
-                  placeholder="e.g., Kigali City, Nyamirambo"
-                />
-              </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="is_online">🟢 Currently Online</Label>
+              <p className="text-sm text-gray-600">Accept ride requests</p>
+            </div>
+            <Switch
+              id="is_online"
+              defaultChecked={driverProfile?.is_online}
+              onCheckedChange={(checked) => setValue('is_online', checked)}
+            />
+          </div>
 
-              <div className="flex space-x-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSaving} className="flex-1">
-                  {isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+          <Button type="submit" className="w-full">
+            Update Settings
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );
