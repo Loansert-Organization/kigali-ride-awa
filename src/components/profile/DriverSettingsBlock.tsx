@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -37,9 +38,9 @@ const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userProfile }
       }
 
       if (data) {
-        // Ensure we have all required fields for DriverProfile, including ID
+        // Map the database structure to our DriverProfile type
         const completeProfile: DriverProfile = {
-          id: data.id || data.user_id, // Use existing ID or fallback to user_id
+          id: data.user_id, // Use user_id as the id since that's the primary key
           user_id: data.user_id,
           vehicle_type: data.vehicle_type,
           plate_number: data.plate_number,
@@ -65,7 +66,6 @@ const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userProfile }
       const { error } = await supabase
         .from('driver_profiles')
         .upsert({
-          id: driverProfile.id,
           user_id: userProfile.id,
           vehicle_type: driverProfile.vehicle_type,
           plate_number: driverProfile.plate_number,
