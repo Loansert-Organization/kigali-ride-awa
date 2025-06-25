@@ -5,9 +5,9 @@ import { Navigate } from 'react-router-dom';
 import DriverHome from '@/pages/home/Driver';
 
 const DriverHomePage = () => {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

@@ -28,25 +28,33 @@ class GlobalErrorBoundary extends Component<Props, State> {
     console.error('Global error caught:', error, errorInfo);
     
     // Log error to Supabase with proper JSON serialization
-    supabase
-      .from('agent_logs')
-      .insert({
-        event_type: 'critical_error',
-        component: 'GlobalErrorBoundary',
-        message: error.message,
-        metadata: {
-          stack: error.stack || '',
-          componentStack: errorInfo.componentStack || '',
-          errorName: error.name || 'Unknown'
-        },
-        severity: 'critical'
-      })
-      .then(() => {
-        console.log('Error logged to Supabase');
-      })
-      .catch((logError) => {
+    const logError = async () => {
+      try {
+        const { error: insertError } = await supabase
+          .from('agent_logs')
+          .insert({
+            event_type: 'critical_error',
+            component: 'GlobalErrorBoundary',
+            message: error.message,
+            metadata: {
+              stack: error.stack || '',
+              componentStack: errorInfo.componentStack || '',
+              errorName: error.name || 'Unknown'
+            },
+            severity: 'critical'
+          });
+
+        if (insertError) {
+          console.error('Failed to log critical error:', insertError);
+        } else {
+          console.log('Error logged to Supabase');
+        }
+      } catch (logError) {
         console.error('Failed to log critical error:', logError);
-      });
+      }
+    };
+
+    logError();
   }
 
   handleRetry = () => {
