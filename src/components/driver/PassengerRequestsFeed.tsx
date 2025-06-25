@@ -1,9 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Users, MapPin } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
 import PassengerRequestCard from './PassengerRequestCard';
 import PassengerRequestModal from './PassengerRequestModal';
 import { usePassengerRequests } from '@/hooks/driver/usePassengerRequests';

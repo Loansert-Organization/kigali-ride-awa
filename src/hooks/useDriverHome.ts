@@ -24,18 +24,15 @@ export const useDriverHome = () => {
   const [isToggleLoading, setIsToggleLoading] = useState(false);
   
   const { user } = useUserData();
-  const { driverProfile, isOnline, setIsOnline } = useDriverProfile();
+  const { driverProfile, isOnline, toggleOnlineStatus: originalToggleOnlineStatus } = useDriverProfile();
   const { driverLocation } = useDriverLocation();
-  const { statusData, toggleOnlineStatus } = useDriverStatus();
+  const { statusData } = useDriverStatus();
   const { navigate, handleQuickStart } = useDriverActions();
 
   const handleToggleOnlineStatus = async (newStatus: boolean) => {
     setIsToggleLoading(true);
     try {
-      const success = await toggleOnlineStatus(newStatus, driverProfile);
-      if (success) {
-        setIsOnline(newStatus);
-      }
+      await originalToggleOnlineStatus();
     } finally {
       setIsToggleLoading(false);
     }

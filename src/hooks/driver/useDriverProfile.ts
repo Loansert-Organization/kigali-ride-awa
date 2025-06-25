@@ -19,6 +19,7 @@ export const useDriverProfile = () => {
   const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(false);
 
   const loadDriverProfile = async () => {
     if (!user) return;
@@ -59,6 +60,7 @@ export const useDriverProfile = () => {
       }
 
       setDriverProfile(profile);
+      setIsOnline(profile?.is_online || false);
     } catch (err) {
       console.error('Error in loadDriverProfile:', err);
       setError('An unexpected error occurred');
@@ -68,7 +70,7 @@ export const useDriverProfile = () => {
   };
 
   const updateDriverProfile = async (updates: Partial<DriverProfile>) => {
-    if (!user || !driverProfile) return;
+    if (!user) return;
 
     try {
       // Get the user's profile first
@@ -82,19 +84,26 @@ export const useDriverProfile = () => {
         throw new Error('User profile not found');
       }
 
+      // Prepare the upsert data - exclude updated_at as it's auto-generated
+      const upsertData = {
+        user_id: userProfile.id,
+        vehicle_type: updates.vehicle_type || driverProfile?.vehicle_type || '',
+        plate_number: updates.plate_number || driverProfile?.plate_number || '',
+        preferred_zone: updates.preferred_zone || driverProfile?.preferred_zone,
+        is_online: updates.is_online !== undefined ? updates.is_online : (driverProfile?.is_online || false)
+      };
+
       const { data, error } = await supabase
         .from('driver_profiles')
-        .upsert({
-          user_id: userProfile.id,
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .upsert(upsertData)
         .select()
         .single();
 
       if (error) throw error;
 
       setDriverProfile(data);
+      setIsOnline(data.is_online);
+      
       toast({
         title: "Profile updated",
         description: "Your driver profile has been updated successfully",
@@ -115,7 +124,7 @@ export const useDriverProfile = () => {
   const toggleOnlineStatus = async () => {
     if (!driverProfile) return;
 
-    const newStatus = !driverProfile.is_online;
+    const newStatus = !isOnline;
     
     try {
       await updateDriverProfile({ is_online: newStatus });
@@ -138,7 +147,9 @@ export const useDriverProfile = () => {
   return {
     driverProfile,
     isLoading,
-    error,
+    error: error || '',
+    isOnline,
+    setIsOnline,
     updateDriverProfile,
     toggleOnlineStatus,
     refetch: loadDriverProfile
