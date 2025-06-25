@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Share, Copy, User } from 'lucide-react';
 import BottomNavigation from '@/components/navigation/BottomNavigation';
+import WhatsAppStatusBlock from '@/components/profile/WhatsAppStatusBlock';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
@@ -69,10 +70,16 @@ const PassengerProfile = () => {
                 <div className="text-sm text-gray-600">
                   Member since {userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString() : 'recently'}
                 </div>
+                <div className="text-xs text-gray-500">
+                  {userProfile?.auth_method === 'whatsapp' ? '📱 WhatsApp Account' : '👤 Guest Account'}
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* WhatsApp Status */}
+        <WhatsAppStatusBlock />
 
         {/* Promo Code Section */}
         <Card>

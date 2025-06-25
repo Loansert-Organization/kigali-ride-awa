@@ -782,6 +782,7 @@ export type Database = {
       }
       users: {
         Row: {
+          auth_method: string | null
           auth_user_id: string | null
           created_at: string
           id: string
@@ -789,12 +790,15 @@ export type Database = {
           location_enabled: boolean | null
           notifications_enabled: boolean | null
           onboarding_completed: boolean | null
+          phone_number: string | null
+          phone_verified: boolean | null
           promo_code: string | null
           referred_by: string | null
           role: string | null
           updated_at: string
         }
         Insert: {
+          auth_method?: string | null
           auth_user_id?: string | null
           created_at?: string
           id?: string
@@ -802,12 +806,15 @@ export type Database = {
           location_enabled?: boolean | null
           notifications_enabled?: boolean | null
           onboarding_completed?: boolean | null
+          phone_number?: string | null
+          phone_verified?: boolean | null
           promo_code?: string | null
           referred_by?: string | null
           role?: string | null
           updated_at?: string
         }
         Update: {
+          auth_method?: string | null
           auth_user_id?: string | null
           created_at?: string
           id?: string
@@ -815,6 +822,8 @@ export type Database = {
           location_enabled?: boolean | null
           notifications_enabled?: boolean | null
           onboarding_completed?: boolean | null
+          phone_number?: string | null
+          phone_verified?: boolean | null
           promo_code?: string | null
           referred_by?: string | null
           role?: string | null
@@ -944,6 +953,10 @@ export type Database = {
       is_owner: {
         Args: { check_user_id: string }
         Returns: boolean
+      }
+      merge_anonymous_to_verified_user: {
+        Args: { anonymous_user_id: string; verified_user_id: string }
+        Returns: undefined
       }
       postgres_fdw_disconnect: {
         Args: { "": string }

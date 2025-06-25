@@ -1,3 +1,4 @@
+
 export const isGuestMode = (userProfile: any): boolean => {
   return userProfile && !userProfile.auth_user_id && userProfile.id?.startsWith('guest_');
 };
@@ -28,6 +29,24 @@ export const generatePromoCode = (): string => {
   const prefix = 'GUEST-';
   const suffix = Math.random().toString(36).substr(2, 5).toUpperCase();
   return `${prefix}${suffix}`;
+};
+
+export const isWhatsAppVerified = (userProfile: any): boolean => {
+  return userProfile?.phone_verified === true && userProfile?.auth_method === 'whatsapp';
+};
+
+export const getAuthStatusText = (userProfile: any): string => {
+  if (!userProfile) return 'Not authenticated';
+  
+  if (isWhatsAppVerified(userProfile)) {
+    return 'WhatsApp verified';
+  }
+  
+  if (userProfile.auth_user_id) {
+    return 'Authenticated';
+  }
+  
+  return 'Guest mode';
 };
 
 export const cleanupAuthState = () => {

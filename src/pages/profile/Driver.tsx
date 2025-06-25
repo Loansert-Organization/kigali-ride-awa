@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Car, Share, Copy } from 'lucide-react';
 import BottomNavigation from '@/components/navigation/BottomNavigation';
+import WhatsAppStatusBlock from '@/components/profile/WhatsAppStatusBlock';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -133,6 +134,35 @@ const DriverProfile = () => {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Driver Info */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Car className="w-5 h-5 mr-2" />
+              Driver Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-green-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                {userProfile?.promo_code?.slice(-2) || 'D'}
+              </div>
+              <div>
+                <div className="font-semibold">Driver</div>
+                <div className="text-sm text-gray-600">
+                  Member since {userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString() : 'recently'}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {userProfile?.auth_method === 'whatsapp' ? '📱 WhatsApp Account' : '👤 Guest Account'}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* WhatsApp Status */}
+        <WhatsAppStatusBlock />
+
         {/* Promo Code Section */}
         <Card>
           <CardHeader>
