@@ -27,7 +27,7 @@ class GlobalErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Global error caught:', error, errorInfo);
     
-    // Log error to Supabase
+    // Log error to Supabase with proper JSON serialization
     supabase
       .from('agent_logs')
       .insert({
@@ -35,13 +35,16 @@ class GlobalErrorBoundary extends Component<Props, State> {
         component: 'GlobalErrorBoundary',
         message: error.message,
         metadata: {
-          stack: error.stack,
-          componentStack: errorInfo.componentStack,
-          errorInfo
+          stack: error.stack || '',
+          componentStack: errorInfo.componentStack || '',
+          errorName: error.name || 'Unknown'
         },
         severity: 'critical'
       })
-      .catch(logError => {
+      .then(() => {
+        console.log('Error logged to Supabase');
+      })
+      .catch((logError) => {
         console.error('Failed to log critical error:', logError);
       });
   }

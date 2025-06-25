@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,12 +14,14 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Profile from "@/pages/Profile";
 import PastTrips from "@/pages/PastTrips";
-import DriverHome from "@/pages/driver/DriverHome";
+import DriverHomePage from "@/pages/driver/DriverHome";
 import AdminOverview from "@/pages/admin/Overview";
 import AdminUsers from "@/pages/admin/Users";
 import AdminTrips from "@/pages/admin/Trips";
 import UserDetails from "@/pages/admin/UserDetails";
 import DriverDetails from "@/pages/admin/DriverDetails";
+import BookRide from "@/pages/BookRide";
+import RideMatches from "@/pages/RideMatches";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +54,9 @@ const App = () => {
                 <Route path="/register" element={<Register />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/past-trips" element={<PastTrips />} />
-                <Route path="/driver" element={<DriverHome />} />
+                <Route path="/book-ride" element={<BookRide />} />
+                <Route path="/ride-matches" element={<RideMatches />} />
+                <Route path="/driver" element={<DriverHomePage />} />
                 <Route path="/admin/overview" element={<AdminOverview />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
                 <Route path="/admin/trips" element={<AdminTrips />} />

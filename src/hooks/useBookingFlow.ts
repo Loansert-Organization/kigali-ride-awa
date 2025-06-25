@@ -3,9 +3,25 @@ import { useState, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/hooks/useAuth';
 import { useErrorHandler } from './useErrorHandler';
+import { useNavigate } from 'react-router-dom';
+
+export interface TripData {
+  fromLocation: string;
+  toLocation: string;
+  scheduledTime: string;
+  vehicleType: string;
+  description: string;
+  fromLat?: number;
+  fromLng?: number;
+  toLat?: number;
+  toLng?: number;
+  fare?: number;
+  seatsAvailable?: number;
+}
 
 interface BookingFlowService {
   createBooking: (passengerTripId: string, driverTripId: string) => Promise<boolean>;
+  createPassengerTrip: (tripData: TripData) => Promise<boolean>;
   confirmBooking: (bookingId: string) => Promise<boolean>;
   cancelBooking: (bookingId: string) => Promise<boolean>;
   launchWhatsApp: (phoneNumber?: string, tripDetails?: any) => void;
@@ -16,6 +32,54 @@ export const useBookingFlow = (): BookingFlowService => {
   const { user } = useAuth();
   const { handleError, handleSuccess } = useErrorHandler();
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const createPassengerTrip = useCallback(async (tripData: TripData): Promise<boolean> => {
+    if (!user) {
+      handleError(new Error('User not authenticated'), 'BookingFlow.createPassengerTrip');
+      return false;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('trips')
+        .insert({
+          user_id: user.id,
+          from_location: tripData.fromLocation,
+          to_location: tripData.toLocation,
+          from_lat: tripData.fromLat,
+          from_lng: tripData.fromLng,
+          to_lat: tripData.toLat,
+          to_lng: tripData.toLng,
+          scheduled_time: tripData.scheduledTime,
+          vehicle_type: tripData.vehicleType,
+          description: tripData.description,
+          role: 'passenger',
+          status: 'pending',
+          seats_available: 1
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await handleSuccess(
+        'Trip request created successfully! Looking for available drivers...',
+        'BookingFlow.createPassengerTrip',
+        { tripId: data.id }
+      );
+
+      // Navigate to matches page
+      navigate(`/ride-matches?tripId=${data.id}`);
+      return true;
+    } catch (error) {
+      await handleError(error, 'BookingFlow.createPassengerTrip', tripData);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, handleError, handleSuccess, navigate]);
 
   const createBooking = useCallback(async (
     passengerTripId: string, 
@@ -172,6 +236,7 @@ export const useBookingFlow = (): BookingFlowService => {
 
   return {
     createBooking,
+    createPassengerTrip,
     confirmBooking,
     cancelBooking,
     launchWhatsApp,
