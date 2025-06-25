@@ -23,6 +23,7 @@ import Rewards from "./pages/Rewards";
 import Profile from "./pages/Profile";
 import DriverEarnings from "./pages/DriverEarnings";
 import AdminOverview from "./pages/admin/Overview";
+import AdminUsers from "./pages/admin/Users";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/ai-dev-tools" element={<AIDevTools />} />
             <Route path="/admin/overview" element={<AdminOverview />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
