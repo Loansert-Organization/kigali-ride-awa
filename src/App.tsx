@@ -21,6 +21,7 @@ import AIDevTools from "./pages/AIDevTools";
 import Favorites from "./pages/Favorites";
 import Rewards from "./pages/Rewards";
 import Profile from "./pages/Profile";
+import DriverEarnings from "./pages/DriverEarnings";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/matches" element={<RideMatches />} />
             <Route path="/create-trip" element={<CreateTrip />} />
             <Route path="/driver-trips" element={<DriverTrips />} />
+            <Route path="/driver-earnings" element={<DriverEarnings />} />
             <Route path="/trip-details" element={<TripDetails />} />
             <Route path="/past-trips" element={<PastTrips />} />
             <Route path="/favorites" element={<Favorites />} />
