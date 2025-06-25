@@ -38,6 +38,11 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
     }
   };
 
+  // Wrapper function to handle the Promise<boolean> return and convert to Promise<void>
+  const handleAcceptWrapper = async (tripId: string): Promise<void> => {
+    await handleAcceptRequest(tripId);
+  };
+
   if (!isOnline) {
     return (
       <Card>
@@ -83,7 +88,7 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
                 <PassengerRequestCard
                   key={request.id}
                   trip={request}
-                  onAccept={handleAcceptRequest}
+                  onAccept={handleAcceptWrapper}
                   onViewDetails={handleViewDetails}
                   suggestedFare={request.suggested_fare}
                 />
