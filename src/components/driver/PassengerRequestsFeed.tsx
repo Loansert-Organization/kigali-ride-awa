@@ -43,6 +43,11 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
     await handleAcceptRequest(tripId);
   };
 
+  // Wrapper function for modal accept that also returns Promise<void>
+  const handleModalAccept = async (tripId: string): Promise<void> => {
+    await handleAcceptRequest(tripId);
+  };
+
   if (!isOnline) {
     return (
       <Card>
@@ -110,7 +115,7 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         trip={selectedTrip}
-        onAccept={handleAcceptRequest}
+        onAccept={handleModalAccept}
         onWhatsAppContact={handleWhatsAppContact}
       />
     </>
