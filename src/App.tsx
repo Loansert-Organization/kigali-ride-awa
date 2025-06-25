@@ -14,6 +14,8 @@ import DriverHome from "./pages/home/Driver";
 import BookRide from "./pages/BookRide";
 import RideMatches from "./pages/RideMatches";
 import CreateTrip from "./pages/CreateTrip";
+import DriverTrips from "./pages/DriverTrips";
+import TripDetails from "./pages/TripDetails";
 import PastTrips from "./pages/PastTrips";
 import AIDevTools from "./pages/AIDevTools";
 import Favorites from "./pages/Favorites";
@@ -38,6 +40,8 @@ const App = () => (
             <Route path="/book-ride" element={<BookRide />} />
             <Route path="/matches" element={<RideMatches />} />
             <Route path="/create-trip" element={<CreateTrip />} />
+            <Route path="/driver-trips" element={<DriverTrips />} />
+            <Route path="/trip-details" element={<TripDetails />} />
             <Route path="/past-trips" element={<PastTrips />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/rewards" element={<Rewards />} />
