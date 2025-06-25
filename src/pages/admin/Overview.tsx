@@ -18,6 +18,16 @@ export default function Overview() {
     refetch();
   };
 
+  const handleUserAction = (action: string, user: any) => {
+    console.log('User action:', action, user);
+    // TODO: Implement user actions (view, ban, flag, etc.)
+  };
+
+  const handleTripAction = (action: string, trip: any) => {
+    console.log('Trip action:', action, trip);
+    // TODO: Implement trip actions (view, cancel, flag, etc.)
+  };
+
   useEffect(() => {
     if (error) {
       console.error('Error loading admin dashboard:', error);
@@ -45,11 +55,19 @@ export default function Overview() {
         </TabsContent>
 
         <TabsContent value="users" className="space-y-6">
-          <UsersTableBlock users={data?.users || []} />
+          <UsersTableBlock 
+            users={data?.users || []} 
+            isLoading={isLoading}
+            onUserAction={handleUserAction}
+          />
         </TabsContent>
 
         <TabsContent value="trips" className="space-y-6">
-          <TripsTableBlock trips={data?.trips || []} />
+          <TripsTableBlock 
+            trips={data?.trips || []} 
+            isLoading={isLoading}
+            onTripAction={handleTripAction}
+          />
         </TabsContent>
 
         <TabsContent value="schema" className="space-y-6">
