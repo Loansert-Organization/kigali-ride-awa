@@ -1,255 +1,126 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Bell } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import MapBlock from "@/components/passenger/MapBlock";
-import SmartSuggestionsBlock from "@/components/passenger/SmartSuggestionsBlock";
-import QuickActionsBlock from "@/components/passenger/QuickActionsBlock";
-import ReferralBannerBlock from "@/components/passenger/ReferralBannerBlock";
-import BottomNavigation from "@/components/navigation/BottomNavigation";
+import { MapPin, Search, Clock, Star } from 'lucide-react';
+import BottomNavigation from '@/components/navigation/BottomNavigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PassengerHome = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-  const [favorites, setFavorites] = useState<any[]>([]);
-  const [nearbyDrivers, setNearbyDrivers] = useState<any[]>([]);
-  const [openDriverTrips, setOpenDriverTrips] = useState<any[]>([]);
-  const [currentLocation, setCurrentLocation] = useState<{lat: number, lng: number} | null>(null);
+  const { userProfile } = useAuth();
+  const [currentLocation, setCurrentLocation] = useState<string>('');
 
   useEffect(() => {
-    loadUserData();
-    loadFavorites();
-    loadNearbyDrivers();
-    loadOpenDriverTrips();
-    getCurrentLocation();
-    
-    // Set up real-time refresh
-    const interval = setInterval(() => {
-      loadNearbyDrivers();
-      loadOpenDriverTrips();
-    }, 45000); // Refresh every 45 seconds
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadUserData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('auth_user_id', user.id)
-          .single();
-        setUser(userData);
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    }
-  };
-
-  const loadFavorites = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: userRecord } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_user_id', user.id)
-          .single();
-        
-        if (userRecord) {
-          const { data } = await supabase
-            .from('favorites')
-            .select('*')
-            .eq('user_id', userRecord.id)
-            .limit(4);
-          
-          setFavorites(data || []);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading favorites:', error);
-    }
-  };
-
-  const loadNearbyDrivers = async () => {
-    try {
-      const { data } = await supabase
-        .from('driver_profiles')
-        .select('*')
-        .eq('is_online', true)
-        .limit(10);
-      
-      // Mock nearby driver locations for demo
-      const driversWithLocation = (data || []).map((driver, index) => ({
-        ...driver,
-        lat: -1.9441 + (Math.random() - 0.5) * 0.02, // Around Kigali
-        lng: 30.0619 + (Math.random() - 0.5) * 0.02
-      }));
-      
-      setNearbyDrivers(driversWithLocation);
-    } catch (error) {
-      console.error('Error loading nearby drivers:', error);
-    }
-  };
-
-  const loadOpenDriverTrips = async () => {
-    try {
-      const { data } = await supabase
-        .from('trips')
-        .select('*')
-        .eq('role', 'driver')
-        .eq('status', 'pending')
-        .gte('scheduled_time', new Date().toISOString())
-        .order('scheduled_time', { ascending: true })
-        .limit(8);
-      
-      setOpenDriverTrips(data || []);
-    } catch (error) {
-      console.error('Error loading open driver trips:', error);
-    }
-  };
-
-  const getCurrentLocation = () => {
+    // Get current location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setCurrentLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
+          setCurrentLocation('Current Location');
         },
         (error) => {
-          console.log('Location access denied:', error);
-          // Fallback to Kigali city center
-          setCurrentLocation({
-            lat: -1.9441,
-            lng: 30.0619
-          });
+          console.warn('Location access denied:', error);
+          setCurrentLocation('Location unavailable');
         }
       );
     }
-  };
+  }, []);
 
-  const handleSuggestionClick = (suggestion: any) => {
-    switch (suggestion.type) {
-      case 'favorite':
-        navigate('/book-ride', { state: { destination: suggestion.data } });
-        break;
-      case 'home':
-      case 'market':
-      case 'church':
-        navigate('/book-ride', { state: { destinationType: suggestion.type } });
-        break;
-      case 'last_trip':
-        // TODO: Get last trip and navigate with it
-        navigate('/book-ride');
-        break;
-      case 'add_favorite':
-        navigate('/favorites');
-        break;
-      default:
-        navigate('/book-ride');
-    }
-  };
-
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case 'request_ride':
-        navigate('/book-ride');
-        break;
-      case 'view_trips':
-        navigate('/matches');
-        break;
-      case 'my_rides':
-        navigate('/past-trips');
-        break;
-    }
-  };
-
-  const handleViewRewards = () => {
-    navigate('/rewards');
-  };
+  const quickDestinations = [
+    { name: "Nyabugogo", icon: "🚌" },
+    { name: "Kimisagara", icon: "🏢" },
+    { name: "Kigali City", icon: "🏬" },
+    { name: "Airport", icon: "✈️" }
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-orange-500 p-4 text-white">
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-4 text-white">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Muraho! 👋</h1>
-            <p className="text-purple-100">Ready for your next ride?</p>
-          </div>
           <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/20"
-            >
-              <Bell className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/20"
-              onClick={() => navigate('/profile')}
-            >
-              <User className="w-5 h-5" />
-            </Button>
+            <MapPin className="w-6 h-6" />
+            <div>
+              <p className="text-sm opacity-90">Your location</p>
+              <p className="font-semibold">{currentLocation}</p>
+            </div>
           </div>
+          <Button
+            variant="ghost"
+            className="text-white hover:bg-white/20"
+            onClick={() => navigate('/profile')}
+          >
+            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+              {userProfile?.promo_code?.slice(-2) || 'U'}
+            </div>
+          </Button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="p-4 pb-20">
-        {/* Map Block */}
-        <MapBlock 
-          currentLocation={currentLocation}
-          nearbyDrivers={nearbyDrivers}
-          openDriverTrips={openDriverTrips}
-        />
-        
-        {/* Smart Suggestions */}
-        <SmartSuggestionsBlock 
-          favorites={favorites}
-          onSuggestionClick={handleSuggestionClick}
-        />
-        
-        {/* Quick Actions */}
-        <QuickActionsBlock 
-          onActionClick={handleQuickAction}
-        />
-        
-        {/* Referral Banner */}
-        {user?.promo_code && (
-          <ReferralBannerBlock 
-            promoCode={user.promo_code}
-            onViewRewards={handleViewRewards}
-          />
-        )}
-
-        {/* Status Banner */}
-        {nearbyDrivers.length === 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
-            <p className="text-orange-700 font-medium">No drivers nearby right now</p>
-            <p className="text-orange-600 text-sm mt-1">Try scheduling a ride or check back soon!</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-100"
+      <div className="p-4 space-y-6">
+        {/* Quick Book Button */}
+        <Card className="bg-gradient-to-r from-green-500 to-blue-500 text-white border-0">
+          <CardContent className="p-6">
+            <Button
               onClick={() => navigate('/book-ride')}
+              className="w-full bg-white text-green-600 hover:bg-gray-100 font-semibold py-6 text-lg"
             >
-              Schedule a Ride →
+              <Search className="w-6 h-6 mr-3" />
+              🚗 Book a Ride Now
             </Button>
-          </div>
-        )}
+          </CardContent>
+        </Card>
+
+        {/* Quick Destinations */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Clock className="w-5 h-5 mr-2" />
+              Quick Destinations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              {quickDestinations.map((dest) => (
+                <Button
+                  key={dest.name}
+                  variant="outline"
+                  className="h-16 flex flex-col items-center justify-center"
+                  onClick={() => navigate('/book-ride', { state: { destination: dest.name } })}
+                >
+                  <span className="text-2xl mb-1">{dest.icon}</span>
+                  <span className="text-sm">{dest.name}</span>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Star className="w-5 h-5 mr-2" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-500 text-center py-4">
+              No recent trips. Book your first ride!
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/past-trips')}
+              className="w-full"
+            >
+              View All Trips
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Bottom Navigation */}
       <BottomNavigation role="passenger" />
     </div>
   );

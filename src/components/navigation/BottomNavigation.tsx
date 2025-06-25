@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Home, Car, Star, Gift, User, MapPin, FileText } from 'lucide-react';
+import { Home, Search, Star, Gift, User, Plus, Users } from 'lucide-react';
 
 interface BottomNavigationProps {
   role: 'passenger' | 'driver';
@@ -14,7 +14,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ role }) => {
 
   const passengerTabs = [
     { icon: Home, label: 'Home', path: '/home/passenger' },
-    { icon: Car, label: 'Book', path: '/book-ride' },
+    { icon: Search, label: 'Book', path: '/book-ride' },
     { icon: Star, label: 'Favorites', path: '/favorites' },
     { icon: Gift, label: 'Rewards', path: '/rewards' },
     { icon: User, label: 'Profile', path: '/profile' }
@@ -22,8 +22,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ role }) => {
 
   const driverTabs = [
     { icon: Home, label: 'Home', path: '/home/driver' },
-    { icon: MapPin, label: 'Create Trip', path: '/create-trip' },
-    { icon: FileText, label: 'Requests', path: '/requests' },
+    { icon: Plus, label: 'Create', path: '/create-trip' },
+    { icon: Users, label: 'Requests', path: '/driver-requests' },
     { icon: Gift, label: 'Rewards', path: '/rewards' },
     { icon: User, label: 'Profile', path: '/profile' }
   ];
@@ -32,25 +32,24 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ role }) => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-1">
-      <div className="flex justify-around max-w-md mx-auto">
-        {tabs.map((tab, index) => {
+      <div className="flex justify-around">
+        {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = location.pathname === tab.path;
           
           return (
             <Button
-              key={index}
+              key={tab.path}
               variant="ghost"
-              size="sm"
-              className={`flex flex-col items-center py-2 px-3 min-w-0 ${
+              onClick={() => navigate(tab.path)}
+              className={`flex-1 flex flex-col items-center py-2 px-1 h-auto ${
                 isActive 
                   ? 'text-purple-600 bg-purple-50' 
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-gray-600 hover:text-purple-600'
               }`}
-              onClick={() => navigate(tab.path)}
             >
               <Icon className="w-5 h-5 mb-1" />
-              <span className="text-xs truncate">{tab.label}</span>
+              <span className="text-xs">{tab.label}</span>
             </Button>
           );
         })}

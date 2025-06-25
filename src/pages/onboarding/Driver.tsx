@@ -1,200 +1,167 @@
 
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { useDriverOnboarding } from "@/hooks/useDriverOnboarding";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Car, Users, DollarSign } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 const DriverOnboarding = () => {
-  const { userProfile, loading } = useAuth();
   const navigate = useNavigate();
-  const {
-    currentStep,
-    setCurrentStep,
-    language,
-    locationGranted,
-    setLocationGranted,
-    notificationsGranted,
-    setNotificationsGranted,
-    vehicleType,
-    setVehicleType,
-    plateNumber,
-    setPlateNumber,
-    existingPromo,
-    finishOnboarding
-  } = useDriverOnboarding();
+  const { user, updateUserProfile } = useAuth();
+  const [step, setStep] = useState(1);
+  const [vehicleData, setVehicleData] = useState({
+    vehicleType: '',
+    plateNumber: '',
+    preferredZone: ''
+  });
 
-  useEffect(() => {
-    // Redirect if user is not a driver or has completed onboarding
-    if (!loading && userProfile) {
-      if (userProfile.role !== 'driver') {
-        navigate('/');
-        return;
-      }
-      
-      if (userProfile.onboarding_completed) {
+  const handleVehicleSubmit = async () => {
+    if (!vehicleData.vehicleType || !vehicleData.plateNumber) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', user?.id)
+        .single();
+
+      if (userData) {
+        const { error } = await supabase
+          .from('driver_profiles')
+          .insert({
+            user_id: userData.id,
+            vehicle_type: vehicleData.vehicleType,
+            plate_number: vehicleData.plateNumber,
+            preferred_zone: vehicleData.preferredZone || null
+          });
+
+        if (error) throw error;
+
+        await updateUserProfile({ onboarding_completed: true });
         navigate('/home/driver');
-        return;
       }
-    }
-  }, [userProfile, loading, navigate]);
-
-  if (loading || !userProfile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-green-600" />
-          <p className="text-gray-600">Setting up your driver profile...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const handleNext = () => {
-    if (currentStep < 2) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      finishOnboarding();
+    } catch (error) {
+      console.error('Error creating driver profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create driver profile",
+        variant: "destructive"
+      });
     }
   };
 
-  const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    } else {
-      navigate('/');
+  const steps = [
+    {
+      icon: <Car className="w-12 h-12 text-blue-600" />,
+      title: "Vehicle Information",
+      description: "Tell us about your vehicle"
+    },
+    {
+      icon: <Users className="w-12 h-12 text-green-600" />,
+      title: "Create Trips",
+      description: "Post where you're going and pick up passengers"
+    },
+    {
+      icon: <DollarSign className="w-12 h-12 text-purple-600" />,
+      title: "Earn Money",
+      description: "Set your own fares and build your reputation"
     }
-  };
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-8">
-      <div className="container mx-auto px-4 max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4">
+      <div className="max-w-md mx-auto pt-8">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            🚗 Driver Setup
+            Welcome Driver! 🚗
           </h1>
-          <p className="text-gray-600">
-            Step {currentStep + 1} of 3
-          </p>
+          <p className="text-gray-600">Let's set up your driver profile</p>
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>
-              {currentStep === 0 && "Vehicle Information"}
-              {currentStep === 1 && "Permissions"}
-              {currentStep === 2 && "Final Details"}
-            </CardTitle>
+          <CardHeader className="text-center">
+            {steps[step - 1].icon}
+            <CardTitle className="mt-4">{steps[step - 1].title}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {currentStep === 0 && (
-              <>
+          <CardContent>
+            <p className="text-center text-gray-600 mb-6">{steps[step - 1].description}</p>
+            
+            {step === 1 && (
+              <div className="space-y-4">
                 <div>
-                  <Label htmlFor="vehicleType">Vehicle Type</Label>
-                  <Select value={vehicleType} onValueChange={(value: any) => setVehicleType(value)}>
+                  <Label htmlFor="vehicleType">Vehicle Type *</Label>
+                  <Select value={vehicleData.vehicleType} onValueChange={(value) => setVehicleData({...vehicleData, vehicleType: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select vehicle type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="moto">Motorcycle</SelectItem>
-                      <SelectItem value="car">Car</SelectItem>
-                      <SelectItem value="tuktuk">Tuk Tuk</SelectItem>
-                      <SelectItem value="minibus">Minibus</SelectItem>
+                      <SelectItem value="moto">Moto 🛵</SelectItem>
+                      <SelectItem value="car">Car 🚗</SelectItem>
+                      <SelectItem value="tuktuk">Tuktuk 🛺</SelectItem>
+                      <SelectItem value="minibus">Minibus 🚐</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div>
-                  <Label htmlFor="plateNumber">Plate Number</Label>
+                  <Label htmlFor="plateNumber">Plate Number *</Label>
                   <Input
                     id="plateNumber"
-                    value={plateNumber}
-                    onChange={(e) => setPlateNumber(e.target.value)}
-                    placeholder="Enter your vehicle plate number"
-                    className="uppercase"
+                    value={vehicleData.plateNumber}
+                    onChange={(e) => setVehicleData({...vehicleData, plateNumber: e.target.value})}
+                    placeholder="e.g., RAB 123 A"
                   />
                 </div>
-              </>
-            )}
 
-            {currentStep === 1 && (
-              <>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Location Access</Label>
-                    <p className="text-sm text-gray-600">
-                      Required to show your location to passengers
-                    </p>
-                  </div>
-                  <Switch
-                    checked={locationGranted}
-                    onCheckedChange={setLocationGranted}
+                <div>
+                  <Label htmlFor="preferredZone">Preferred Zone (Optional)</Label>
+                  <Input
+                    id="preferredZone"
+                    value={vehicleData.preferredZone}
+                    onChange={(e) => setVehicleData({...vehicleData, preferredZone: e.target.value})}
+                    placeholder="e.g., Kigali City, Nyabugogo"
                   />
                 </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Push Notifications</Label>
-                    <p className="text-sm text-gray-600">
-                      Get notified about new ride requests
-                    </p>
-                  </div>
-                  <Switch
-                    checked={notificationsGranted}
-                    onCheckedChange={setNotificationsGranted}
-                  />
-                </div>
-              </>
+              </div>
             )}
-
-            {currentStep === 2 && (
-              <>
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">
-                    Ready to Start Driving!
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    Your driver profile is almost complete.
-                  </p>
-                  
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <p className="text-sm text-green-800">
-                      <strong>Vehicle:</strong> {vehicleType} <br />
-                      <strong>Plate:</strong> {plateNumber} <br />
-                      {existingPromo && (
-                        <>
-                          <strong>Promo Code:</strong> {existingPromo}
-                        </>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                onClick={handleBack}
-                className="flex-1"
-              >
-                {currentStep === 0 ? 'Back to Role' : 'Previous'}
-              </Button>
-              
-              <Button 
-                onClick={handleNext}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-                disabled={currentStep === 0 && !plateNumber.trim()}
-              >
-                {currentStep === 2 ? 'Complete Setup' : 'Continue'}
-              </Button>
+            
+            <div className="flex justify-center space-x-2 my-6">
+              {steps.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2 h-2 rounded-full ${
+                    index + 1 <= step ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
             </div>
+
+            {step === 1 ? (
+              <Button onClick={handleVehicleSubmit} className="w-full">
+                Continue
+              </Button>
+            ) : step < steps.length ? (
+              <Button onClick={() => setStep(step + 1)} className="w-full">
+                Next
+              </Button>
+            ) : (
+              <Button onClick={() => navigate('/home/driver')} className="w-full">
+                Start Driving
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
