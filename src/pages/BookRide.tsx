@@ -1,14 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import LocationInputBlock from "@/components/booking/LocationInputBlock";
 import VehicleSelectBlock from "@/components/booking/VehicleSelectBlock";
 import TimePickerBlock from "@/components/booking/TimePickerBlock";
 import CommentsBlock from "@/components/booking/CommentsBlock";
+import BookRideHeader from "@/components/booking/BookRideHeader";
+import ProgressSteps from "@/components/booking/ProgressSteps";
+import BookRideActions from "@/components/booking/BookRideActions";
+import BookingSummary from "@/components/booking/BookingSummary";
 
 interface Favorite {
   id: string;
@@ -267,23 +269,14 @@ const BookRide = () => {
               onCommentsChange={setComments}
             />
             
-            {/* Booking Summary */}
-            <div className="bg-gradient-to-r from-purple-50 to-orange-50 p-4 rounded-lg border">
-              <h3 className="font-semibold text-gray-800 mb-3">Booking Summary</h3>
-              <div className="space-y-2 text-sm">
-                <div><strong>From:</strong> {fromLocation}</div>
-                <div><strong>To:</strong> {toLocation}</div>
-                <div><strong>Vehicle:</strong> {vehicleType}</div>
-                <div><strong>Time:</strong> {
-                  scheduledTime === 'now' ? 'Now' :
-                  scheduledTime === 'custom' ? new Date(customTime).toLocaleString() :
-                  scheduledTime === 'in15' ? 'In 15 minutes' :
-                  scheduledTime === 'in30' ? 'In 30 minutes' :
-                  scheduledTime === 'in1h' ? 'In 1 hour' : scheduledTime
-                }</div>
-                {comments && <div><strong>Notes:</strong> {comments}</div>}
-              </div>
-            </div>
+            <BookingSummary
+              fromLocation={fromLocation}
+              toLocation={toLocation}
+              vehicleType={vehicleType}
+              scheduledTime={scheduledTime}
+              customTime={customTime}
+              comments={comments}
+            />
           </div>
         );
 
@@ -294,61 +287,24 @@ const BookRide = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleBack}
-            className="p-2 hover:bg-gray-100 rounded-md"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-lg font-semibold">Book a Ride</h1>
-            <p className="text-sm text-gray-500">Step {currentStep + 1} of {steps.length}</p>
-          </div>
-        </div>
-      </div>
+      <BookRideHeader
+        onBack={handleBack}
+        currentStep={currentStep}
+        totalSteps={steps.length}
+      />
 
-      {/* Progress Steps */}
-      <div className="bg-white p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between max-w-md mx-auto">
-          {steps.map((step, index) => (
-            <div key={index} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                currentStep >= index 
-                  ? 'bg-purple-600 text-white' 
-                  : 'bg-gray-200 text-gray-600'
-              }`}>
-                {index + 1}
-              </div>
-              {index < steps.length - 1 && (
-                <div className={`w-16 h-1 ml-2 ${
-                  currentStep > index ? 'bg-purple-600' : 'bg-gray-200'
-                }`} />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      <ProgressSteps steps={steps} currentStep={currentStep} />
 
       {/* Step Content */}
       <div className="p-4 pb-24">
         {renderStep()}
       </div>
 
-      {/* Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
-        <Button
-          onClick={handleNext}
-          disabled={!canProceed()}
-          className="w-full h-12 bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 text-white font-semibold"
-        >
-          {currentStep === steps.length - 1 ? '🚖 Book Ride' : 'Next →'}
-        </Button>
-      </div>
+      <BookRideActions
+        onNext={handleNext}
+        canProceed={canProceed()}
+        isLastStep={currentStep === steps.length - 1}
+      />
     </div>
   );
 };
