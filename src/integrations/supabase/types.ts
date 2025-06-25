@@ -9,6 +9,54 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_trip_flags: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          flag_reason: string
+          flag_type: string | null
+          id: string
+          resolved: boolean | null
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          flag_reason: string
+          flag_type?: string | null
+          id?: string
+          resolved?: boolean | null
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          flag_reason?: string
+          flag_type?: string | null
+          id?: string
+          resolved?: boolean | null
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_trip_flags_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_trip_flags_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           confirmed: boolean | null
