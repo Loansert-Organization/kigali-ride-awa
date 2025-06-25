@@ -109,10 +109,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      // Ensure role is properly typed
-      if (data && data.role && !['passenger', 'driver'].includes(data.role)) {
-        console.warn('Invalid role detected, setting to null:', data.role);
-        data.role = null;
+      // Ensure role is properly typed - fix the TypeScript error
+      if (data && data.role) {
+        if (!['passenger', 'driver'].includes(data.role)) {
+          console.warn('Invalid role detected, setting to null:', data.role);
+          data.role = null;
+        }
       }
 
       return data || null;
