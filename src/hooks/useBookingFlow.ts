@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "@/hooks/use-toast";
-import { EdgeFunctionService } from "@/services/EdgeFunctionService";
+import { EdgeFunctionService, CreateTripRequest } from "@/services/EdgeFunctionService";
 
 export interface TripData {
   fromLocation: string;
@@ -23,11 +23,27 @@ export const useBookingFlow = () => {
   const createPassengerTrip = async (tripData: TripData) => {
     setIsLoading(true);
     try {
-      const response = await EdgeFunctionService.createTrip({
-        ...tripData,
+      // Get current user
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      
+      // Convert TripData to CreateTripRequest format
+      const tripRequest: CreateTripRequest = {
+        user_id: currentUser.id,
         role: 'passenger',
-        seats_available: 1
-      });
+        from_location: tripData.fromLocation,
+        from_lat: tripData.fromLat,
+        from_lng: tripData.fromLng,
+        to_location: tripData.toLocation,
+        to_lat: tripData.toLat,
+        to_lng: tripData.toLng,
+        vehicle_type: tripData.vehicleType,
+        scheduled_time: tripData.scheduledTime,
+        seats_available: 1,
+        is_negotiable: true,
+        description: tripData.description
+      };
+
+      const response = await EdgeFunctionService.createTrip(tripRequest);
 
       if (response.success) {
         toast({

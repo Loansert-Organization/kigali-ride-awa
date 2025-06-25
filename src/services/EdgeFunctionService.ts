@@ -1,39 +1,46 @@
 
+// Services for Edge Function calls with proper error handling and type safety
 import { supabase } from "@/integrations/supabase/client";
 
-interface CreateTripRequest {
+export interface CreateTripRequest {
+  user_id: string;
+  role: 'passenger' | 'driver';
   from_location: string;
-  to_location: string;
   from_lat?: number;
   from_lng?: number;
+  to_location: string;
   to_lat?: number;
   to_lng?: number;
   vehicle_type: string;
   scheduled_time: string;
-  role: 'passenger' | 'driver';
-  seats_available?: number;
+  seats_available: number;
   fare?: number;
-  is_negotiable?: boolean;
+  is_negotiable: boolean;
   description?: string;
 }
 
-interface CreateTripResponse {
+export interface CreateTripResponse {
   success: boolean;
-  trip: any;
-  geocoding?: {
-    from_geocoded: boolean;
-    to_geocoded: boolean;
-  };
+  trip?: any;
   error?: string;
 }
 
-interface MatchResponse {
+export interface NearbyTripsResponse {
+  success: boolean;
+  trips?: any[];
+  error?: string;
+}
+
+export interface MatchResponse {
   success: boolean;
   matches?: any[];
-  passenger_trip?: any;
-  total_matches?: number;
   booking?: any;
-  message?: string;
+  error?: string;
+}
+
+export interface WhatsAppResponse {
+  success: boolean;
+  whatsapp_url?: string;
   error?: string;
 }
 
@@ -45,166 +52,106 @@ export class EdgeFunctionService {
       });
 
       if (error) throw error;
-      return data;
+
+      return { success: true, trip: data };
     } catch (error) {
-      console.error('EdgeFunctionService.createTrip error:', error);
-      throw error;
+      console.error('Error creating trip:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to create trip' 
+      };
+    }
+  }
+
+  static async getNearbyOpenTrips(
+    lat: number,
+    lng: number,
+    radius: number = 5,
+    vehicleType?: string,
+    limit: number = 10
+  ): Promise<NearbyTripsResponse> {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-nearby-open-trips', {
+        body: { lat, lng, radius, vehicle_type: vehicleType, limit }
+      });
+
+      if (error) throw error;
+
+      return { success: true, trips: data?.trips || [] };
+    } catch (error) {
+      console.error('Error fetching nearby trips:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to fetch nearby trips' 
+      };
     }
   }
 
   static async matchPassengerDriver(
-    action: 'find_matches' | 'create_booking',
+    action: string,
     passengerTripId: string,
     driverTripId?: string
   ): Promise<MatchResponse> {
     try {
       const { data, error } = await supabase.functions.invoke('match-passenger-driver', {
-        body: {
-          action,
-          passengerTripId,
-          driverTripId
+        body: { 
+          action, 
+          passenger_trip_id: passengerTripId, 
+          driver_trip_id: driverTripId 
         }
       });
 
       if (error) throw error;
-      return data;
+
+      return { success: true, ...data };
     } catch (error) {
-      console.error('EdgeFunctionService.matchPassengerDriver error:', error);
-      throw error;
+      console.error('Error in match-passenger-driver:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to process match' 
+      };
     }
   }
 
-  static async getLiveDrivers(params: {
-    lat: number;
-    lng: number;
-    radius?: number;
-    vehicleType?: string;
-  }) {
+  static async sendWhatsAppInvite(
+    phoneNumber: string,
+    messageType: string,
+    tripData: any,
+    userData?: any,
+    language: string = 'en'
+  ): Promise<WhatsAppResponse> {
     try {
-      const searchParams = new URLSearchParams({
-        lat: params.lat.toString(),
-        lng: params.lng.toString(),
-        radius: (params.radius || 10).toString(),
-        ...(params.vehicleType && { vehicleType: params.vehicleType })
-      });
-
-      const { data, error } = await supabase.functions.invoke('get-live-drivers', {
-        body: { searchParams: searchParams.toString() }
-      });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('EdgeFunctionService.getLiveDrivers error:', error);
-      throw error;
-    }
-  }
-
-  static async getNearbyOpenTrips(params: {
-    lat: number;
-    lng: number;
-    radius?: number;
-    vehicleType?: string;
-    limit?: number;
-  }) {
-    try {
-      const searchParams = new URLSearchParams({
-        lat: params.lat.toString(),
-        lng: params.lng.toString(),
-        radius: (params.radius || 10).toString(),
-        limit: (params.limit || 20).toString(),
-        ...(params.vehicleType && { vehicleType: params.vehicleType })
-      });
-
-      const { data, error } = await supabase.functions.invoke('get-nearby-open-trips', {
-        body: { searchParams: searchParams.toString() }
-      });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('EdgeFunctionService.getNearbyOpenTrips error:', error);
-      throw error;
-    }
-  }
-
-  static async createOrUpdateUserProfile(profileData: {
-    role: 'passenger' | 'driver';
-    language?: string;
-    location_enabled?: boolean;
-    notifications_enabled?: boolean;
-    onboarding_completed?: boolean;
-    referred_by?: string;
-    vehicleData?: {
-      vehicle_type: string;
-      plate_number: string;
-      preferred_zone?: string;
-    };
-  }) {
-    try {
-      const { data, error } = await supabase.functions.invoke('create-or-update-user-profile', {
-        body: { profileData }
-      });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('EdgeFunctionService.createOrUpdateUserProfile error:', error);
-      throw error;
-    }
-  }
-
-  static async getMapsApiKey() {
-    try {
-      const { data, error } = await supabase.functions.invoke('maps-sig');
+      const message = this.generateWhatsAppMessage(messageType, tripData, userData, language);
       
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('EdgeFunctionService.getMapsApiKey error:', error);
-      throw error;
-    }
-  }
-
-  static async reverseGeocode(lat: number, lng: number) {
-    try {
-      const { data, error } = await supabase.functions.invoke('reverse-geocode', {
-        body: { lat, lng }
-      });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('EdgeFunctionService.reverseGeocode error:', error);
-      throw error;
-    }
-  }
-
-  static async sendWhatsAppInvite(phoneNumber: string, message: string) {
-    try {
       const { data, error } = await supabase.functions.invoke('send-whatsapp-invite', {
         body: { phoneNumber, message }
       });
 
       if (error) throw error;
-      return data;
+
+      return { success: true, whatsapp_url: data?.whatsapp_url };
     } catch (error) {
-      console.error('EdgeFunctionService.sendWhatsAppInvite error:', error);
-      throw error;
+      console.error('Error sending WhatsApp invite:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to send WhatsApp invite' 
+      };
     }
   }
 
-  static async resolveReferral(promoCode: string, refereeRole: 'passenger' | 'driver') {
-    try {
-      const { data, error } = await supabase.functions.invoke('resolve-referral', {
-        body: { promoCode, refereeRole }
-      });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('EdgeFunctionService.resolveReferral error:', error);
-      throw error;
+  private static generateWhatsAppMessage(
+    type: string, 
+    tripData: any, 
+    userData?: any, 
+    language: string = 'en'
+  ): string {
+    switch (type) {
+      case 'booking_request':
+        return `🚗 Kigali Ride: Trip booking from ${tripData.from_location} to ${tripData.to_location}. Contact for coordination.`;
+      case 'referral_invite':
+        return `🎉 Join Kigali Ride using my code: ${userData?.promo_code}. Get rewards for your first trip!`;
+      default:
+        return 'Kigali Ride: Trip coordination message';
     }
   }
 }

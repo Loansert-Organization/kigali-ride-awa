@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import VehicleDetailsBlock from "@/components/trip/VehicleDetailsBlock";
 import FareInputBlock from "@/components/trip/FareInputBlock";
 import TripConfirmationBlock from "@/components/trip/TripConfirmationBlock";
 import CreateTripProgressIndicator from "@/components/trip/CreateTripProgressIndicator";
-import { EdgeFunctionService } from "@/services/EdgeFunctionService";
+import { EdgeFunctionService, CreateTripRequest } from "@/services/EdgeFunctionService";
 
 interface TripData {
   fromLocation: string;
@@ -157,10 +156,10 @@ const CreateTrip = () => {
         return;
       }
 
-      // Use Edge Function to create trip with geocoding
-      const tripPayload = {
+      // Convert to CreateTripRequest format with proper typing
+      const tripPayload: CreateTripRequest = {
         user_id: userRecord.id,
-        role: 'driver',
+        role: 'driver' as const, // Explicitly cast to the required literal type
         from_location: tripData.fromLocation,
         from_lat: tripData.fromLat,
         from_lng: tripData.fromLng,
@@ -172,7 +171,7 @@ const CreateTrip = () => {
         seats_available: tripData.seatsAvailable,
         fare: tripData.fare,
         is_negotiable: tripData.isNegotiable,
-        description: tripData.description || null
+        description: tripData.description || undefined
       };
 
       const result = await EdgeFunctionService.createTrip(tripPayload);
@@ -200,13 +199,13 @@ const CreateTrip = () => {
 
         navigate('/home/driver');
       } else {
-        throw new Error(result.details || 'Failed to create trip');
+        throw new Error(result.error || 'Failed to create trip');
       }
     } catch (error) {
       console.error('Error creating trip:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create trip. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create trip. Please try again.",
         variant: "destructive"
       });
     } finally {

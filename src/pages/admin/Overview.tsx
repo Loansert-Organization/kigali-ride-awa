@@ -5,7 +5,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { KPIStatsCards } from '@/components/admin/KPIStatsCards';
 import { UsersTableBlock } from '@/components/admin/UsersTableBlock';
 import { TripsTableBlock } from '@/components/admin/TripsTableBlock';
-import { AIAgentLogsTable } from '@/components/admin/AIAgentLogsTable';
+import AIAgentLogsTable from '@/components/admin/AIAgentLogsTable';
 import SchemaAuditReport from '@/components/admin/SchemaAuditReport';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -38,7 +37,18 @@ const DriverSettingsBlock: React.FC<DriverSettingsBlockProps> = ({ userProfile }
       }
 
       if (data) {
-        setDriverProfile(data);
+        // Ensure we have all required fields for DriverProfile
+        const completeProfile: DriverProfile = {
+          id: data.id || '',
+          user_id: data.user_id,
+          vehicle_type: data.vehicle_type,
+          plate_number: data.plate_number,
+          is_online: data.is_online || false,
+          preferred_zone: data.preferred_zone || null,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        };
+        setDriverProfile(completeProfile);
       }
     } catch (error) {
       console.error('Error loading driver profile:', error);
