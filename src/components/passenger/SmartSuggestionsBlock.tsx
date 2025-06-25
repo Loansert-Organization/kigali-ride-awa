@@ -10,6 +10,14 @@ interface Favorite {
   address: string;
 }
 
+interface SuggestionItem {
+  icon: React.ComponentType<any>;
+  label: string;
+  type: string;
+  color: string;
+  data?: Favorite;
+}
+
 interface SmartSuggestionsBlockProps {
   favorites: Favorite[];
   onSuggestionClick: (suggestion: { type: string; data?: any }) => void;
@@ -19,7 +27,7 @@ const SmartSuggestionsBlock: React.FC<SmartSuggestionsBlockProps> = ({
   favorites,
   onSuggestionClick
 }) => {
-  const suggestions = [
+  const defaultSuggestions: SuggestionItem[] = [
     { icon: Home, label: 'Home', type: 'home', color: 'text-blue-600' },
     { icon: ShoppingBag, label: 'Market', type: 'market', color: 'text-green-600' },
     { icon: MapPin, label: 'Church', type: 'church', color: 'text-purple-600' },
@@ -28,15 +36,18 @@ const SmartSuggestionsBlock: React.FC<SmartSuggestionsBlockProps> = ({
   ];
 
   // Use favorites if available, otherwise show default suggestions
-  const displaySuggestions = favorites.length > 0 
-    ? favorites.slice(0, 4).map(fav => ({
-        icon: MapPin,
-        label: fav.label,
-        type: 'favorite',
-        data: fav,
-        color: 'text-purple-600'
-      })).concat([{ icon: Plus, label: 'Add More', type: 'add_favorite', color: 'text-gray-600' }])
-    : suggestions;
+  const displaySuggestions: SuggestionItem[] = favorites.length > 0 
+    ? [
+        ...favorites.slice(0, 4).map(fav => ({
+          icon: MapPin,
+          label: fav.label,
+          type: 'favorite',
+          data: fav,
+          color: 'text-purple-600'
+        })),
+        { icon: Plus, label: 'Add More', type: 'add_favorite', color: 'text-gray-600' }
+      ]
+    : defaultSuggestions;
 
   return (
     <Card className="mb-4">
