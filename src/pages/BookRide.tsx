@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Clock, Car, Navigation } from 'lucide-react';
@@ -6,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WhatsAppLoginModal } from '@/components/auth/WhatsAppLoginModal';
-import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { OTPAuthFlow } from '@/components/auth/OTPAuthFlow';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -29,10 +29,10 @@ interface TripData {
 const BookRide = () => {
   const navigate = useNavigate();
   const { isAuthenticated, userProfile, isGuest } = useAuth();
-  const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
   const { handleError } = useGlobalErrorHandler();
   const [isBooking, setIsBooking] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [showOTPFlow, setShowOTPFlow] = useState(false);
   
   const [tripData, setTripData] = useState<TripData>({
     fromLocation: '',
@@ -225,7 +225,19 @@ const BookRide = () => {
   };
 
   const handleBookRide = () => {
-    requireAuth(proceedWithBooking);
+    if (!isAuthenticated) {
+      setShowOTPFlow(true);
+    } else {
+      proceedWithBooking();
+    }
+  };
+
+  const handleOTPSuccess = (user: any) => {
+    setShowOTPFlow(false);
+    // The auth context will be updated automatically
+    setTimeout(() => {
+      proceedWithBooking();
+    }, 100);
   };
 
   const canBookRide = tripData.fromLocation && tripData.toLocation;
@@ -382,13 +394,17 @@ const BookRide = () => {
         </div>
       </div>
 
-      <WhatsAppLoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onSuccess={() => handleLoginSuccess(proceedWithBooking)}
-        title="Complete Your Booking"
-        description="Verify your WhatsApp number to book your ride and connect with drivers"
-      />
+      {/* OTP Authentication Flow */}
+      {showOTPFlow && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <OTPAuthFlow
+              onSuccess={handleOTPSuccess}
+              onCancel={() => setShowOTPFlow(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

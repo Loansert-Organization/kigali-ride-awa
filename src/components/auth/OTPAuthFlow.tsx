@@ -20,6 +20,7 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const { login } = useAuth();
 
   // Countdown timer for resend
   useEffect(() => {
@@ -58,15 +59,19 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
     try {
       const formattedPhone = formatPhoneNumber(phoneNumber);
       
+      console.log('Sending OTP to:', formattedPhone);
+      
       const { data, error } = await supabase.functions.invoke('send-otp', {
         body: { phone: formattedPhone }
       });
+
+      console.log('OTP send response:', { data, error });
 
       if (error) {
         throw error;
       }
 
-      if (data?.success) {
+      if (data === 'sent') {
         toast({
           title: "📱 Code sent!",
           description: "Check your WhatsApp for the verification code"
@@ -76,7 +81,7 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
         // Auto-focus first OTP input
         setTimeout(() => otpRefs.current[0]?.focus(), 100);
       } else {
-        throw new Error(data?.error || 'Failed to send OTP');
+        throw new Error('Failed to send OTP');
       }
     } catch (error: any) {
       console.error('Send OTP error:', error);
@@ -105,6 +110,8 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
     try {
       const formattedPhone = formatPhoneNumber(phoneNumber);
       
+      console.log('Verifying OTP for:', formattedPhone, 'with code:', code);
+      
       const { data, error } = await supabase.functions.invoke('verify-otp', {
         body: { 
           phone: formattedPhone, 
@@ -112,18 +119,38 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
         }
       });
 
+      console.log('OTP verification response:', { data, error });
+
       if (error) {
         throw error;
       }
 
-      if (data?.success && data?.user) {
+      if (data && typeof data === 'object' && data.token) {
+        // Store the JWT token and create user session
+        const { error: signInError } = await supabase.auth.setSession({
+          access_token: data.token,
+          refresh_token: data.token
+        });
+
+        if (signInError) {
+          console.error('Session creation error:', signInError);
+          throw signInError;
+        }
+
         toast({
           title: "🎉 Verified!",
           description: "Welcome to Kigali Ride!"
         });
-        onSuccess(data.user);
+        
+        onSuccess({ phone: formattedPhone });
+      } else if (data === 'no-code') {
+        throw new Error('No verification code found. Please request a new one.');
+      } else if (data === 'expired') {
+        throw new Error('Verification code has expired. Please request a new one.');
+      } else if (data === 'wrong') {
+        throw new Error('Invalid verification code. Please check and try again.');
       } else {
-        throw new Error(data?.error || 'Verification failed');
+        throw new Error('Verification failed');
       }
     } catch (error: any) {
       console.error('Verify OTP error:', error);
@@ -131,8 +158,12 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
       let errorMessage = "Verification failed";
       if (error.message.includes('expired')) {
         errorMessage = "Code has expired. Please request a new one.";
-      } else if (error.message.includes('Invalid')) {
+      } else if (error.message.includes('Invalid') || error.message.includes('wrong')) {
         errorMessage = "Invalid code. Please check and try again.";
+      } else if (error.message.includes('no-code')) {
+        errorMessage = "No code found. Please request a new one.";
+      } else {
+        errorMessage = error.message || "Verification failed";
       }
       
       toast({

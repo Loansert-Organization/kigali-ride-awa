@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { UserProfile } from '@/types/user';
 
 export const useOTPAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -31,14 +30,14 @@ export const useOTPAuth = () => {
         throw new Error(error.message || 'Failed to send OTP');
       }
 
-      if (data?.success) {
+      if (data === 'sent') {
         toast({
           title: "📱 Code sent!",
           description: "Check your WhatsApp for the 6-digit verification code",
         });
-        return { success: true, messageId: data.messageId };
+        return { success: true };
       } else {
-        throw new Error(data?.error || 'Unknown error occurred');
+        throw new Error('Failed to send OTP');
       }
     } catch (error: any) {
       console.error('OTP send error:', error);
@@ -81,7 +80,18 @@ export const useOTPAuth = () => {
         throw new Error(error.message || 'Verification failed');
       }
 
-      if (data?.success && data?.user) {
+      if (data && typeof data === 'object' && data.token) {
+        // Store the JWT token and create user session
+        const { error: signInError } = await supabase.auth.setSession({
+          access_token: data.token,
+          refresh_token: data.token
+        });
+
+        if (signInError) {
+          console.error('Session creation error:', signInError);
+          throw signInError;
+        }
+
         toast({
           title: "🎉 Phone verified!",
           description: "Welcome to Kigali Ride!",
@@ -89,17 +99,17 @@ export const useOTPAuth = () => {
 
         return { 
           success: true, 
-          user: data.user as UserProfile 
+          user: { phone: formattedPhone, token: data.token }
         };
       } else {
         let errorMessage = "Invalid or expired verification code";
         
-        if (data?.error?.includes('expired')) {
+        if (data === 'expired') {
           errorMessage = "Verification code has expired. Please request a new one.";
-        } else if (data?.error?.includes('Invalid')) {
+        } else if (data === 'wrong') {
           errorMessage = "Invalid verification code. Please check and try again.";
-        } else if (data?.error) {
-          errorMessage = data.error;
+        } else if (data === 'no-code') {
+          errorMessage = "No verification code found. Please request a new one.";
         }
         
         throw new Error(errorMessage);
