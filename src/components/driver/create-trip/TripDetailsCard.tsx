@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 interface TripDetailsCardProps {
   scheduledTime: string;
   vehicleType: string;
-  seatsAvailable: string;
+  seatsAvailable: number;
   fare: string;
   description: string;
   isNegotiable: boolean;
@@ -59,7 +59,7 @@ const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
 
         <div>
           <Label htmlFor="seatsAvailable">Available Seats</Label>
-          <Select value={seatsAvailable} onValueChange={(value) => onUpdate({ seatsAvailable: value })}>
+          <Select value={seatsAvailable.toString()} onValueChange={(value) => onUpdate({ seatsAvailable: value })}>
             <SelectTrigger>
               <SelectValue placeholder="Select seats" />
             </SelectTrigger>
