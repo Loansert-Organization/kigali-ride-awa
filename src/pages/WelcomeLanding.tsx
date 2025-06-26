@@ -65,22 +65,70 @@ const WelcomeLanding = () => {
     navigate('/home/passenger');
   };
 
-  const CurrentStepComponent = steps[currentStep].component;
+  const handleGetStarted = () => {
+    handleNext();
+  };
+
+  const handleRequestLocation = () => {
+    handleComplete();
+  };
+
+  const handleSkipLocation = () => {
+    handleComplete();
+  };
+
+  const languages = [
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'kn', name: 'Kinyarwanda', flag: '🇷🇼' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' }
+  ];
+
+  const currentLang = languages.find(l => l.code === selectedLanguage) || languages[0];
+
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 0:
+        return <WelcomeStep onGetStarted={handleGetStarted} />;
+      case 1:
+        return (
+          <LanguageStep
+            languages={languages}
+            selectedLanguage={selectedLanguage}
+            onLanguageSelect={handleLanguageSelect}
+          />
+        );
+      case 2:
+        return (
+          <RoleStep
+            currentLang={currentLang}
+            onRoleSelect={handleRoleSelect}
+            isProcessing={false}
+            selectedRole={selectedRole}
+            urlPromo={null}
+            showPromoInput={false}
+            setShowPromoInput={() => {}}
+            promoCode=""
+            setPromoCode={() => {}}
+          />
+        );
+      case 3:
+        return (
+          <PermissionsStep
+            selectedRole={selectedRole}
+            onRequestLocation={handleRequestLocation}
+            onSkipLocation={handleSkipLocation}
+            showPWAPrompt={false}
+            setShowPWAPrompt={() => {}}
+          />
+        );
+      default:
+        return <WelcomeStep onGetStarted={handleGetStarted} />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-      <CurrentStepComponent
-        onNext={handleNext}
-        onBack={handleBack}
-        onLanguageSelect={handleLanguageSelect}
-        onRoleSelect={handleRoleSelect}
-        onComplete={handleComplete}
-        onSkipToApp={handleSkipToApp}
-        selectedLanguage={selectedLanguage}
-        selectedRole={selectedRole}
-        currentStep={currentStep}
-        totalSteps={steps.length}
-      />
+      {renderCurrentStep()}
     </div>
   );
 };

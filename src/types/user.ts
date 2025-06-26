@@ -13,3 +13,14 @@ export interface UserProfile {
   created_at: string;
   updated_at: string;
 }
+
+export interface DriverProfile {
+  id: string;
+  user_id: string;
+  vehicle_type: string;
+  plate_number: string;
+  preferred_zone?: string | null;
+  is_online: boolean;
+  created_at: string;
+  updated_at: string;
+}
