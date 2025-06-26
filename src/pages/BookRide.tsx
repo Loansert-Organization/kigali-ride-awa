@@ -181,25 +181,52 @@ const BookRide = () => {
       return;
     }
 
-    // Get user from WhatsApp auth or regular auth
-    const whatsappUser = localStorage.getItem('whatsapp_auth_user');
-    const currentUser = whatsappUser ? JSON.parse(whatsappUser) : userProfile;
-
-    if (!currentUser) {
-      toast({
-        title: "Authentication required",
-        description: "Please verify your WhatsApp number to book",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsBooking(true);
     try {
+      // Get user from WhatsApp auth or regular auth
+      const whatsappUser = localStorage.getItem('whatsapp_auth_user');
+      let currentUser = whatsappUser ? JSON.parse(whatsappUser) : userProfile;
+
+      // If no user found, we need to create one in our users table
+      if (!currentUser && !isAuthenticated) {
+        // Create anonymous user entry
+        const { data: newUser, error: userError } = await supabase
+          .from('users')
+          .insert({
+            role: 'passenger',
+            auth_method: 'anonymous'
+          })
+          .select()
+          .single();
+
+        if (userError) throw userError;
+        currentUser = newUser;
+      }
+
+      // Get the user ID - either from auth or from our users table
+      let userId = currentUser?.id;
+      
+      // If we have an authenticated user but no profile, get their user record
+      if (isAuthenticated && !userId) {
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_user_id', userProfile?.id)
+          .single();
+        
+        userId = existingUser?.id;
+      }
+
+      if (!userId) {
+        throw new Error('Unable to identify user for booking');
+      }
+
+      console.log('Creating trip with user ID:', userId);
+
       const { data, error } = await supabase
         .from('trips')
         .insert({
-          user_id: currentUser.id,
+          user_id: userId,
           from_location: tripData.fromLocation,
           to_location: tripData.toLocation,
           from_lat: tripData.fromLat,
@@ -216,7 +243,10 @@ const BookRide = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Trip creation error:', error);
+        throw error;
+      }
 
       toast({
         title: "🚗 Ride booked successfully!",
@@ -226,10 +256,10 @@ const BookRide = () => {
       navigate(`/ride-matches?tripId=${data.id}`);
     } catch (error) {
       console.error('Booking error:', error);
-      toast({
-        title: "Booking failed",
-        description: "Please try again or contact support",
-        variant: "destructive"
+      await handleError(error, 'BookRide-proceedWithBooking', {
+        tripData,
+        isAuthenticated,
+        userProfile: userProfile?.id
       });
     } finally {
       setIsBooking(false);
