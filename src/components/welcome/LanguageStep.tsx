@@ -3,12 +3,11 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Globe } from 'lucide-react';
-import { Language, LanguageCode } from '@/constants/languages';
 
 interface LanguageStepProps {
-  languages: readonly Language[];
-  selectedLanguage: LanguageCode;
-  onLanguageSelect: (lang: LanguageCode) => void;
+  languages: Array<{ code: string; name: string; flag: string }>;
+  selectedLanguage: string;
+  onLanguageSelect: (lang: 'en' | 'kn' | 'fr') => void;
 }
 
 const LanguageStep: React.FC<LanguageStepProps> = ({ 
@@ -32,7 +31,7 @@ const LanguageStep: React.FC<LanguageStepProps> = ({
                 key={lang.code}
                 variant={selectedLanguage === lang.code ? "default" : "outline"}
                 className="w-full justify-start text-left hover-scale font-semibold"
-                onClick={() => onLanguageSelect(lang.code)}
+                onClick={() => onLanguageSelect(lang.code as 'en' | 'kn' | 'fr')}
               >
                 <span className="text-2xl mr-3">{lang.flag}</span>
                 <span className="text-[18px]">{lang.name}</span>

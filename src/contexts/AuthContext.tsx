@@ -10,15 +10,11 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   error: string | null;
-  isRetrying: boolean;
   debugInfo: any;
   refreshUserProfile: () => Promise<UserProfile | null>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<UserProfile | null>;
-  createUserProfile: (profileData: Partial<UserProfile>) => Promise<UserProfile | null>;
   signOut: () => Promise<void>;
   retryInitialization: () => Promise<void>;
-  clearError: () => void;
-  performHealthCheck: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
