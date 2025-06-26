@@ -1,6 +1,12 @@
 
 import React, { useEffect, useRef } from 'react';
 
+declare global {
+  interface Window {
+    initMap: () => void;
+  }
+}
+
 interface FullScreenMapProps {
   onMapReady?: (map: google.maps.Map) => void;
   children?: React.ReactNode;
