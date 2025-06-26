@@ -49,7 +49,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ role }) => {
               }`}
             >
               <Icon className="w-5 h-5 mb-1" />
-              <span className="text-xs">{tab.label}</span>
+              <span className="text-[13px] font-semibold">{tab.label}</span>
             </Button>
           );
         })}

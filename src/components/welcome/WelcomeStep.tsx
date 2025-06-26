@@ -19,16 +19,16 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onGetStarted }) => {
             </div>
           </div>
           
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-heading-1 text-gray-900 mb-2">
             🚗 Kigali Ride
           </h1>
-          <p className="text-gray-600 mb-8">
+          <p className="text-body text-gray-600 mb-8">
             Fast, reliable rides across Kigali
           </p>
 
           <Button 
             onClick={onGetStarted}
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 py-3 text-lg animate-pulse"
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 py-3 text-lg font-semibold animate-pulse"
           >
             <Sparkles className="w-5 h-5 mr-2" />
             Get Started

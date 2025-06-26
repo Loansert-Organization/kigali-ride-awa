@@ -53,10 +53,10 @@ const DriverTripCardBlock: React.FC<DriverTripCardBlockProps> = ({
           <div className="flex items-center space-x-3">
             <div className="text-2xl">{getVehicleIcon(trip.vehicle_type)}</div>
             <div>
-              <h3 className="font-semibold text-gray-900 capitalize">
+              <h3 className="font-bold text-gray-900 capitalize text-[18px]">
                 {trip.vehicle_type} Driver
               </h3>
-              <div className="flex items-center text-sm text-gray-500">
+              <div className="flex items-center text-[15px] text-gray-500 font-medium">
                 <Clock className="w-4 h-4 mr-1" />
                 {formatTime(trip.scheduled_time)}
               </div>
@@ -64,30 +64,30 @@ const DriverTripCardBlock: React.FC<DriverTripCardBlockProps> = ({
           </div>
           
           <div className="text-right">
-            <div className="text-lg font-semibold text-purple-600">
+            <div className="text-lg font-bold text-purple-600">
               {formatFare(trip.fare, trip.is_negotiable)}
             </div>
             {trip.is_negotiable && (
-              <span className="text-xs text-gray-500">Discuss price</span>
+              <span className="text-[13px] text-gray-500 font-medium">Discuss price</span>
             )}
           </div>
         </div>
 
         <div className="mb-3">
-          <div className="flex items-center text-sm text-gray-700 mb-1">
+          <div className="flex items-center text-[15px] text-gray-700 mb-1 font-medium">
             <MapPin className="w-4 h-4 mr-2 text-green-500" />
-            <span className="font-medium">From:</span>
+            <span className="font-semibold">From:</span>
             <span className="ml-1">{trip.from_location}</span>
           </div>
-          <div className="flex items-center text-sm text-gray-700">
+          <div className="flex items-center text-[15px] text-gray-700 font-medium">
             <MapPin className="w-4 h-4 mr-2 text-red-500" />
-            <span className="font-medium">To:</span>
+            <span className="font-semibold">To:</span>
             <span className="ml-1">{trip.to_location}</span>
           </div>
         </div>
 
         {trip.description && (
-          <div className="mb-3 p-2 bg-gray-50 rounded text-sm text-gray-600">
+          <div className="mb-3 p-2 bg-gray-50 rounded text-[15px] text-gray-600 font-medium">
             "{trip.description}"
           </div>
         )}
@@ -95,7 +95,7 @@ const DriverTripCardBlock: React.FC<DriverTripCardBlockProps> = ({
         <div className="flex space-x-3">
           <Button
             onClick={onMatch}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-[16px]"
           >
             ✅ Match Ride
           </Button>
@@ -103,14 +103,14 @@ const DriverTripCardBlock: React.FC<DriverTripCardBlockProps> = ({
           <Button
             onClick={onWhatsApp}
             variant="outline"
-            className="flex-1 border-green-500 text-green-600 hover:bg-green-50"
+            className="flex-1 border-green-500 text-green-600 hover:bg-green-50 font-semibold text-[16px]"
           >
             💬 WhatsApp
           </Button>
         </div>
 
         <div className="mt-2 flex items-center justify-center">
-          <span className="text-xs text-gray-400">
+          <span className="text-[13px] text-gray-400 font-medium">
             Match score: {Math.floor(Math.random() * 20 + 80)}% • Shared route
           </span>
         </div>

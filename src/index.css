@@ -66,8 +66,30 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground text-[17px] font-medium;
     font-family: "Inter", system-ui, sans-serif;
+    line-height: 1.5;
+  }
+  
+  /* Enhanced typography hierarchy */
+  h1 {
+    @apply text-2xl font-bold;
+  }
+  
+  h2 {
+    @apply text-xl font-semibold;
+  }
+  
+  h3 {
+    @apply text-lg font-semibold;
+  }
+  
+  p {
+    @apply text-[17px] font-medium;
+  }
+  
+  small {
+    @apply text-sm font-medium;
   }
 }
 
@@ -110,6 +132,31 @@
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Enhanced typography utilities */
+  .text-heading-1 {
+    @apply text-3xl font-bold;
+  }
+  
+  .text-heading-2 {
+    @apply text-2xl font-bold;
+  }
+  
+  .text-heading-3 {
+    @apply text-xl font-semibold;
+  }
+  
+  .text-body {
+    @apply text-[17px] font-medium;
+  }
+  
+  .text-caption {
+    @apply text-sm font-medium;
+  }
+  
+  .text-label {
+    @apply text-[15px] font-semibold;
   }
 }
 

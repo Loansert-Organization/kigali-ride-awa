@@ -32,11 +32,11 @@ const RoleStep: React.FC<RoleStepProps> = ({
       <Card className="w-full max-w-md animate-fade-in">
         <CardContent className="p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-heading-1 text-gray-900 mb-2">
               {currentLang.greeting}
             </h1>
-            <p className="text-gray-600 mb-6">A smarter way to get around</p>
-            <h2 className="text-xl font-semibold text-gray-800">👤 Are you a...</h2>
+            <p className="text-body text-gray-600 mb-6">A smarter way to get around</p>
+            <h2 className="text-heading-3 text-gray-800">👤 Are you a...</h2>
           </div>
 
           <div className="space-y-4 mb-6">
@@ -49,16 +49,16 @@ const RoleStep: React.FC<RoleStepProps> = ({
                 <>
                   <Loader2 className="w-8 h-8 mr-3 animate-spin" />
                   <div className="text-left">
-                    <div className="font-bold text-lg">Setting up...</div>
-                    <div className="text-sm opacity-90">Please wait</div>
+                    <div className="font-bold text-[18px]">Setting up...</div>
+                    <div className="text-[15px] opacity-90 font-medium">Please wait</div>
                   </div>
                 </>
               ) : (
                 <>
                   <Car className="w-8 h-8 mr-3" />
                   <div className="text-left">
-                    <div className="font-bold text-lg">🚗 I'm a Driver</div>
-                    <div className="text-sm opacity-90">Offer rides and earn money</div>
+                    <div className="font-bold text-[18px]">🚗 I'm a Driver</div>
+                    <div className="text-[15px] opacity-90 font-medium">Offer rides and earn money</div>
                   </div>
                 </>
               )}
@@ -73,16 +73,16 @@ const RoleStep: React.FC<RoleStepProps> = ({
                 <>
                   <Loader2 className="w-8 h-8 mr-3 animate-spin" />
                   <div className="text-left">
-                    <div className="font-bold text-lg">Setting up...</div>
-                    <div className="text-sm opacity-90">Please wait</div>
+                    <div className="font-bold text-[18px]">Setting up...</div>
+                    <div className="text-[15px] opacity-90 font-medium">Please wait</div>
                   </div>
                 </>
               ) : (
                 <>
                   <User className="w-8 h-8 mr-3" />
                   <div className="text-left">
-                    <div className="font-bold text-lg">🧑🏾 I'm a Passenger</div>
-                    <div className="text-sm opacity-90">Book rides across Kigali</div>
+                    <div className="font-bold text-[18px]">🧑🏾 I'm a Passenger</div>
+                    <div className="text-[15px] opacity-90 font-medium">Book rides across Kigali</div>
                   </div>
                 </>
               )}
@@ -93,7 +93,7 @@ const RoleStep: React.FC<RoleStepProps> = ({
           {urlPromo ? (
             <div className="text-center p-4 bg-green-50 rounded-lg mb-4">
               <Gift className="w-8 h-8 mx-auto text-green-600 mb-2" />
-              <p className="text-green-700 font-medium">Joining with promo code</p>
+              <p className="text-green-700 font-semibold text-[17px]">Joining with promo code</p>
               <p className="text-2xl font-bold text-green-600">RIDE-{urlPromo}</p>
             </div>
           ) : (
@@ -102,7 +102,7 @@ const RoleStep: React.FC<RoleStepProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowPromoInput(!showPromoInput)}
-                className="mb-2"
+                className="mb-2 font-semibold"
                 disabled={isProcessing}
               >
                 <Gift className="w-4 h-4 mr-2" />
@@ -114,7 +114,7 @@ const RoleStep: React.FC<RoleStepProps> = ({
                   placeholder="Enter promo code"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center font-mono"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center font-mono text-[17px] font-medium"
                   maxLength={10}
                   disabled={isProcessing}
                 />
@@ -123,7 +123,7 @@ const RoleStep: React.FC<RoleStepProps> = ({
           )}
 
           {isProcessing && (
-            <div className="text-center mt-4 text-sm text-gray-600">
+            <div className="text-center mt-4 text-[15px] text-gray-600 font-medium">
               <p>Setting up your account...</p>
             </div>
           )}

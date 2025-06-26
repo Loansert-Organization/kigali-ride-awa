@@ -18,8 +18,8 @@ const RideMatchesHeader: React.FC<RideMatchesHeaderProps> = ({ matchCount }) => 
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>
-          <h1 className="text-lg font-semibold">Available Rides</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-xl font-bold">Available Rides</h1>
+          <p className="text-[15px] text-gray-500 font-medium">
             {matchCount} matches found
           </p>
         </div>
