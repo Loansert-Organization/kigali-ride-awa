@@ -59,7 +59,7 @@ export const WhatsAppOTPFlow: React.FC<WhatsAppOTPFlowProps> = ({
       if (data?.success) {
         toast({
           title: "🚀 OTP sent via WhatsApp!",
-          description: "Check your WhatsApp for the verification code using our auth_rw template",
+          description: "Check your WhatsApp for the verification code using our ikanisa template",
         });
         setStep('otp');
       } else {
@@ -143,7 +143,7 @@ export const WhatsAppOTPFlow: React.FC<WhatsAppOTPFlowProps> = ({
               <MessageCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
               <h3 className="text-lg font-semibold mb-2">WhatsApp OTP Verification</h3>
               <p className="text-gray-600 text-sm">
-                We'll send you a verification code via WhatsApp using our secure auth_rw template
+                We'll send you a verification code via WhatsApp using our secure ikanisa template
               </p>
             </div>
 
@@ -164,7 +164,7 @@ export const WhatsAppOTPFlow: React.FC<WhatsAppOTPFlowProps> = ({
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  You'll receive a professional WhatsApp message with your OTP
+                  You'll receive a professional WhatsApp message with your OTP via ikanisa template
                 </p>
               </div>
             </div>

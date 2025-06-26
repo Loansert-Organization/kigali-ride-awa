@@ -38,7 +38,7 @@ const WhatsAppOTPBlock: React.FC = () => {
               </p>
               <div className="flex items-center space-x-2 text-xs text-green-700">
                 <Zap className="w-3 h-3" />
-                <span>Template auth_rw • Secure OTP • Fast verification</span>
+                <span>Template ikanisa • Phone ID 396791596844039 • Secure OTP</span>
               </div>
             </div>
           ) : (
@@ -48,7 +48,7 @@ const WhatsAppOTPBlock: React.FC = () => {
                 <span className="font-medium text-blue-900">WhatsApp OTP Available</span>
               </div>
               <p className="text-sm text-blue-800 mb-3">
-                Verify your phone number using our secure WhatsApp OTP system with the auth_rw template
+                Verify your phone number using our secure WhatsApp OTP system with the ikanisa template
               </p>
               <Button 
                 onClick={() => setShowOTPFlow(true)}

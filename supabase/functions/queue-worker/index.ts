@@ -296,12 +296,12 @@ async function handleWhatsAppNotification(payload: any, supabase: any) {
 
     // Check environment variables
     const WHATSAPP_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN');
-    const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
+    const PHONE_NUMBER_ID = '396791596844039'; // Updated Phone Number ID
     
-    if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
+    if (!WHATSAPP_TOKEN) {
       console.error('WhatsApp credentials missing:', {
         hasToken: !!WHATSAPP_TOKEN,
-        hasPhoneId: !!PHONE_NUMBER_ID
+        phoneNumberId: PHONE_NUMBER_ID
       });
       throw new Error('WhatsApp API credentials not configured');
     }
@@ -354,6 +354,7 @@ async function handleWhatsAppNotification(payload: any, supabase: any) {
       JSON.stringify({ 
         success: true, 
         messageId: whatsappResult.messages?.[0]?.id,
+        phoneNumberId: PHONE_NUMBER_ID,
         timestamp: new Date().toISOString()
       }),
       { 

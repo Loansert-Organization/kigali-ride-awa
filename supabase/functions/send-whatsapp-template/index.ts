@@ -52,17 +52,16 @@ serve(async (req) => {
 
     // Check WhatsApp API credentials with detailed logging
     const WHATSAPP_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN');
-    const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
+    const PHONE_NUMBER_ID = '396791596844039'; // Updated Phone Number ID
     
     console.log('WhatsApp credentials check:', {
       hasToken: !!WHATSAPP_TOKEN,
-      hasPhoneId: !!PHONE_NUMBER_ID,
-      tokenLength: WHATSAPP_TOKEN ? WHATSAPP_TOKEN.length : 0,
-      phoneNumberId: PHONE_NUMBER_ID ? `${PHONE_NUMBER_ID.substring(0, 4)}...` : 'missing'
+      phoneNumberId: PHONE_NUMBER_ID,
+      tokenLength: WHATSAPP_TOKEN ? WHATSAPP_TOKEN.length : 0
     });
     
-    if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
-      throw new Error(`WhatsApp API credentials not configured: Token=${!!WHATSAPP_TOKEN}, PhoneId=${!!PHONE_NUMBER_ID}`);
+    if (!WHATSAPP_TOKEN) {
+      throw new Error(`WhatsApp API credentials not configured: Token=${!!WHATSAPP_TOKEN}`);
     }
 
     // Format phone number (remove + if present, ensure it's E.164 compatible)
@@ -83,10 +82,11 @@ serve(async (req) => {
       to: formattedPhone,
       otpCode,
       phoneNumberId: PHONE_NUMBER_ID,
+      templateName: 'ikanisa',
       timestamp: new Date().toISOString()
     });
 
-    // Try template message first with comprehensive error logging
+    // Try template message first with updated template name
     try {
       const templateResponse = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
         method: 'POST',
@@ -99,7 +99,7 @@ serve(async (req) => {
           to: formattedPhone,
           type: 'template',
           template: {
-            name: 'auth_rw',
+            name: 'ikanisa', // Updated template name
             language: {
               code: 'en'
             },
@@ -142,6 +142,8 @@ serve(async (req) => {
             success: true, 
             messageId: templateResult.messages[0].id,
             method: 'template',
+            templateName: 'ikanisa',
+            phoneNumberId: PHONE_NUMBER_ID,
             timestamp: new Date().toISOString()
           }),
           { 
@@ -192,6 +194,7 @@ serve(async (req) => {
               success: true, 
               messageId: textResult.messages[0].id,
               method: 'text_fallback',
+              phoneNumberId: PHONE_NUMBER_ID,
               timestamp: new Date().toISOString()
             }),
             { 

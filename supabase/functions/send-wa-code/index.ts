@@ -40,9 +40,9 @@ serve(async (req) => {
 
     // WhatsApp Business API token
     const WHATSAPP_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN')
-    const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')
+    const PHONE_NUMBER_ID = '396791596844039' // Updated Phone Number ID
     
-    if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
+    if (!WHATSAPP_TOKEN) {
       throw new Error('WhatsApp API credentials not configured')
     }
 
@@ -51,6 +51,12 @@ serve(async (req) => {
     
     // Create verification message
     const message = `🚗 Kigali Ride\n\nYour verification code: ${code}\n\nThis code expires in 10 minutes.`
+
+    console.log('Sending WhatsApp message:', {
+      to: formattedPhone,
+      phoneNumberId: PHONE_NUMBER_ID,
+      messagePreview: message.substring(0, 50) + '...'
+    });
 
     // Send WhatsApp message using Meta Business API
     const whatsappResponse = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
@@ -71,6 +77,12 @@ serve(async (req) => {
 
     const whatsappResult = await whatsappResponse.json()
 
+    console.log('WhatsApp API response:', {
+      status: whatsappResponse.status,
+      statusText: whatsappResponse.statusText,
+      result: whatsappResult
+    });
+
     if (!whatsappResponse.ok) {
       console.error('WhatsApp API error:', whatsappResult)
       throw new Error(`WhatsApp API error: ${whatsappResult.error?.message || 'Unknown error'}`)
@@ -83,6 +95,7 @@ serve(async (req) => {
         success: true, 
         status: 'sent',
         messageId: whatsappResult.messages?.[0]?.id,
+        phoneNumberId: PHONE_NUMBER_ID,
         verificationCode: code // For demo purposes - remove in production
       }),
       { 
