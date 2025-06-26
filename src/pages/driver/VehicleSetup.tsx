@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,16 +9,16 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { WhatsAppOTPFlow } from "@/components/auth/WhatsAppOTPFlow";
 import { useAuth } from "@/contexts/AuthContext";
-
 const VehicleSetup = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, userProfile } = useAuth();
-  
+  const {
+    isAuthenticated,
+    userProfile
+  } = useAuth();
   const [vehicleType, setVehicleType] = useState<string>("");
   const [plateNumber, setPlateNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showWhatsAppOTP, setShowWhatsAppOTP] = useState(false);
-
   const proceedWithVehicleSetup = async () => {
     if (!vehicleType || !plateNumber.trim()) {
       toast({
@@ -29,7 +28,6 @@ const VehicleSetup = () => {
       });
       return;
     }
-
     if (!userProfile) {
       toast({
         title: "Authentication required",
@@ -38,36 +36,32 @@ const VehicleSetup = () => {
       });
       return;
     }
-
     setIsLoading(true);
     try {
       // Create or update driver profile
-      const { error } = await supabase
-        .from('driver_profiles')
-        .upsert({
-          user_id: userProfile.id,
-          vehicle_type: vehicleType,
-          plate_number: plateNumber.toUpperCase(),
-          is_online: false
-        });
-
+      const {
+        error
+      } = await supabase.from('driver_profiles').upsert({
+        user_id: userProfile.id,
+        vehicle_type: vehicleType,
+        plate_number: plateNumber.toUpperCase(),
+        is_online: false
+      });
       if (error) throw error;
 
       // Update user role to driver if not already set
       if (userProfile.role !== 'driver') {
-        const { error: roleError } = await supabase
-          .from('users')
-          .update({ role: 'driver' })
-          .eq('id', userProfile.id);
-
+        const {
+          error: roleError
+        } = await supabase.from('users').update({
+          role: 'driver'
+        }).eq('id', userProfile.id);
         if (roleError) throw roleError;
       }
-
       toast({
         title: "🚗 Vehicle setup complete!",
-        description: "You can now start posting trips and earning money",
+        description: "You can now start posting trips and earning money"
       });
-
       navigate('/home/driver');
     } catch (error) {
       console.error('Vehicle setup error:', error);
@@ -80,18 +74,16 @@ const VehicleSetup = () => {
       setIsLoading(false);
     }
   };
-
   const handleVehicleSetup = () => {
     // If not authenticated, show WhatsApp login wizard
     if (!isAuthenticated) {
       setShowWhatsAppOTP(true);
       return;
     }
-    
+
     // If authenticated, proceed with vehicle setup
     proceedWithVehicleSetup();
   };
-
   const handleWhatsAppSuccess = async (phoneNumber: string) => {
     setShowWhatsAppOTP(false);
     // After successful WhatsApp login, proceed with vehicle setup
@@ -99,18 +91,11 @@ const VehicleSetup = () => {
       proceedWithVehicleSetup();
     }, 500);
   };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
+  return <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b p-4">
         <div className="flex items-center max-w-md mx-auto">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(-1)}
-            className="mr-3"
-          >
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mr-3">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <h1 className="text-xl font-bold">Vehicle Setup</h1>
@@ -128,13 +113,11 @@ const VehicleSetup = () => {
           </div>
 
           {/* Auth Status */}
-          {!isAuthenticated && (
-            <div className="bg-green-50 p-3 rounded-lg text-center">
+          {!isAuthenticated && <div className="bg-green-50 p-3 rounded-lg text-center">
               <p className="text-sm text-green-800">
                 🚗 Fill in your vehicle details. You'll verify your WhatsApp when saving.
               </p>
-            </div>
-          )}
+            </div>}
 
           <div className="space-y-4">
             <div>
@@ -154,47 +137,26 @@ const VehicleSetup = () => {
 
             <div>
               <Label htmlFor="plateNumber">Plate Number</Label>
-              <Input
-                id="plateNumber"
-                type="text"
-                placeholder="e.g., RAD 123 A"
-                value={plateNumber}
-                onChange={(e) => setPlateNumber(e.target.value)}
-                className="uppercase"
-              />
+              <Input id="plateNumber" type="text" placeholder="e.g., RAD 123 A" value={plateNumber} onChange={e => setPlateNumber(e.target.value)} className="uppercase" />
               <p className="text-xs text-gray-500 mt-1">
                 Enter your vehicle's license plate number
               </p>
             </div>
           </div>
 
-          <Button
-            onClick={handleVehicleSetup}
-            disabled={isLoading}
-            className="w-full bg-purple-600 hover:bg-purple-700"
-            size="lg"
-          >
+          <Button onClick={handleVehicleSetup} disabled={isLoading} size="lg" className="w-full bg-purple-600 hover:bg-purple-700 text-xs">
             {isLoading ? 'Setting up...' : !isAuthenticated ? '📱 Verify WhatsApp & Complete Setup' : '🚗 Complete Vehicle Setup'}
           </Button>
 
-          {!isAuthenticated && (
-            <div className="text-center">
+          {!isAuthenticated && <div className="text-center">
               <p className="text-sm text-gray-600">
                 You'll need to verify your WhatsApp number to continue
               </p>
-            </div>
-          )}
+            </div>}
         </div>
       </div>
 
-      <WhatsAppOTPFlow
-        isOpen={showWhatsAppOTP}
-        onClose={() => setShowWhatsAppOTP(false)}
-        onSuccess={handleWhatsAppSuccess}
-        userProfile={userProfile}
-      />
-    </div>
-  );
+      <WhatsAppOTPFlow isOpen={showWhatsAppOTP} onClose={() => setShowWhatsAppOTP(false)} onSuccess={handleWhatsAppSuccess} userProfile={userProfile} />
+    </div>;
 };
-
 export default VehicleSetup;
