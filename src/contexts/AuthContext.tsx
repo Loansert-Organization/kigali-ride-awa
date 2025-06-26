@@ -2,8 +2,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/user';
+import { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
+  // WhatsApp Auth Properties
   isAuthenticated: boolean;
   userProfile: UserProfile | null;
   loading: boolean;
@@ -16,6 +18,15 @@ interface AuthContextType {
   requiresWhatsAppAuth: () => boolean;
   setGuestRole: (role: 'passenger' | 'driver') => void;
   guestRole: 'passenger' | 'driver' | null;
+  
+  // Legacy Properties (for compatibility)
+  user: User | null;
+  session: Session | null;
+  refreshUserProfile: () => Promise<UserProfile | null>;
+  updateUserProfile: (updates: Partial<UserProfile>) => Promise<UserProfile | null>;
+  error: string | null;
+  debugInfo: any;
+  retryInitialization: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +49,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [guestRole, setGuestRole] = useState<'passenger' | 'driver' | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [debugInfo] = useState<any>({});
 
   const isGuest = !isAuthenticated;
 
@@ -49,6 +64,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (savedGuestRole) {
       setGuestRole(savedGuestRole);
     }
+
+    // Set up Supabase auth listener for legacy compatibility
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setIsAuthenticated(true);
+          // Try to load user profile
+          try {
+            const { data: profile } = await supabase
+              .from('users')
+              .select('*')
+              .eq('auth_user_id', session.user.id)
+              .single();
+            
+            if (profile) {
+              const typedProfile: UserProfile = {
+                ...profile,
+                role: profile.role as 'passenger' | 'driver' | null
+              };
+              setUserProfile(typedProfile);
+            }
+          } catch (err) {
+            console.error('Error loading profile:', err);
+          }
+        } else {
+          setIsAuthenticated(false);
+          setUserProfile(null);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const checkExistingSession = async () => {
@@ -168,6 +218,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsAuthenticated(false);
     setUserProfile(null);
     setPhoneNumber(null);
+    setUser(null);
+    setSession(null);
     localStorage.removeItem('whatsapp_phone');
     localStorage.removeItem('whatsapp_user_id');
   };
@@ -194,8 +246,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const refreshUserProfile = async (): Promise<UserProfile | null> => {
+    await refreshProfile();
+    return userProfile;
+  };
+
+  const updateUserProfile = async (updates: Partial<UserProfile>): Promise<UserProfile | null> => {
+    if (!userProfile) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userProfile.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const typedProfile: UserProfile = {
+        ...data,
+        role: data.role as 'passenger' | 'driver' | null
+      };
+
+      setUserProfile(typedProfile);
+      return typedProfile;
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      setError(error.message);
+      return null;
+    }
+  };
+
   const requiresWhatsAppAuth = (): boolean => {
     return !isAuthenticated;
+  };
+
+  const retryInitialization = async (): Promise<void> => {
+    setError(null);
+    await checkExistingSession();
   };
 
   const handleSetGuestRole = (role: 'passenger' | 'driver') => {
@@ -205,6 +297,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{
+      // WhatsApp Auth Properties
       isAuthenticated,
       userProfile,
       loading,
@@ -216,7 +309,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       refreshProfile,
       requiresWhatsAppAuth,
       setGuestRole: handleSetGuestRole,
-      guestRole
+      guestRole,
+      
+      // Legacy Properties (for compatibility)
+      user,
+      session,
+      refreshUserProfile,
+      updateUserProfile,
+      error,
+      debugInfo,
+      retryInitialization
     }}>
       {children}
     </AuthContext.Provider>
