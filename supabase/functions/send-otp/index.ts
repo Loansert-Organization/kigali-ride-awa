@@ -30,22 +30,22 @@ serve(async (req) => {
     )
 
     // Generate 6-digit OTP
-    const otp = (Math.floor(100000 + Math.random() * 900000)).toString()
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
 
-    // Create a simple hash using built-in crypto API (compatible with edge functions)
+    // Create a simple hash
     const encoder = new TextEncoder()
     const data = encoder.encode(otp + 'salt_kigali_ride')
     const hashBuffer = await crypto.subtle.digest('SHA-256', data)
     const hashArray = Array.from(new Uint8Array(hashBuffer))
     const code_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 
-    // Store OTP with hash
+    // Store OTP
     const { error: insertError } = await supabase
       .from('otps')
       .insert({
         phone,
         code_hash,
-        expires_at: new Date(Date.now() + 5 * 60_000) // 5-minute expiry
+        expires_at: new Date(Date.now() + 5 * 60_000).toISOString()
       })
 
     if (insertError) {
@@ -56,7 +56,7 @@ serve(async (req) => {
       })
     }
 
-    // Send WhatsApp message using the correct template
+    // Send WhatsApp message
     const whatsappResponse = await fetch(
       'https://graph.facebook.com/v19.0/396791596844039/messages',
       {
@@ -84,10 +84,8 @@ serve(async (req) => {
     )
 
     if (!whatsappResponse.ok) {
-      const errorText = await whatsappResponse.text()
-      console.error('WhatsApp API error:', errorText)
+      console.error('WhatsApp template failed, trying text fallback')
       
-      // Fallback to text message if template fails
       const textResponse = await fetch(
         'https://graph.facebook.com/v19.0/396791596844039/messages',
         {
@@ -108,20 +106,19 @@ serve(async (req) => {
       )
 
       if (!textResponse.ok) {
-        const textError = await textResponse.text()
-        console.error('WhatsApp text fallback error:', textError)
-        return new Response(JSON.stringify({ error: 'WhatsApp send failed' }), {
+        console.error('WhatsApp text also failed')
+        return new Response(JSON.stringify({ error: 'Failed to send WhatsApp message' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
     }
 
-    console.log('WhatsApp OTP sent successfully')
+    console.log('OTP sent successfully to:', phone)
 
-    return new Response('sent', {
+    return new Response(JSON.stringify({ success: true, message: 'OTP sent' }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (error) {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Clock, Car, Navigation } from 'lucide-react';
@@ -33,6 +32,7 @@ const BookRide = () => {
   const [isBooking, setIsBooking] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [showOTPFlow, setShowOTPFlow] = useState(false);
+  const [isWhatsAppAuthenticated, setIsWhatsAppAuthenticated] = useState(false);
   
   const [tripData, setTripData] = useState<TripData>({
     fromLocation: '',
@@ -41,6 +41,14 @@ const BookRide = () => {
     vehicleType: 'car',
     description: ''
   });
+
+  // Check for existing WhatsApp auth on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('whatsapp_auth_user');
+    if (storedUser) {
+      setIsWhatsAppAuthenticated(true);
+    }
+  }, []);
 
   // Get current location and reverse geocode it
   const handleUseCurrentLocation = async () => {
@@ -173,7 +181,11 @@ const BookRide = () => {
       return;
     }
 
-    if (!userProfile) {
+    // Get user from WhatsApp auth or regular auth
+    const whatsappUser = localStorage.getItem('whatsapp_auth_user');
+    const currentUser = whatsappUser ? JSON.parse(whatsappUser) : userProfile;
+
+    if (!currentUser) {
       toast({
         title: "Authentication required",
         description: "Please verify your WhatsApp number to book",
@@ -187,7 +199,7 @@ const BookRide = () => {
       const { data, error } = await supabase
         .from('trips')
         .insert({
-          user_id: userProfile.id,
+          user_id: currentUser.id,
           from_location: tripData.fromLocation,
           to_location: tripData.toLocation,
           from_lat: tripData.fromLat,
@@ -225,7 +237,7 @@ const BookRide = () => {
   };
 
   const handleBookRide = () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !isWhatsAppAuthenticated) {
       setShowOTPFlow(true);
     } else {
       proceedWithBooking();
@@ -234,13 +246,14 @@ const BookRide = () => {
 
   const handleOTPSuccess = (user: any) => {
     setShowOTPFlow(false);
-    // The auth context will be updated automatically
+    setIsWhatsAppAuthenticated(true);
     setTimeout(() => {
       proceedWithBooking();
     }, 100);
   };
 
   const canBookRide = tripData.fromLocation && tripData.toLocation;
+  const isUserAuthenticated = isAuthenticated || isWhatsAppAuthenticated;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -261,7 +274,7 @@ const BookRide = () => {
 
       <div className="p-4 max-w-md mx-auto space-y-4">
         {/* Auth Status Banner */}
-        {isGuest && (
+        {!isUserAuthenticated && (
           <div className="bg-blue-50 p-3 rounded-lg text-center">
             <p className="text-sm text-blue-800">
               👋 Fill in your trip details. You'll verify your WhatsApp when booking.
@@ -371,7 +384,7 @@ const BookRide = () => {
           size="lg"
         >
           <Car className="w-5 h-5 mr-2" />
-          {isBooking ? 'Booking Ride...' : isGuest ? '📱 Verify WhatsApp & Book Ride' : '🚗 Book Ride Now'}
+          {isBooking ? 'Booking Ride...' : !isUserAuthenticated ? '📱 Verify WhatsApp & Book Ride' : '🚗 Book Ride Now'}
         </Button>
 
         {!canBookRide && (

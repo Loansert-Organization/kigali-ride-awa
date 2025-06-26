@@ -6,38 +6,45 @@ import { toast } from "@/hooks/use-toast";
 export const useOTPAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
 
+  const formatPhoneNumber = (phoneNumber: string) => {
+    // Remove all non-digits
+    let clean = phoneNumber.replace(/\D/g, '');
+    
+    // Handle Rwanda numbers
+    if (clean.startsWith('0')) {
+      clean = '250' + clean.substring(1);
+    }
+    if (!clean.startsWith('250')) {
+      clean = '250' + clean;
+    }
+    
+    return '+' + clean;
+  };
+
   const sendOTP = async (phoneNumber: string) => {
     setIsLoading(true);
     
     try {
-      // Format phone number for Rwanda (+250)
-      const formattedPhone = phoneNumber.startsWith('250') 
-        ? `+${phoneNumber}` 
-        : phoneNumber.startsWith('+250') 
-        ? phoneNumber 
-        : `+250${phoneNumber.replace(/^0+/, '')}`;
-
+      const formattedPhone = formatPhoneNumber(phoneNumber);
       console.log('Sending OTP to:', formattedPhone);
 
       const { data, error } = await supabase.functions.invoke('send-otp', {
         body: { phone: formattedPhone }
       });
 
-      console.log('OTP response:', { data, error });
-
       if (error) {
         console.error('Supabase function error:', error);
         throw new Error(error.message || 'Failed to send OTP');
       }
 
-      if (data === 'sent') {
+      if (data?.success) {
         toast({
           title: "📱 Code sent!",
           description: "Check your WhatsApp for the 6-digit verification code",
         });
-        return { success: true };
+        return { success: true, phone: formattedPhone };
       } else {
-        throw new Error('Failed to send OTP');
+        throw new Error(data?.error || 'Failed to send OTP');
       }
     } catch (error: any) {
       console.error('OTP send error:', error);
@@ -58,12 +65,7 @@ export const useOTPAuth = () => {
     setIsLoading(true);
     
     try {
-      const formattedPhone = phoneNumber.startsWith('250') 
-        ? `+${phoneNumber}` 
-        : phoneNumber.startsWith('+250') 
-        ? phoneNumber 
-        : `+250${phoneNumber.replace(/^0+/, '')}`;
-
+      const formattedPhone = formatPhoneNumber(phoneNumber);
       console.log('Verifying OTP for:', formattedPhone, 'with code:', otpCode);
 
       const { data, error } = await supabase.functions.invoke('verify-otp', {
@@ -73,46 +75,27 @@ export const useOTPAuth = () => {
         }
       });
 
-      console.log('OTP verification response:', { data, error });
-
       if (error) {
         console.error('Supabase function error:', error);
         throw new Error(error.message || 'Verification failed');
       }
 
-      if (data && typeof data === 'object' && data.token) {
-        // Store the JWT token and create user session
-        const { error: signInError } = await supabase.auth.setSession({
-          access_token: data.token,
-          refresh_token: data.token
-        });
-
-        if (signInError) {
-          console.error('Session creation error:', signInError);
-          throw signInError;
-        }
-
+      if (data?.success && data?.user) {
         toast({
           title: "🎉 Phone verified!",
           description: "Welcome to Kigali Ride!",
         });
 
+        // Store user data in localStorage for session management
+        localStorage.setItem('whatsapp_auth_user', JSON.stringify(data.user));
+        localStorage.setItem('whatsapp_phone', formattedPhone);
+        
         return { 
           success: true, 
-          user: { phone: formattedPhone, token: data.token }
+          user: data.user
         };
       } else {
-        let errorMessage = "Invalid or expired verification code";
-        
-        if (data === 'expired') {
-          errorMessage = "Verification code has expired. Please request a new one.";
-        } else if (data === 'wrong') {
-          errorMessage = "Invalid verification code. Please check and try again.";
-        } else if (data === 'no-code') {
-          errorMessage = "No verification code found. Please request a new one.";
-        }
-        
-        throw new Error(errorMessage);
+        throw new Error(data?.error || 'Verification failed');
       }
     } catch (error: any) {
       console.error('OTP verification error:', error);

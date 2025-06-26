@@ -4,9 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageCircle, ArrowLeft, Timer } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useOTPAuth } from "@/hooks/useOTPAuth";
 
 interface OTPAuthFlowProps {
   onSuccess: (user: any) => void;
@@ -17,12 +15,13 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
-  const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [currentPhone, setCurrentPhone] = useState('');
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const { login } = useAuth();
+  
+  const { sendOTP, verifyOTP, isLoading } = useOTPAuth();
 
-  // Countdown timer for resend
+  // Countdown timer
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -30,149 +29,31 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
     }
   }, [countdown]);
 
-  const formatPhoneNumber = (phone: string) => {
-    // Format for Rwanda numbers
-    let formatted = phone.replace(/\D/g, ''); // Remove non-digits
-    
-    if (formatted.startsWith('0')) {
-      formatted = '250' + formatted.substring(1);
-    }
-    
-    if (!formatted.startsWith('250')) {
-      formatted = '250' + formatted;
-    }
-    
-    return '+' + formatted;
-  };
-
-  const sendOTP = async () => {
+  const handleSendOTP = async () => {
     if (!phoneNumber.trim()) {
-      toast({
-        title: "Phone number required",
-        description: "Please enter your phone number",
-        variant: "destructive"
-      });
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const formattedPhone = formatPhoneNumber(phoneNumber);
-      
-      console.log('Sending OTP to:', formattedPhone);
-      
-      const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { phone: formattedPhone }
-      });
-
-      console.log('OTP send response:', { data, error });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data === 'sent') {
-        toast({
-          title: "📱 Code sent!",
-          description: "Check your WhatsApp for the verification code"
-        });
-        setStep('otp');
-        setCountdown(60); // 60-second countdown
-        // Auto-focus first OTP input
-        setTimeout(() => otpRefs.current[0]?.focus(), 100);
-      } else {
-        throw new Error('Failed to send OTP');
-      }
-    } catch (error: any) {
-      console.error('Send OTP error:', error);
-      toast({
-        title: "Failed to send code",
-        description: error.message || "Please try again",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+    const result = await sendOTP(phoneNumber);
+    
+    if (result.success) {
+      setCurrentPhone(result.phone || phoneNumber);
+      setStep('otp');
+      setCountdown(60);
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
     }
   };
 
-  const verifyOTP = async () => {
+  const handleVerifyOTP = async () => {
     const code = otpCode.join('');
     if (code.length !== 6) {
-      toast({
-        title: "Invalid code",
-        description: "Please enter the complete 6-digit code",
-        variant: "destructive"
-      });
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const formattedPhone = formatPhoneNumber(phoneNumber);
-      
-      console.log('Verifying OTP for:', formattedPhone, 'with code:', code);
-      
-      const { data, error } = await supabase.functions.invoke('verify-otp', {
-        body: { 
-          phone: formattedPhone, 
-          code: code 
-        }
-      });
-
-      console.log('OTP verification response:', { data, error });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data && typeof data === 'object' && data.token) {
-        // Store the JWT token and create user session
-        const { error: signInError } = await supabase.auth.setSession({
-          access_token: data.token,
-          refresh_token: data.token
-        });
-
-        if (signInError) {
-          console.error('Session creation error:', signInError);
-          throw signInError;
-        }
-
-        toast({
-          title: "🎉 Verified!",
-          description: "Welcome to Kigali Ride!"
-        });
-        
-        onSuccess({ phone: formattedPhone });
-      } else if (data === 'no-code') {
-        throw new Error('No verification code found. Please request a new one.');
-      } else if (data === 'expired') {
-        throw new Error('Verification code has expired. Please request a new one.');
-      } else if (data === 'wrong') {
-        throw new Error('Invalid verification code. Please check and try again.');
-      } else {
-        throw new Error('Verification failed');
-      }
-    } catch (error: any) {
-      console.error('Verify OTP error:', error);
-      
-      let errorMessage = "Verification failed";
-      if (error.message.includes('expired')) {
-        errorMessage = "Code has expired. Please request a new one.";
-      } else if (error.message.includes('Invalid') || error.message.includes('wrong')) {
-        errorMessage = "Invalid code. Please check and try again.";
-      } else if (error.message.includes('no-code')) {
-        errorMessage = "No code found. Please request a new one.";
-      } else {
-        errorMessage = error.message || "Verification failed";
-      }
-      
-      toast({
-        title: "Verification failed",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+    const result = await verifyOTP(currentPhone, code);
+    
+    if (result.success) {
+      onSuccess(result.user);
     }
   };
 
@@ -188,16 +69,13 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
       });
       setOtpCode(newOtpCode);
       
-      // Focus the next empty input or the last one
       const nextIndex = Math.min(index + pastedCode.length, 5);
       otpRefs.current[nextIndex]?.focus();
     } else {
-      // Single digit input
       const newOtpCode = [...otpCode];
       newOtpCode[index] = value;
       setOtpCode(newOtpCode);
       
-      // Auto-focus next input
       if (value && index < 5) {
         otpRefs.current[index + 1]?.focus();
       }
@@ -206,7 +84,6 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
 
   const handleOTPKeyDown = (index: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
-      // Focus previous input on backspace if current is empty
       otpRefs.current[index - 1]?.focus();
     }
   };
@@ -250,8 +127,8 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
               </Button>
             )}
             <Button
-              onClick={sendOTP}
-              disabled={isLoading}
+              onClick={handleSendOTP}
+              disabled={isLoading || !phoneNumber.trim()}
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
               {isLoading ? 'Sending...' : 'Send Code'}
@@ -273,7 +150,7 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
       <CardContent className="space-y-4">
         <div>
           <p className="text-sm text-gray-600 mb-4">
-            We sent a 6-digit code to {formatPhoneNumber(phoneNumber)}
+            We sent a 6-digit code to {currentPhone}
           </p>
           
           <div className="flex space-x-2 justify-center mb-4">
@@ -296,7 +173,7 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
 
         <div className="flex flex-col space-y-3">
           <Button
-            onClick={verifyOTP}
+            onClick={handleVerifyOTP}
             disabled={isLoading || otpCode.join('').length !== 6}
             className="w-full bg-green-600 hover:bg-green-700"
           >
@@ -321,7 +198,7 @@ export const OTPAuthFlow: React.FC<OTPAuthFlowProps> = ({ onSuccess, onCancel })
             ) : (
               <Button
                 variant="ghost"
-                onClick={sendOTP}
+                onClick={handleSendOTP}
                 disabled={isLoading}
                 className="text-sm text-blue-600"
               >
