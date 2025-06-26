@@ -29,7 +29,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Find the most recent OTP for this phone
+    // Find the most recent OTP for this phone from the otps table
     const { data: otpData, error: fetchError } = await supabase
       .from('otps')
       .select('*')
@@ -39,7 +39,7 @@ serve(async (req) => {
       .maybeSingle()
 
     if (fetchError || !otpData) {
-      console.error('No OTP found for phone:', phone)
+      console.error('No OTP found for phone:', phone, 'Error:', fetchError)
       return new Response(JSON.stringify({ error: 'No OTP found' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -55,7 +55,7 @@ serve(async (req) => {
       })
     }
 
-    // Verify the OTP code
+    // Verify the OTP code by recreating the hash
     const encoder = new TextEncoder()
     const data = encoder.encode(code + 'salt_kigali_ride')
     const hashBuffer = await crypto.subtle.digest('SHA-256', data)
