@@ -82,7 +82,7 @@ serve(async (req) => {
       to: formattedPhone,
       otpCode,
       phoneNumberId: PHONE_NUMBER_ID,
-      templateName: 'ikanisa',
+      templateName: 'autho_rw',
       timestamp: new Date().toISOString()
     });
 
@@ -99,7 +99,7 @@ serve(async (req) => {
           to: formattedPhone,
           type: 'template',
           template: {
-            name: 'ikanisa', // Updated template name
+            name: 'autho_rw', // Updated template name
             language: {
               code: 'en'
             },
@@ -142,7 +142,7 @@ serve(async (req) => {
             success: true, 
             messageId: templateResult.messages[0].id,
             method: 'template',
-            templateName: 'ikanisa',
+            templateName: 'autho_rw',
             phoneNumberId: PHONE_NUMBER_ID,
             timestamp: new Date().toISOString()
           }),

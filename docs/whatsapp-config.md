@@ -9,13 +9,13 @@
 - **API Endpoint**: `https://graph.facebook.com/v19.0/396791596844039/messages`
 
 ### Template Name
-- **Current Template**: `ikanisa`
+- **Current Template**: `autho_rw`
 - **Language Code**: `en` (English)
 - **Used for**: Authentication OTP messages
 - **Parameters**: 1 text parameter (OTP code)
 
 ### Template Configuration
-The `ikanisa` template should be configured in the WhatsApp Business Manager with:
+The `autho_rw` template should be configured in the WhatsApp Business Manager with:
 - **Category**: Authentication
 - **Language**: English
 - **Body**: Contains a placeholder for the OTP code
@@ -34,7 +34,7 @@ The `ikanisa` template should be configured in the WhatsApp Business Manager wit
 
 ### Testing
 To test the WhatsApp integration:
-1. Ensure the `ikanisa` template is approved in WhatsApp Business Manager
+1. Ensure the `autho_rw` template is approved in WhatsApp Business Manager
 2. Test with a verified phone number
 3. Check edge function logs for detailed API responses
 4. Verify OTP delivery and verification flow
