@@ -80,7 +80,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: false,
         error: error.message,
-        stack: error.stack,
+        message: 'Queue worker encountered an error',
         timestamp: new Date().toISOString()
       }),
       { 
@@ -95,7 +95,7 @@ async function processPendingTasks(supabase: any) {
   try {
     console.log('Checking for pending OTP codes...');
 
-    // Check for pending OTP codes that need to be sent (now with correct schema)
+    // Check for pending OTP codes that need to be sent
     const { data: pendingOTPs, error: otpError } = await supabase
       .from('otp_codes')
       .select('*')
@@ -136,7 +136,8 @@ async function processPendingTasks(supabase: any) {
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: 'Processed pending tasks',
+        message: 'Queue check completed',
+        pending_tasks_found: pendingOTPs?.length || 0,
         processed: processed,
         timestamp: new Date().toISOString()
       }),
@@ -151,7 +152,8 @@ async function processPendingTasks(supabase: any) {
       JSON.stringify({ 
         success: false,
         error: error.message,
-        stack: error.stack
+        message: 'Failed to check pending tasks',
+        timestamp: new Date().toISOString()
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -267,7 +269,7 @@ async function handleWhatsAppOTP(payload: any, supabase: any) {
       JSON.stringify({ 
         success: false,
         error: error.message,
-        stack: error.stack,
+        message: 'WhatsApp OTP processing failed',
         payload: payload,
         timestamp: new Date().toISOString()
       }),
@@ -375,7 +377,7 @@ async function handleWhatsAppNotification(payload: any, supabase: any) {
       JSON.stringify({ 
         success: false,
         error: error.message,
-        stack: error.stack,
+        message: 'WhatsApp notification processing failed',
         payload: payload,
         timestamp: new Date().toISOString()
       }),
