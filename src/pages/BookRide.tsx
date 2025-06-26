@@ -157,7 +157,17 @@ const BookRide = () => {
       toast({
         title: errorTitle,
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowLoginModal(true)}
+            className="text-xs"
+          >
+            📱 Login with WhatsApp
+          </Button>
+        )
       });
     } finally {
       setIsGettingLocation(false);
