@@ -43,7 +43,7 @@ const CreateTrip = () => {
           seatsAvailable={parseInt(tripData.seatsAvailable) || 1}
           fare={tripData.fare}
           description={tripData.description}
-          isNegotiable={tripData.isNegotiable}
+          isNegotiable={Boolean(tripData.isNegotiable)}
           onUpdate={(updates) => setTripData(prev => ({ ...prev, ...updates }))}
         />
 
