@@ -44,7 +44,24 @@ const CreateTrip = () => {
           fare={tripData.fare}
           description={tripData.description}
           isNegotiable={tripData.isNegotiable}
-          onUpdate={(updates) => setTripData(prev => ({ ...prev, ...updates }))}
+          onUpdate={(updates) => {
+            setTripData(prev => ({
+              ...prev,
+              ...updates,
+              // Ensure seatsAvailable is always a number
+              ...(updates.seatsAvailable !== undefined && {
+                seatsAvailable: typeof updates.seatsAvailable === 'string' 
+                  ? parseInt(updates.seatsAvailable) 
+                  : updates.seatsAvailable
+              }),
+              // Ensure isNegotiable is always a boolean
+              ...(updates.isNegotiable !== undefined && {
+                isNegotiable: typeof updates.isNegotiable === 'string'
+                  ? updates.isNegotiable === 'true'
+                  : updates.isNegotiable
+              })
+            }))
+          }}
         />
 
         <CreateTripButton
