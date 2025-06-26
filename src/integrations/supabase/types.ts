@@ -52,6 +52,13 @@ export type Database = {
             foreignKeyName: "admin_trip_flags_admin_user_id_fkey"
             columns: ["admin_user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_trip_flags_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -60,6 +67,13 @@ export type Database = {
             columns: ["admin_user_id"]
             isOneToOne: false
             referencedRelation: "weekly_rewards_leaderboard_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_trip_flags_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "driver_trips_map"
             referencedColumns: ["id"]
           },
           {
@@ -114,6 +128,13 @@ export type Database = {
             foreignKeyName: "agent_logs_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -159,7 +180,21 @@ export type Database = {
             foreignKeyName: "bookings_driver_trip_id_fkey"
             columns: ["driver_trip_id"]
             isOneToOne: false
+            referencedRelation: "driver_trips_map"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_driver_trip_id_fkey"
+            columns: ["driver_trip_id"]
+            isOneToOne: false
             referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_passenger_trip_id_fkey"
+            columns: ["passenger_trip_id"]
+            isOneToOne: false
+            referencedRelation: "driver_trips_map"
             referencedColumns: ["id"]
           },
           {
@@ -203,6 +238,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "driver_booking_success_view"
             referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_presence_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "driver_presence_driver_id_fkey"
@@ -255,6 +297,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "driver_booking_success_view"
             referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "driver_profiles_user_id_fkey"
@@ -315,6 +364,13 @@ export type Database = {
             foreignKeyName: "favorites_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -370,6 +426,13 @@ export type Database = {
             foreignKeyName: "file_uploads_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_uploads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -415,6 +478,13 @@ export type Database = {
             foreignKeyName: "incidents_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
+            referencedRelation: "driver_trips_map"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
             referencedRelation: "trips"
             referencedColumns: ["id"]
           },
@@ -424,6 +494,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "driver_booking_success_view"
             referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "incidents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "incidents_user_id_fkey"
@@ -482,6 +559,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "driver_booking_success_view"
             referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "otp_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "otp_codes_user_id_fkey"
@@ -563,6 +647,13 @@ export type Database = {
             foreignKeyName: "push_tokens_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -634,6 +725,13 @@ export type Database = {
           trip_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "trip_heatmap_logs_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "driver_trips_map"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trip_heatmap_logs_trip_id_fkey"
             columns: ["trip_id"]
@@ -716,6 +814,13 @@ export type Database = {
             foreignKeyName: "trips_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -774,6 +879,13 @@ export type Database = {
             foreignKeyName: "user_referrals_referee_id_fkey"
             columns: ["referee_id"]
             isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_referrals_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -790,6 +902,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "driver_booking_success_view"
             referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "user_referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "user_referrals_referrer_id_fkey"
@@ -845,6 +964,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "driver_booking_success_view"
             referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "user_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "user_rewards_user_id_fkey"
@@ -993,6 +1119,83 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_presence_map: {
+        Row: {
+          id: string | null
+          is_online: boolean | null
+          lat: number | null
+          lng: number | null
+        }
+        Insert: {
+          id?: string | null
+          is_online?: boolean | null
+          lat?: number | null
+          lng?: number | null
+        }
+        Update: {
+          id?: string | null
+          is_online?: boolean | null
+          lat?: number | null
+          lng?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_presence_driver_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_presence_driver_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_presence_driver_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_presence_driver_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "weekly_rewards_leaderboard_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_trips_map: {
+        Row: {
+          from_location: string | null
+          id: string | null
+          lat: number | null
+          lng: number | null
+          scheduled_time: string | null
+          to_location: string | null
+        }
+        Insert: {
+          from_location?: string | null
+          id?: string | null
+          lat?: number | null
+          lng?: number | null
+          scheduled_time?: string | null
+          to_location?: string | null
+        }
+        Update: {
+          from_location?: string | null
+          id?: string | null
+          lat?: number | null
+          lng?: number | null
+          scheduled_time?: string | null
+          to_location?: string | null
+        }
+        Relationships: []
+      }
       heatmap_aggregated_view: {
         Row: {
           completion_rate: number | null
@@ -1001,6 +1204,21 @@ export type Database = {
           lng_rounded: number | null
           role: string | null
           trip_count: number | null
+        }
+        Relationships: []
+      }
+      public_user_codes: {
+        Row: {
+          id: string | null
+          promo_code: string | null
+        }
+        Insert: {
+          id?: string | null
+          promo_code?: string | null
+        }
+        Update: {
+          id?: string | null
+          promo_code?: string | null
         }
         Relationships: []
       }

@@ -16,8 +16,8 @@ import { Loader } from "@/components/ui/loader";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 
 /* ---------- Types ------------------------------------------- */
-type Driver = { user_id: string; lat?: number; lng?: number };
-type Trip   = { id: string; from_location: string; to_location: string; from_lat?: number; from_lng?: number };
+type Driver = { id: string; lat?: number; lng?: number };
+type Trip   = { id: string; from_location: string; to_location: string; lat?: number; lng?: number };
 
 /* ------------------------------------------------------------ */
 const PassengerHomePage: React.FC = () => {
@@ -31,7 +31,7 @@ const PassengerHomePage: React.FC = () => {
 
   /* one-time fetch promo code */
   useEffect(() => {
-    supabase.from("users").select("promo_code").single()
+    supabase.from("public_user_codes").select("promo_code").single()
       .then(({ data }) => setPromo(data?.promo_code ?? null));
   }, []);
 
@@ -45,23 +45,15 @@ const PassengerHomePage: React.FC = () => {
   async function refreshMarkers() {
     if (!map.current) return;
 
-    /* DRIVERS - get online drivers with location from driver_presence */
+    /* DRIVERS - get online drivers with location from driver_presence_map view */
     const { data: drivers } = await supabase
-      .from("driver_presence")
-      .select("driver_id, lat, lng")
-      .eq("is_online", true)
-      .not("lat", "is", null)
-      .not("lng", "is", null) as { data: Array<{driver_id: string, lat: number, lng: number}> };
+      .from("driver_presence_map")
+      .select("id, lat, lng") as { data: Driver[] };
 
-    /* TRIPS - get open driver trips */
+    /* TRIPS - get open driver trips from driver_trips_map view */
     const { data: trips } = await supabase
-      .from("trips")
-      .select("id, from_location, to_location, from_lat, from_lng")
-      .eq("role", "driver")
-      .eq("status", "pending")
-      .gt("scheduled_time", new Date().toISOString())
-      .not("from_lat", "is", null)
-      .not("from_lng", "is", null) as { data: Trip[] };
+      .from("driver_trips_map")
+      .select("id, from_location, to_location, lat, lng") as { data: Trip[] };
 
     /* clear old */
     driverMarkers.current.forEach(m => m.setMap(null));
@@ -69,7 +61,7 @@ const PassengerHomePage: React.FC = () => {
 
     /* driver markers */
     driverMarkers.current = (drivers ?? []).map(d => new google.maps.Marker({
-      position: { lat: d.lat, lng: d.lng },
+      position: { lat: d.lat!, lng: d.lng! },
       map: map.current!,
       icon: {
         url: "https://i.imgur.com/xxWzC2w.gif",   // tiny animated car
@@ -79,7 +71,7 @@ const PassengerHomePage: React.FC = () => {
 
     /* trip pins */
     tripMarkers.current = (trips ?? []).map(t => new google.maps.Marker({
-      position: { lat: t.from_lat!, lng: t.from_lng! },
+      position: { lat: t.lat!, lng: t.lng! },
       map: map.current!,
       icon: {
         path: google.maps.SymbolPath.CIRCLE,
