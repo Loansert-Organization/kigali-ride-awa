@@ -107,7 +107,7 @@ serve(async (req) => {
             to: formattedPhone,
             type: 'text',
             text: {
-              body: `🚗 Kigali Ride Verification\n\nYour verification code: ${otpCode}\n\nThis code expires in 10 minutes.`
+              body: `🚗 *Kigali Ride* - Muraho! Welcome!\n\n*Your verification code:* ${otpCode}\n\nUwakangye neza ku Kigali Ride - igikoresho cyawe cyo gushaka n'ugutanga amatwara mu Kigali.\n\n*This code expires in 10 minutes.*\n\nMurakoze! 🇷🇼`
             }
           })
         })

@@ -13,6 +13,7 @@ interface TripData {
   description: string;
   fare: string;
   seatsAvailable: string;
+  isNegotiable: boolean;
 }
 
 export const useCreateTripForm = () => {
@@ -28,7 +29,8 @@ export const useCreateTripForm = () => {
     vehicleType: 'car',
     description: '',
     fare: '',
-    seatsAvailable: '3'
+    seatsAvailable: '3',
+    isNegotiable: false
   });
 
   const proceedWithTripCreation = async () => {
@@ -65,7 +67,7 @@ export const useCreateTripForm = () => {
           seats_available: parseInt(tripData.seatsAvailable),
           role: 'driver',
           status: 'pending',
-          is_negotiable: !tripData.fare
+          is_negotiable: tripData.isNegotiable
         })
         .select()
         .single();
