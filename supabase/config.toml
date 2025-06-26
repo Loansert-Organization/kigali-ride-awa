@@ -48,3 +48,6 @@ verify_jwt = false
 
 [functions.fix-user-policies]
 verify_jwt = false
+
+[functions.google-oauth]
+verify_jwt = false
