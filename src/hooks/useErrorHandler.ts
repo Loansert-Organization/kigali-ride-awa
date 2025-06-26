@@ -3,7 +3,7 @@ import React, { useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
+import { ToastAction } from '@/components/ui/toast';
 
 interface ErrorLogEntry {
   event_type: string;
@@ -85,18 +85,21 @@ export const useErrorHandler = (options?: UseErrorHandlerOptions) => {
     const displayMessage = getDisplayMessage(errorMessage);
     const showWhatsAppButton = shouldShowWhatsAppLogin(errorMessage) && options?.onWhatsAppLogin;
 
-    // Show user-friendly toast with optional WhatsApp login button
+    // Show user-friendly toast with optional WhatsApp login action
     if (showWhatsAppButton) {
       toast({
         title: "Something went wrong",
         description: displayMessage,
         variant: "destructive",
-        action: React.createElement(Button, {
-          variant: "outline",
-          size: "sm",
-          onClick: options.onWhatsAppLogin,
-          className: "text-xs"
-        }, "📱 Login with WhatsApp")
+        action: (
+          <ToastAction 
+            altText="Login with WhatsApp"
+            onClick={options.onWhatsAppLogin}
+            className="text-xs"
+          >
+            📱 Login with WhatsApp
+          </ToastAction>
+        )
       });
     } else {
       toast({
