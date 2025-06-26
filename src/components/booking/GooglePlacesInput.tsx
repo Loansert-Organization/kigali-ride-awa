@@ -1,147 +1,120 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
-import { MapPin } from 'lucide-react';
 
 interface GooglePlacesInputProps {
   value: string;
   onChange: (value: string, coordinates?: { lat: number; lng: number }) => void;
-  placeholder: string;
+  placeholder?: string;
   className?: string;
 }
 
 const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
   value,
   onChange,
-  placeholder,
+  placeholder = "Enter location...",
   className = ""
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
-
-  // Check if Google Maps is loaded
-  useEffect(() => {
-    const checkGoogleMaps = () => {
-      if (window.google?.maps?.places) {
-        console.log('✅ Google Maps Places API loaded');
-        setIsGoogleLoaded(true);
-        return true;
-      }
-      return false;
-    };
-
-    if (checkGoogleMaps()) return;
-
-    // If not loaded immediately, check periodically
-    const interval = setInterval(() => {
-      if (checkGoogleMaps()) {
-        clearInterval(interval);
-      }
-    }, 500);
-
-    // Clean up after 10 seconds
-    const timeout = setTimeout(() => {
-      clearInterval(interval);
-      console.warn('⚠️ Google Maps Places API not loaded within 10 seconds');
-    }, 10000);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, []);
 
   useEffect(() => {
-    if (!inputRef.current || !isGoogleLoaded) {
-      return;
-    }
+    let timeoutId: NodeJS.Timeout;
+    
+    const initializeAutocomplete = () => {
+      if (!inputRef.current) return;
 
-    try {
-      console.log('🔧 Initializing Google Places Autocomplete...');
-      
-      // Initialize Google Places Autocomplete
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(
-        inputRef.current,
-        {
-          types: ['geocode'],
+      try {
+        // Check if Google Maps is available
+        if (typeof window.google === 'undefined' || !window.google.maps || !window.google.maps.places) {
+          throw new Error('Google Maps Places API not available');
+        }
+
+        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+          types: ['establishment', 'geocode'],
           componentRestrictions: { country: 'rw' }, // Restrict to Rwanda
-          fields: ['formatted_address', 'geometry', 'name']
-        }
-      );
-
-      // Listen for place selection
-      const listener = autocompleteRef.current.addListener('place_changed', () => {
-        console.log('📍 Place changed event triggered');
-        const place = autocompleteRef.current?.getPlace();
-        
-        console.log('🔍 Place details:', {
-          hasAddress: !!place?.formatted_address,
-          hasGeometry: !!place?.geometry?.location,
-          place: place
+          fields: ['place_id', 'formatted_address', 'geometry', 'name']
         });
-        
-        if (place?.formatted_address && place?.geometry?.location) {
-          const coordinates = {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng()
-          };
-          
-          console.log('✅ Valid place selected:', {
-            address: place.formatted_address,
-            coordinates
-          });
-          
-          onChange(place.formatted_address, coordinates);
-        } else if (place?.name && place?.geometry?.location) {
-          // Fallback to place name if formatted_address is not available
-          const coordinates = {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng()
-          };
-          
-          console.log('✅ Place selected with name:', {
-            name: place.name,
-            coordinates
-          });
-          
-          onChange(place.name, coordinates);
-        } else {
-          console.warn('⚠️ Invalid place selected - missing address or geometry');
-        }
-      });
 
-      console.log('✅ Google Places Autocomplete initialized');
-      
-      return () => {
-        console.log('🧹 Cleaning up Google Places listener');
-        if (listener && window.google?.maps?.event) {
-          window.google.maps.event.removeListener(listener);
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          if (place.formatted_address && place.geometry?.location) {
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+            onChange(place.formatted_address, { lat, lng });
+          } else if (place.name) {
+            onChange(place.name);
+          }
+        });
+
+        autocompleteRef.current = autocomplete;
+        setIsLoaded(true);
+        setError(null);
+      } catch (err) {
+        console.warn('Google Places autocomplete initialization failed:', err);
+        setError('Location autocomplete unavailable');
+        setIsLoaded(false);
+      }
+    };
+
+    // Check if Google Maps is already loaded
+    if (window.google?.maps?.places) {
+      initializeAutocomplete();
+    } else {
+      // Wait for Google Maps to load with a reasonable timeout
+      const checkGoogleMaps = () => {
+        if (window.google?.maps?.places) {
+          clearTimeout(timeoutId);
+          initializeAutocomplete();
+        } else {
+          timeoutId = setTimeout(checkGoogleMaps, 500);
         }
       };
-    } catch (error) {
-      console.error('❌ Failed to initialize Google Places Autocomplete:', error);
+      
+      checkGoogleMaps();
+
+      // Set a maximum timeout of 10 seconds
+      const maxTimeout = setTimeout(() => {
+        clearTimeout(timeoutId);
+        if (!isLoaded) {
+          setError('Location services temporarily unavailable');
+          setIsLoaded(false);
+        }
+      }, 10000);
+
+      return () => {
+        clearTimeout(timeoutId);
+        clearTimeout(maxTimeout);
+      };
     }
-  }, [onChange, isGoogleLoaded]);
+
+    return () => {
+      if (autocompleteRef.current) {
+        window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);
+      }
+    };
+  }, [onChange]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+  };
 
   return (
     <div className="relative">
-      <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
       <Input
         ref={inputRef}
+        type="text"
         value={value}
-        onChange={(e) => {
-          console.log('✏️ Manual input change:', e.target.value);
-          onChange(e.target.value);
-        }}
-        placeholder={isGoogleLoaded ? placeholder : `${placeholder} (Loading...)`}
-        className={`pl-10 h-12 text-base ${className}`}
-        disabled={!isGoogleLoaded}
+        onChange={handleInputChange}
+        placeholder={error ? "Enter location manually..." : placeholder}
+        className={className}
       />
-      {!isGoogleLoaded && (
-        <div className="absolute right-3 top-3">
-          <div className="animate-spin w-5 h-5 border-2 border-gray-300 border-t-purple-600 rounded-full"></div>
-        </div>
+      {error && (
+        <p className="text-xs text-orange-600 mt-1">
+          ℹ️ {error} - manual entry enabled
+        </p>
       )}
     </div>
   );

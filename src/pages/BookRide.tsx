@@ -30,7 +30,7 @@ const BookRide = () => {
   const navigate = useNavigate();
   const { isAuthenticated, userProfile, isGuest } = useAuth();
   const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isBooking, setIsBooking] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   
   const [tripData, setTripData] = useState<TripData>({
@@ -55,15 +55,13 @@ const BookRide = () => {
 
       const { latitude, longitude } = position.coords;
       
-      // Reverse geocode the coordinates to get address
+      // Try reverse geocoding with fallback
       try {
         const { data, error } = await supabase.functions.invoke('reverse-geocode', {
           body: { lat: latitude, lng: longitude }
         });
 
-        if (error) throw error;
-
-        const address = data.success ? data.address : 'Current Location';
+        const address = (data?.success && data?.address) ? data.address : 'Current Location';
         
         setTripData(prev => ({
           ...prev,
@@ -77,13 +75,18 @@ const BookRide = () => {
           description: "Using your current location as pickup point",
         });
       } catch (geocodeError) {
-        console.warn('Reverse geocoding failed:', geocodeError);
+        // Fallback to coordinates display
         setTripData(prev => ({
           ...prev,
-          fromLocation: 'Current Location',
+          fromLocation: `Current Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
           fromLat: latitude,
           fromLng: longitude
         }));
+        
+        toast({
+          title: "📍 Location set",
+          description: "Location coordinates captured",
+        });
       }
     } catch (error) {
       console.error('Location error:', error);
@@ -115,7 +118,6 @@ const BookRide = () => {
     }));
   };
 
-  // Guest users can fill the form, but auth is required only on booking
   const proceedWithBooking = async () => {
     if (!tripData.fromLocation || !tripData.toLocation) {
       toast({
@@ -135,7 +137,7 @@ const BookRide = () => {
       return;
     }
 
-    setIsLoading(true);
+    setIsBooking(true);
     try {
       const { data, error } = await supabase
         .from('trips')
@@ -173,12 +175,11 @@ const BookRide = () => {
         variant: "destructive"
       });
     } finally {
-      setIsLoading(false);
+      setIsBooking(false);
     }
   };
 
   const handleBookRide = () => {
-    // Use auth guard - will show WhatsApp login if not authenticated
     requireAuth(proceedWithBooking);
   };
 
@@ -308,12 +309,12 @@ const BookRide = () => {
         {/* Book Button */}
         <Button
           onClick={handleBookRide}
-          disabled={!canBookRide || isLoading}
+          disabled={!canBookRide || isBooking}
           className="w-full bg-purple-600 hover:bg-purple-700"
           size="lg"
         >
           <Car className="w-5 h-5 mr-2" />
-          {isLoading ? 'Booking Ride...' : isGuest ? '📱 Verify WhatsApp & Book Ride' : '🚗 Book Ride Now'}
+          {isBooking ? 'Booking Ride...' : isGuest ? '📱 Verify WhatsApp & Book Ride' : '🚗 Book Ride Now'}
         </Button>
 
         {!canBookRide && (
