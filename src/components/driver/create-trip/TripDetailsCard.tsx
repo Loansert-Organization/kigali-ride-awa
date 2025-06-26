@@ -61,7 +61,7 @@ const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
           <Label htmlFor="seatsAvailable">Available Seats</Label>
           <Select 
             value={seatsAvailable.toString()} 
-            onValueChange={(value) => onUpdate({ seatsAvailable: value })}
+            onValueChange={(value) => onUpdate({ seatsAvailable: parseInt(value) })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select seats" />

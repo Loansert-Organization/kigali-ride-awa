@@ -12,7 +12,7 @@ interface TripData {
   vehicleType: string;
   description: string;
   fare: string;
-  seatsAvailable: string;
+  seatsAvailable: number;
   isNegotiable: boolean;
 }
 
@@ -29,7 +29,7 @@ export const useCreateTripForm = () => {
     vehicleType: 'car',
     description: '',
     fare: '',
-    seatsAvailable: '3',
+    seatsAvailable: 3,
     isNegotiable: false
   });
 
@@ -64,7 +64,7 @@ export const useCreateTripForm = () => {
           vehicle_type: tripData.vehicleType,
           description: tripData.description,
           fare: tripData.fare ? parseFloat(tripData.fare) : null,
-          seats_available: parseInt(tripData.seatsAvailable),
+          seats_available: tripData.seatsAvailable,
           role: 'driver',
           status: 'pending',
           is_negotiable: tripData.isNegotiable

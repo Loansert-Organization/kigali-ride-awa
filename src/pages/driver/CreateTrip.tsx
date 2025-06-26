@@ -40,7 +40,7 @@ const CreateTrip = () => {
         <TripDetailsCard
           scheduledTime={tripData.scheduledTime}
           vehicleType={tripData.vehicleType}
-          seatsAvailable={parseInt(tripData.seatsAvailable) || 1}
+          seatsAvailable={tripData.seatsAvailable}
           fare={tripData.fare}
           description={tripData.description}
           isNegotiable={tripData.isNegotiable}
