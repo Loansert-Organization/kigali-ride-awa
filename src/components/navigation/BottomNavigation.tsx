@@ -16,15 +16,15 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ role }) => {
     { icon: Home, label: 'Home', path: '/home/passenger' },
     { icon: Search, label: 'Book', path: '/book-ride' },
     { icon: Star, label: 'Favorites', path: '/favorites' },
-    { icon: Gift, label: 'Rewards', path: '/rewards' },
+    { icon: Gift, label: 'Rewards', path: '/leaderboard' },
     { icon: User, label: 'Profile', path: '/profile' }
   ];
 
   const driverTabs = [
     { icon: Home, label: 'Home', path: '/home/driver' },
     { icon: Plus, label: 'Create', path: '/create-trip' },
-    { icon: Users, label: 'Requests', path: '/driver-requests' },
-    { icon: Gift, label: 'Rewards', path: '/rewards' },
+    { icon: Users, label: 'Requests', path: '/passenger-requests' },
+    { icon: Gift, label: 'Rewards', path: '/leaderboard' },
     { icon: User, label: 'Profile', path: '/profile' }
   ];
 

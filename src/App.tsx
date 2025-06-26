@@ -14,6 +14,8 @@ import CreateTrip from "./pages/driver/CreateTrip";
 import RideMatches from "./pages/RideMatches";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
+import FavoritesManager from "./pages/FavoritesManager";
+import PassengerRequests from "./pages/PassengerRequests";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +36,8 @@ const App = () => (
             <Route path="/ride-matches" element={<RideMatches />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/favorites" element={<FavoritesManager />} />
+            <Route path="/passenger-requests" element={<PassengerRequests />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
