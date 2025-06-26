@@ -31,15 +31,18 @@ serve(async (req) => {
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    console.log('Generated OTP:', otp)
 
-    // Create a simple hash
+    // Create a simple hash using the same method as verify-otp
     const encoder = new TextEncoder()
     const data = encoder.encode(otp + 'salt_kigali_ride')
     const hashBuffer = await crypto.subtle.digest('SHA-256', data)
     const hashArray = Array.from(new Uint8Array(hashBuffer))
     const code_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 
-    // Store OTP
+    console.log('Generated hash:', code_hash)
+
+    // Store OTP in the otps table (not otp_codes)
     const { error: insertError } = await supabase
       .from('otps')
       .insert({
@@ -56,7 +59,9 @@ serve(async (req) => {
       })
     }
 
-    // Send WhatsApp message - using simple text message
+    console.log('OTP stored successfully in otps table')
+
+    // Send WhatsApp message
     const whatsappResponse = await fetch(
       'https://graph.facebook.com/v19.0/396791596844039/messages',
       {
