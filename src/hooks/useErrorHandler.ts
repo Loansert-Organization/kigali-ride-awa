@@ -1,5 +1,5 @@
 
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -91,16 +91,12 @@ export const useErrorHandler = (options?: UseErrorHandlerOptions) => {
         title: "Something went wrong",
         description: displayMessage,
         variant: "destructive",
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={options.onWhatsAppLogin}
-            className="text-xs"
-          >
-            📱 Login with WhatsApp
-          </Button>
-        )
+        action: React.createElement(Button, {
+          variant: "outline",
+          size: "sm",
+          onClick: options.onWhatsAppLogin,
+          className: "text-xs"
+        }, "📱 Login with WhatsApp")
       });
     } else {
       toast({
