@@ -91,11 +91,15 @@ export const useErrorHandler = (options?: UseErrorHandlerOptions) => {
         title: "Something went wrong",
         description: displayMessage,
         variant: "destructive",
-        action: React.createElement(ToastAction, {
-          altText: "Login with WhatsApp",
-          onClick: options.onWhatsAppLogin,
-          className: "text-xs"
-        }, "📱 Login with WhatsApp")
+        action: (
+          <ToastAction
+            altText="Login with WhatsApp"
+            onClick={options.onWhatsAppLogin}
+            className="text-xs"
+          >
+            📱 Login with WhatsApp
+          </ToastAction>
+        )
       });
     } else {
       toast({
