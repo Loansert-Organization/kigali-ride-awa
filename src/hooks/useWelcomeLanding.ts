@@ -81,22 +81,28 @@ export const useWelcomeLanding = () => {
 
     try {
       // First ensure we have an authenticated user
-      if (!user) {
+      let currentUser = user;
+      if (!currentUser) {
         console.log('No authenticated user, signing in anonymously...');
         const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
         
         if (authError) {
           console.error('Error with anonymous sign in:', authError);
-          throw authError;
+          throw new Error('Failed to authenticate. Please try again.');
         }
         
+        currentUser = authData.user;
+        
         // Wait a moment for the auth state to update
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
 
-      console.log('Updating user role to:', role, 'for user ID:', user?.id);
+      console.log('Updating user role to:', role, 'for user ID:', currentUser?.id);
 
-      // Create or update user profile
+      // Store role in localStorage as backup
+      localStorage.setItem('user_role', role);
+
+      // Create or update user profile with better error handling
       const profileData = {
         role: role,
         language: selectedLanguage,
@@ -107,23 +113,24 @@ export const useWelcomeLanding = () => {
       };
 
       if (!userProfile) {
-        console.log('No user profile found, creating one first');
+        console.log('Creating new user profile...');
         const { data: newProfile, error: createError } = await supabase
           .from('users')
           .insert({
             ...profileData,
-            auth_user_id: user?.id || null,
+            auth_user_id: currentUser?.id || null,
           })
           .select()
           .single();
 
         if (createError) {
           console.error('Error creating user profile:', createError);
-          throw createError;
+          throw new Error(`Profile creation failed: ${createError.message}`);
         }
 
         console.log('User profile created successfully:', newProfile);
       } else {
+        console.log('Updating existing user profile...');
         const { error: updateError } = await supabase
           .from('users')
           .update(profileData)
@@ -131,7 +138,7 @@ export const useWelcomeLanding = () => {
 
         if (updateError) {
           console.error('Error updating user role:', updateError);
-          throw updateError;
+          throw new Error(`Profile update failed: ${updateError.message}`);
         }
 
         console.log('User profile updated successfully');
@@ -140,21 +147,25 @@ export const useWelcomeLanding = () => {
       // Refresh the user profile to get the updated data
       await refreshUserProfile();
       
+      // Navigate to permissions step
       setTimeout(() => {
         setCurrentStep('permissions');
         setIsProcessing(false);
-      }, 500);
+      }, 800);
 
       toast({
         title: "Role selected!",
         description: `Welcome as a ${role}! 🎉`,
       });
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('Role selection error:', error);
       setIsProcessing(false);
+      setSelectedRole(null);
+      
       toast({
-        title: "Error",
-        description: "Please try again",
+        title: "Setup Error",
+        description: error.message || "Please try again",
         variant: "destructive"
       });
     }
@@ -198,17 +209,20 @@ export const useWelcomeLanding = () => {
   };
 
   const navigateToOnboarding = () => {
-    if (selectedRole === 'passenger') {
+    const role = selectedRole || localStorage.getItem('user_role') as 'passenger' | 'driver';
+    
+    if (role === 'passenger') {
       navigate('/onboarding/passenger');
-    } else if (selectedRole === 'driver') {
+    } else if (role === 'driver') {
       navigate('/onboarding/driver');
     } else {
-      console.error('No role selected for navigation');
+      console.error('No role found for navigation');
       toast({
         title: "Error",
         description: "Please select your role first",
         variant: "destructive"
       });
+      setCurrentStep('role');
     }
   };
 

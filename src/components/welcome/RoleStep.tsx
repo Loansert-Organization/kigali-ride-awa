@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Car, User, Gift } from 'lucide-react';
+import { Car, User, Gift, Loader2 } from 'lucide-react';
 
 interface RoleStepProps {
   currentLang: { greeting: string };
@@ -45,13 +45,23 @@ const RoleStep: React.FC<RoleStepProps> = ({
               disabled={isProcessing}
               className="w-full h-16 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white hover-scale disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Car className="w-8 h-8 mr-3" />
-              <div className="text-left">
-                <div className="font-bold text-lg">
-                  {isProcessing && selectedRole === 'driver' ? '⏳ Setting up...' : '🚗 I\'m a Driver'}
-                </div>
-                <div className="text-sm opacity-90">Offer rides and earn money</div>
-              </div>
+              {isProcessing && selectedRole === 'driver' ? (
+                <>
+                  <Loader2 className="w-8 h-8 mr-3 animate-spin" />
+                  <div className="text-left">
+                    <div className="font-bold text-lg">Setting up...</div>
+                    <div className="text-sm opacity-90">Please wait</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Car className="w-8 h-8 mr-3" />
+                  <div className="text-left">
+                    <div className="font-bold text-lg">🚗 I'm a Driver</div>
+                    <div className="text-sm opacity-90">Offer rides and earn money</div>
+                  </div>
+                </>
+              )}
             </Button>
             
             <Button 
@@ -59,13 +69,23 @@ const RoleStep: React.FC<RoleStepProps> = ({
               disabled={isProcessing}
               className="w-full h-16 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover-scale disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <User className="w-8 h-8 mr-3" />
-              <div className="text-left">
-                <div className="font-bold text-lg">
-                  {isProcessing && selectedRole === 'passenger' ? '⏳ Setting up...' : '🧑🏾 I\'m a Passenger'}
-                </div>
-                <div className="text-sm opacity-90">Book rides across Kigali</div>
-              </div>
+              {isProcessing && selectedRole === 'passenger' ? (
+                <>
+                  <Loader2 className="w-8 h-8 mr-3 animate-spin" />
+                  <div className="text-left">
+                    <div className="font-bold text-lg">Setting up...</div>
+                    <div className="text-sm opacity-90">Please wait</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <User className="w-8 h-8 mr-3" />
+                  <div className="text-left">
+                    <div className="font-bold text-lg">🧑🏾 I'm a Passenger</div>
+                    <div className="text-sm opacity-90">Book rides across Kigali</div>
+                  </div>
+                </>
+              )}
             </Button>
           </div>
 
@@ -99,6 +119,12 @@ const RoleStep: React.FC<RoleStepProps> = ({
                   disabled={isProcessing}
                 />
               )}
+            </div>
+          )}
+
+          {isProcessing && (
+            <div className="text-center mt-4 text-sm text-gray-600">
+              <p>Setting up your account...</p>
             </div>
           )}
         </CardContent>
