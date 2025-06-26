@@ -80,7 +80,7 @@ const WelcomeLanding = () => {
     return (
       <>
         <LanguageStep
-          languages={languages}
+          languages={[...languages]}
           selectedLanguage={selectedLanguage}
           onLanguageSelect={handleLanguageSelect}
         />
