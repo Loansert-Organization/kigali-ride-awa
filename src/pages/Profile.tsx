@@ -1,31 +1,35 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MessageCircle, User, Gift, LogOut, Settings } from 'lucide-react';
+import { ArrowLeft, User, Gift, LogOut, Settings } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/contexts/AuthContext';
-import { WhatsAppLoginModal } from '@/components/auth/WhatsAppLoginModal';
-import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { UnifiedWhatsAppOTP } from '@/components/auth/UnifiedWhatsAppOTP';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, userProfile, logout, isGuest } = useAuth();
-  const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
+  const { isAuthenticated, userProfile, logout } = useAuth();
+  const { isAuthenticated: isWhatsAppAuth, getCurrentUser, logout: whatsappLogout } = useUnifiedAuth();
 
-  const handleLoginRequired = () => {
-    requireAuth(() => {
-      // User is now authenticated, the component will re-render
-    });
-  };
+  // Check if we have any form of authentication
+  const currentUser = getCurrentUser() || userProfile;
+  const isUserAuthenticated = isAuthenticated || isWhatsAppAuth();
 
   const handleLogout = async () => {
     await logout();
+    whatsappLogout();
     navigate('/');
   };
 
-  if (isGuest) {
+  const handleAuthSuccess = () => {
+    // Refresh the page to show updated profile
+    window.location.reload();
+  };
+
+  if (!isUserAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
@@ -44,36 +48,24 @@ const Profile = () => {
         </div>
 
         <div className="p-4 max-w-md mx-auto">
-          <Card className="text-center">
-            <CardContent className="p-8">
-              <User className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Guest User</h2>
-              <p className="text-gray-600 mb-6">
-                Verify your WhatsApp to access your profile, booking history, and rewards.
-              </p>
-              <Button 
-                onClick={handleLoginRequired}
-                className="w-full bg-green-600 hover:bg-green-700"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Verify WhatsApp Number
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+          <div className="text-center mb-6">
+            <User className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Guest User</h2>
+            <p className="text-gray-600 mb-6">
+              Verify your WhatsApp to access your profile, booking history, and rewards.
+            </p>
+          </div>
 
-        <WhatsAppLoginModal
-          isOpen={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
-          onSuccess={() => handleLoginSuccess()}
-          title="Verify Your WhatsApp"
-          description="Connect your WhatsApp to access your profile and booking history"
-        />
+          <UnifiedWhatsAppOTP
+            onSuccess={handleAuthSuccess}
+            className="w-full"
+          />
+        </div>
       </div>
     );
   }
 
-  if (!userProfile) {
+  if (!currentUser) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -110,18 +102,17 @@ const Profile = () => {
                 <User className="w-8 h-8 text-purple-600" />
               </div>
               <div className="flex-1">
-                <h2 className="text-xl font-semibold">{userProfile.promo_code}</h2>
+                <h2 className="text-xl font-semibold">{currentUser.promo_code || 'User'}</h2>
                 <div className="flex items-center space-x-2 mt-1">
                   <Badge variant="outline">
-                    {userProfile.role || 'User'}
+                    {currentUser.role || 'User'}
                   </Badge>
-                  <span className="text-sm text-green-600 flex items-center">
-                    <MessageCircle className="w-3 h-3 mr-1" />
+                  <span className="text-sm text-green-600">
                     WhatsApp Verified
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">
-                  {userProfile.phone_number}
+                  {currentUser.phone_number}
                 </p>
               </div>
             </div>
@@ -145,35 +136,37 @@ const Profile = () => {
         </div>
 
         {/* Referral Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Gift className="w-5 h-5 mr-2" />
-              Your Referral Code
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600 mb-2">
-                  {userProfile.promo_code}
+        {currentUser.promo_code && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Gift className="w-5 h-5 mr-2" />
+                Your Referral Code
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600 mb-2">
+                    {currentUser.promo_code}
+                  </div>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Share this code with friends to earn points
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(currentUser.promo_code);
+                    }}
+                  >
+                    Copy Code
+                  </Button>
                 </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Share this code with friends to earn points
-                </p>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(userProfile.promo_code);
-                  }}
-                >
-                  Copy Code
-                </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Settings & Actions */}
         <div className="space-y-3">

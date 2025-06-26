@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,18 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Car } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { WhatsAppOTPFlow } from "@/components/auth/WhatsAppOTPFlow";
+import { UnifiedWhatsAppOTP } from "@/components/auth/UnifiedWhatsAppOTP";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
+
 const VehicleSetup = () => {
   const navigate = useNavigate();
-  const {
-    isAuthenticated,
-    userProfile
-  } = useAuth();
+  const { isAuthenticated, userProfile } = useAuth();
+  const { isAuthenticated: isWhatsAppAuth, getCurrentUser } = useUnifiedAuth();
   const [vehicleType, setVehicleType] = useState<string>("");
   const [plateNumber, setPlateNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showWhatsAppOTP, setShowWhatsAppOTP] = useState(false);
+
   const proceedWithVehicleSetup = async () => {
     if (!vehicleType || !plateNumber.trim()) {
       toast({
@@ -28,7 +30,12 @@ const VehicleSetup = () => {
       });
       return;
     }
-    if (!userProfile) {
+
+    // Get user from WhatsApp auth or regular auth
+    const whatsappUser = getCurrentUser();
+    const currentUser = whatsappUser || userProfile;
+
+    if (!currentUser) {
       toast({
         title: "Authentication required",
         description: "Please verify your WhatsApp number first",
@@ -36,32 +43,36 @@ const VehicleSetup = () => {
       });
       return;
     }
+
     setIsLoading(true);
     try {
       // Create or update driver profile
-      const {
-        error
-      } = await supabase.from('driver_profiles').upsert({
-        user_id: userProfile.id,
-        vehicle_type: vehicleType,
-        plate_number: plateNumber.toUpperCase(),
-        is_online: false
-      });
+      const { error } = await supabase
+        .from('driver_profiles')
+        .upsert({
+          user_id: currentUser.id,
+          vehicle_type: vehicleType,
+          plate_number: plateNumber.toUpperCase(),
+          is_online: false
+        });
+
       if (error) throw error;
 
       // Update user role to driver if not already set
-      if (userProfile.role !== 'driver') {
-        const {
-          error: roleError
-        } = await supabase.from('users').update({
-          role: 'driver'
-        }).eq('id', userProfile.id);
+      if (currentUser.role !== 'driver') {
+        const { error: roleError } = await supabase
+          .from('users')
+          .update({ role: 'driver' })
+          .eq('id', currentUser.id);
+
         if (roleError) throw roleError;
       }
+
       toast({
         title: "🚗 Vehicle setup complete!",
         description: "You can now start posting trips and earning money"
       });
+
       navigate('/home/driver');
     } catch (error) {
       console.error('Vehicle setup error:', error);
@@ -74,9 +85,10 @@ const VehicleSetup = () => {
       setIsLoading(false);
     }
   };
+
   const handleVehicleSetup = () => {
     // If not authenticated, show WhatsApp login wizard
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !isWhatsAppAuth()) {
       setShowWhatsAppOTP(true);
       return;
     }
@@ -84,14 +96,19 @@ const VehicleSetup = () => {
     // If authenticated, proceed with vehicle setup
     proceedWithVehicleSetup();
   };
-  const handleWhatsAppSuccess = async (phoneNumber: string) => {
+
+  const handleWhatsAppSuccess = () => {
     setShowWhatsAppOTP(false);
     // After successful WhatsApp login, proceed with vehicle setup
     setTimeout(() => {
       proceedWithVehicleSetup();
     }, 500);
   };
-  return <div className="min-h-screen bg-gray-50">
+
+  const currentUserAuth = isAuthenticated || isWhatsAppAuth();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b p-4">
         <div className="flex items-center max-w-md mx-auto">
@@ -113,11 +130,13 @@ const VehicleSetup = () => {
           </div>
 
           {/* Auth Status */}
-          {!isAuthenticated && <div className="bg-green-50 p-3 rounded-lg text-center">
+          {!currentUserAuth && (
+            <div className="bg-green-50 p-3 rounded-lg text-center">
               <p className="text-sm text-green-800">
                 🚗 Fill in your vehicle details. You'll verify your WhatsApp when saving.
               </p>
-            </div>}
+            </div>
+          )}
 
           <div className="space-y-4">
             <div>
@@ -137,26 +156,55 @@ const VehicleSetup = () => {
 
             <div>
               <Label htmlFor="plateNumber">Plate Number</Label>
-              <Input id="plateNumber" type="text" placeholder="e.g., RAD 123 A" value={plateNumber} onChange={e => setPlateNumber(e.target.value)} className="uppercase" />
+              <Input
+                id="plateNumber"
+                type="text"
+                placeholder="e.g., RAD 123 A"
+                value={plateNumber}
+                onChange={(e) => setPlateNumber(e.target.value)}
+                className="uppercase"
+              />
               <p className="text-xs text-gray-500 mt-1">
                 Enter your vehicle's license plate number
               </p>
             </div>
           </div>
 
-          <Button onClick={handleVehicleSetup} disabled={isLoading} size="lg" className="w-full bg-purple-600 hover:bg-purple-700 text-xs">
-            {isLoading ? 'Setting up...' : !isAuthenticated ? '📱 Verify WhatsApp & Complete Setup' : '🚗 Complete Vehicle Setup'}
+          <Button
+            onClick={handleVehicleSetup}
+            disabled={isLoading}
+            size="lg"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-xs"
+          >
+            {isLoading ? 'Setting up...' : !currentUserAuth ? '📱 Verify WhatsApp & Complete Setup' : '🚗 Complete Vehicle Setup'}
           </Button>
 
-          {!isAuthenticated && <div className="text-center">
+          {!currentUserAuth && (
+            <div className="text-center">
               <p className="text-sm text-gray-600">
                 You'll need to verify your WhatsApp number to continue
               </p>
-            </div>}
+            </div>
+          )}
         </div>
       </div>
 
-      <WhatsAppOTPFlow isOpen={showWhatsAppOTP} onClose={() => setShowWhatsAppOTP(false)} onSuccess={handleWhatsAppSuccess} userProfile={userProfile} />
-    </div>;
+      {/* WhatsApp OTP Flow */}
+      {showWhatsAppOTP && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-4 border-b">
+              <h2 className="text-lg font-semibold">WhatsApp Verification</h2>
+            </div>
+            <UnifiedWhatsAppOTP
+              onSuccess={handleWhatsAppSuccess}
+              onCancel={() => setShowWhatsAppOTP(false)}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
+
 export default VehicleSetup;
