@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { phone_number, otp_code, user_id } = await req.json()
+    const { phone_number, otp_code } = await req.json()
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -51,29 +51,55 @@ serve(async (req) => {
       .update({ used: true })
       .eq('id', otpRecord.id)
 
-    // Update user verification status
-    if (user_id) {
-      const { error: updateError } = await supabase
+    // Check if user exists with this phone number
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('phone_number', phone_number)
+      .eq('phone_verified', true)
+      .eq('auth_method', 'whatsapp')
+      .single()
+
+    let user = existingUser
+
+    if (!user) {
+      // Create new user with WhatsApp verification
+      const { data: newUser, error: createError } = await supabase
         .from('users')
-        .update({ 
-          phone_verified: true, 
+        .insert({
+          phone_number: phone_number,
+          phone_verified: true,
           auth_method: 'whatsapp',
-          phone_number: phone_number
+          location_enabled: false,
+          notifications_enabled: true,
+          language: 'en',
+          onboarding_completed: false
         })
-        .eq('id', user_id)
+        .select()
+        .single()
 
-      if (updateError) {
-        throw new Error(`Update error: ${updateError.message}`)
+      if (createError) {
+        console.error('Error creating user:', createError)
+        throw new Error('Failed to create user profile')
       }
-    }
 
-    console.log(`Phone ${phone_number} successfully verified via WhatsApp OTP`)
+      user = newUser
+      console.log(`New WhatsApp user created: ${user.id}`)
+    } else {
+      console.log(`Existing WhatsApp user verified: ${user.id}`)
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true,
         message: 'Phone number verified successfully',
-        phoneNumber: phone_number
+        user: {
+          id: user.id,
+          phone_number: user.phone_number,
+          role: user.role,
+          onboarding_completed: user.onboarding_completed,
+          promo_code: user.promo_code
+        }
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

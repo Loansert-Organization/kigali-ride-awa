@@ -13,45 +13,45 @@ serve(async (req) => {
   }
 
   try {
-    const { phone_number, user_id } = await req.json()
+    const { phone_number } = await req.json()
 
     // Generate 6-digit OTP code
-    const otp_code = Math.floor(100000 + Math.random() * 900000).toString()
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString()
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Store OTP in database
-    const { error: dbError } = await supabase
+    // Store OTP code in database
+    const { error: otpError } = await supabase
       .from('otp_codes')
       .insert({
         phone_number: phone_number,
-        otp_code: otp_code,
+        otp_code: otpCode,
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
       })
 
-    if (dbError) {
-      throw new Error(`Database error: ${dbError.message}`)
+    if (otpError) {
+      throw new Error(`Failed to store OTP: ${otpError.message}`)
     }
 
-    // WhatsApp API credentials
-    const WA_ACCESS_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN')
-    const WA_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')
+    // WhatsApp Business API credentials
+    const WHATSAPP_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN')
+    const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')
     
-    if (!WA_ACCESS_TOKEN || !WA_PHONE_NUMBER_ID) {
+    if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
       throw new Error('WhatsApp API credentials not configured')
     }
 
     // Format phone number (remove + if present)
     const formattedPhone = phone_number.replace('+', '')
     
-    // Send WhatsApp template message using auth_rw template
-    const whatsappResponse = await fetch(`https://graph.facebook.com/v19.0/${WA_PHONE_NUMBER_ID}/messages`, {
+    // Send WhatsApp template message
+    const whatsappResponse = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${WA_ACCESS_TOKEN}`,
+        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -60,12 +60,17 @@ serve(async (req) => {
         type: 'template',
         template: {
           name: 'auth_rw',
-          language: { code: 'en' },
+          language: {
+            code: 'en'
+          },
           components: [
             {
               type: 'body',
               parameters: [
-                { type: 'text', text: otp_code }
+                {
+                  type: 'text',
+                  text: otpCode
+                }
               ]
             }
           ]
@@ -80,22 +85,12 @@ serve(async (req) => {
       throw new Error(`WhatsApp API error: ${whatsappResult.error?.message || 'Unknown error'}`)
     }
 
-    console.log('WhatsApp template message sent successfully:', whatsappResult)
-
-    // Update user with phone number if provided
-    if (user_id) {
-      await supabase
-        .from('users')
-        .update({ phone_number: phone_number })
-        .eq('id', user_id)
-    }
+    console.log('WhatsApp OTP sent successfully:', whatsappResult)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        status: 'sent',
-        messageId: whatsappResult.messages?.[0]?.id,
-        otpCode: otp_code // For demo purposes - remove in production
+        messageId: whatsappResult.messages?.[0]?.id
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

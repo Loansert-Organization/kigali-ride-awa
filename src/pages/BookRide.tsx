@@ -6,21 +6,22 @@ import { Button } from "@/components/ui/button";
 import TripRouteCard from '@/components/booking/TripRouteCard';
 import VehicleSelectionBlock from '@/components/trip/VehicleSelectionBlock';
 import TripDetailsBlock from '@/components/trip/TripDetailsBlock';
+import { WhatsAppLoginModal } from '@/components/auth/WhatsAppLoginModal';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useBookingFlow, TripData } from '@/hooks/useBookingFlow';
 import { MapPickerModal } from '@/components/maps/MapPickerModal';
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from '@/contexts/AuthContext';
 
 const BookRide = () => {
   const navigate = useNavigate();
-  const { user, userProfile } = useAuth();
   const { createPassengerTrip, isLoading } = useBookingFlow();
+  const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
   const [showMapPicker, setShowMapPicker] = useState<'pickup' | 'destination' | null>(null);
   
   const [tripData, setTripData] = useState<TripData>({
     fromLocation: '',
     toLocation: '',
-    scheduledTime: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes from now
+    scheduledTime: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     vehicleType: 'car',
     description: ''
   });
@@ -36,22 +37,10 @@ const BookRide = () => {
       script.onload = () => console.log('✅ Google Maps loaded successfully');
       script.onerror = () => console.error('❌ Failed to load Google Maps');
       document.head.appendChild(script);
-    } else {
-      console.log('✅ Google Maps already loaded');
     }
   }, []);
 
-  // Debug auth state
-  useEffect(() => {
-    console.log('🔐 BookRide Auth State:', {
-      user: user ? { id: user.id } : null,
-      userProfile: userProfile ? { id: userProfile.id, role: userProfile.role } : null,
-      loading: isLoading
-    });
-  }, [user, userProfile, isLoading]);
-
   const handleFromLocationChange = (value: string, coordinates?: { lat: number; lng: number }) => {
-    console.log('📍 From location changed:', { value, coordinates });
     setTripData(prev => ({
       ...prev,
       fromLocation: value,
@@ -61,7 +50,6 @@ const BookRide = () => {
   };
 
   const handleToLocationChange = (value: string, coordinates?: { lat: number; lng: number }) => {
-    console.log('📍 To location changed:', { value, coordinates });
     setTripData(prev => ({
       ...prev,
       toLocation: value,
@@ -71,12 +59,10 @@ const BookRide = () => {
   };
 
   const handleUpdate = (updates: Partial<TripData>) => {
-    console.log('🔄 Trip data update:', updates);
     setTripData(prev => ({ ...prev, ...updates }));
   };
 
   const handleMapPickerSelect = (location: { lat: number; lng: number; address: string }) => {
-    console.log('🗺️ Map picker selection:', { location, mode: showMapPicker });
     if (showMapPicker === 'pickup') {
       handleFromLocationChange(location.address, { lat: location.lat, lng: location.lng });
     } else if (showMapPicker === 'destination') {
@@ -85,28 +71,10 @@ const BookRide = () => {
     setShowMapPicker(null);
   };
 
-  const handleBookRide = async () => {
-    console.log('🚗 Starting ride booking process...');
-    console.log('📊 Current trip data:', tripData);
+  const proceedWithBooking = async () => {
+    console.log('🚗 Proceeding with authenticated booking...');
     
-    // Check authentication
-    if (!user || !userProfile) {
-      console.error('❌ Authentication check failed:', { user: !!user, userProfile: !!userProfile });
-      toast({
-        title: "Authentication required",
-        description: "Please complete your profile to book a ride",
-        variant: "destructive"
-      });
-      navigate('/welcome');
-      return;
-    }
-
-    // Validate required fields
     if (!tripData.fromLocation || !tripData.toLocation) {
-      console.error('❌ Missing location information:', {
-        fromLocation: tripData.fromLocation,
-        toLocation: tripData.toLocation
-      });
       toast({
         title: "Missing information",
         description: "Please enter both pickup and destination locations",
@@ -115,22 +83,9 @@ const BookRide = () => {
       return;
     }
 
-    // More lenient coordinate validation - allow booking even without precise coordinates
-    if (!tripData.fromLat && !tripData.fromLng && !tripData.toLat && !tripData.toLng) {
-      console.warn('⚠️ No coordinates available, but allowing booking to proceed');
-      toast({
-        title: "Location precision limited",
-        description: "Proceeding with text-based locations. Driver will contact you for details.",
-      });
-    }
-
     try {
-      console.log('📤 Calling createPassengerTrip...');
       const success = await createPassengerTrip(tripData);
-      console.log('📥 Booking result:', success);
-      
       if (!success) {
-        console.error('❌ Booking failed - createPassengerTrip returned false');
         toast({
           title: "Booking failed",
           description: "Please try again or contact support",
@@ -138,7 +93,7 @@ const BookRide = () => {
         });
       }
     } catch (error) {
-      console.error('💥 Booking error caught:', error);
+      console.error('💥 Booking error:', error);
       toast({
         title: "Booking failed",
         description: "Please try again or contact support",
@@ -147,15 +102,12 @@ const BookRide = () => {
     }
   };
 
-  const canBookRide = tripData.fromLocation && tripData.toLocation;
+  const handleBookRide = () => {
+    // Use auth guard - will show WhatsApp login if not authenticated
+    requireAuth(proceedWithBooking);
+  };
 
-  console.log('🎯 Render state:', {
-    canBookRide,
-    isLoading,
-    fromLocation: tripData.fromLocation,
-    toLocation: tripData.toLocation,
-    hasCoordinates: !!(tripData.fromLat && tripData.fromLng && tripData.toLat && tripData.toLng)
-  });
+  const canBookRide = tripData.fromLocation && tripData.toLocation;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -227,6 +179,14 @@ const BookRide = () => {
             ? (tripData.fromLat && tripData.fromLng ? { lat: tripData.fromLat, lng: tripData.fromLng } : undefined)
             : (tripData.toLat && tripData.toLng ? { lat: tripData.toLat, lng: tripData.toLng } : undefined)
         }
+      />
+
+      <WhatsAppLoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={() => handleLoginSuccess(proceedWithBooking)}
+        title="Login to Book Ride"
+        description="Verify your WhatsApp number to book your ride"
       />
     </div>
   );

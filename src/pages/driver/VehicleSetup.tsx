@@ -7,11 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Car, Save, AlertCircle } from 'lucide-react';
+import { WhatsAppLoginModal } from '@/components/auth/WhatsAppLoginModal';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { useWhatsAppAuth } from '@/contexts/WhatsAppAuthContext';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const VehicleSetup = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, userProfile } = useWhatsAppAuth();
+  const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     vehicleType: '',
@@ -20,41 +25,34 @@ const VehicleSetup = () => {
   });
 
   useEffect(() => {
-    loadExistingProfile();
-  }, []);
+    if (isAuthenticated && userProfile) {
+      loadExistingProfile();
+    }
+  }, [isAuthenticated, userProfile]);
 
   const loadExistingProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    if (!userProfile) return;
 
-      const { data: userRecord } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_user_id', user.id)
+    try {
+      const { data: profile } = await supabase
+        .from('driver_profiles')
+        .select('*')
+        .eq('user_id', userProfile.id)
         .single();
 
-      if (userRecord) {
-        const { data: profile } = await supabase
-          .from('driver_profiles')
-          .select('*')
-          .eq('user_id', userRecord.id)
-          .single();
-
-        if (profile) {
-          setFormData({
-            vehicleType: profile.vehicle_type || '',
-            plateNumber: profile.plate_number || '',
-            preferredZone: profile.preferred_zone || ''
-          });
-        }
+      if (profile) {
+        setFormData({
+          vehicleType: profile.vehicle_type || '',
+          plateNumber: profile.plate_number || '',
+          preferredZone: profile.preferred_zone || ''
+        });
       }
     } catch (error) {
       console.error('Error loading profile:', error);
     }
   };
 
-  const handleSave = async () => {
+  const saveVehicleData = async () => {
     if (!formData.vehicleType || !formData.plateNumber) {
       toast({
         title: "Required Fields",
@@ -64,23 +62,21 @@ const VehicleSetup = () => {
       return;
     }
 
+    if (!userProfile) {
+      toast({
+        title: "Authentication Error",
+        description: "Please login with WhatsApp first",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: userRecord } = await supabase
-        .from('users')
-        .select('id')
-        .eq('auth_user_id', user.id)
-        .single();
-
-      if (!userRecord) throw new Error('User profile not found');
-
       const { error } = await supabase
         .from('driver_profiles')
         .upsert({
-          user_id: userRecord.id,
+          user_id: userProfile.id,
           vehicle_type: formData.vehicleType,
           plate_number: formData.plateNumber,
           preferred_zone: formData.preferredZone || null
@@ -104,6 +100,11 @@ const VehicleSetup = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSave = () => {
+    // Use auth guard - will show WhatsApp login if not authenticated
+    requireAuth(saveVehicleData);
   };
 
   const vehicleTypes = [
@@ -205,8 +206,8 @@ const VehicleSetup = () => {
               <div className="flex items-start">
                 <AlertCircle className="w-4 h-4 text-blue-600 mr-2 mt-0.5" />
                 <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">Required Information</p>
-                  <p>This information helps passengers identify your vehicle and builds trust in the platform.</p>
+                  <p className="font-medium mb-1">WhatsApp Verification Required</p>
+                  <p>You'll need to verify your WhatsApp number to save your vehicle information and start driving.</p>
                 </div>
               </div>
             </div>
@@ -222,6 +223,14 @@ const VehicleSetup = () => {
           </CardContent>
         </Card>
       </div>
+
+      <WhatsAppLoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={() => handleLoginSuccess(saveVehicleData)}
+        title="Driver Verification Required"
+        description="Verify your WhatsApp number to save your vehicle and start driving"
+      />
     </div>
   );
 };
