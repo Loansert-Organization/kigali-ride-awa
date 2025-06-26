@@ -3,7 +3,6 @@ import React, { useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { ToastAction } from '@/components/ui/toast';
 
 interface ErrorLogEntry {
   event_type: string;
@@ -83,34 +82,16 @@ export const useErrorHandler = (options?: UseErrorHandlerOptions) => {
     });
 
     const displayMessage = getDisplayMessage(errorMessage);
-    const showWhatsAppButton = shouldShowWhatsAppLogin(errorMessage) && options?.onWhatsAppLogin;
 
-    // Show user-friendly toast with optional WhatsApp login action
-    if (showWhatsAppButton) {
-      toast({
-        title: "Something went wrong",
-        description: displayMessage,
-        variant: "destructive",
-        action: (
-          <ToastAction
-            altText="Login with WhatsApp"
-            onClick={options.onWhatsAppLogin}
-            className="text-xs"
-          >
-            📱 Login with WhatsApp
-          </ToastAction>
-        )
-      });
-    } else {
-      toast({
-        title: "Something went wrong",
-        description: displayMessage,
-        variant: "destructive"
-      });
-    }
+    // Show user-friendly toast without WhatsApp action - navigation should handle auth
+    toast({
+      title: "Something went wrong",
+      description: displayMessage,
+      variant: "destructive"
+    });
 
     console.error(`Error in ${component}:`, error);
-  }, [logError, shouldShowWhatsAppLogin, options?.onWhatsAppLogin]);
+  }, [logError]);
 
   const handleSuccess = useCallback(async (
     message: string,
