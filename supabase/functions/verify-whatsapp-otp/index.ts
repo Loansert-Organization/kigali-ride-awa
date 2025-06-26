@@ -13,30 +13,33 @@ serve(async (req) => {
   }
 
   try {
-    const { phone_number, otp_code } = await req.json()
+    const { phone_number, otp_code, user_id } = await req.json()
+
+    if (!phone_number || !otp_code || !user_id) {
+      throw new Error('Missing required parameters: phone_number, otp_code, user_id')
+    }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Verify OTP code
+    // Get the most recent OTP for this phone number and user
     const { data: otpRecord, error: otpError } = await supabase
       .from('otp_codes')
       .select('*')
       .eq('phone_number', phone_number)
-      .eq('otp_code', otp_code)
-      .eq('used', false)
-      .gt('expires_at', new Date().toISOString())
+      .eq('user_id', user_id)
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
 
     if (otpError || !otpRecord) {
+      console.error('OTP record not found:', otpError)
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Invalid or expired OTP code'
+          message: 'No OTP found for this phone number'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -45,61 +48,67 @@ serve(async (req) => {
       )
     }
 
-    // Mark OTP as used
+    // Check if OTP has expired (10 minutes)
+    const expirationTime = new Date(otpRecord.expires_at).getTime()
+    const currentTime = new Date().getTime()
+    
+    if (currentTime > expirationTime) {
+      console.log('OTP expired for phone:', phone_number)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'OTP has expired. Please request a new one.'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
+
+    // Check if OTP matches
+    if (otpRecord.otp_code !== otp_code) {
+      console.log('Invalid OTP for phone:', phone_number, 'Expected:', otpRecord.otp_code, 'Got:', otp_code)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Invalid OTP code'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
+
+    // Update user as verified
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
+        phone_number: phone_number,
+        phone_verified: true, 
+        auth_method: 'whatsapp'
+      })
+      .eq('id', user_id)
+
+    if (updateError) {
+      console.error('Failed to update user:', updateError)
+      throw new Error(`Update error: ${updateError.message}`)
+    }
+
+    // Delete the used OTP
     await supabase
       .from('otp_codes')
-      .update({ used: true })
+      .delete()
       .eq('id', otpRecord.id)
 
-    // Check if user exists with this phone number
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('*')
-      .eq('phone_number', phone_number)
-      .eq('phone_verified', true)
-      .eq('auth_method', 'whatsapp')
-      .single()
-
-    let user = existingUser
-
-    if (!user) {
-      // Create new user with WhatsApp verification
-      const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert({
-          phone_number: phone_number,
-          phone_verified: true,
-          auth_method: 'whatsapp',
-          location_enabled: false,
-          notifications_enabled: true,
-          language: 'en',
-          onboarding_completed: false
-        })
-        .select()
-        .single()
-
-      if (createError) {
-        console.error('Error creating user:', createError)
-        throw new Error('Failed to create user profile')
-      }
-
-      user = newUser
-      console.log(`New WhatsApp user created: ${user.id}`)
-    } else {
-      console.log(`Existing WhatsApp user verified: ${user.id}`)
-    }
+    console.log(`User ${user_id} successfully verified via WhatsApp OTP`)
 
     return new Response(
       JSON.stringify({ 
         success: true,
         message: 'Phone number verified successfully',
-        user: {
-          id: user.id,
-          phone_number: user.phone_number,
-          role: user.role,
-          onboarding_completed: user.onboarding_completed,
-          promo_code: user.promo_code
-        }
+        phoneNumber: phone_number
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -112,7 +121,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message 
+        message: error.message || 'Verification failed'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
