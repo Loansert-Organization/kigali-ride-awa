@@ -1,4 +1,3 @@
-
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @tailwind base;
 @tailwind components;
@@ -66,30 +65,30 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground text-[17px] font-medium;
+    @apply bg-background text-foreground text-lg font-medium;
     font-family: "Inter", system-ui, sans-serif;
     line-height: 1.5;
   }
   
-  /* Enhanced typography hierarchy */
+  /* Enhanced typography hierarchy with increased sizes */
   h1 {
-    @apply text-2xl font-bold;
+    @apply text-3xl font-bold;
   }
   
   h2 {
-    @apply text-xl font-semibold;
+    @apply text-2xl font-semibold;
   }
   
   h3 {
-    @apply text-lg font-semibold;
+    @apply text-xl font-semibold;
   }
   
   p {
-    @apply text-[17px] font-medium;
+    @apply text-lg font-medium;
   }
   
   small {
-    @apply text-sm font-medium;
+    @apply text-base font-medium;
   }
 }
 
@@ -134,29 +133,29 @@
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
   
-  /* Enhanced typography utilities */
+  /* Enhanced typography utilities with increased sizes */
   .text-heading-1 {
-    @apply text-3xl font-bold;
+    @apply text-4xl font-bold;
   }
   
   .text-heading-2 {
-    @apply text-2xl font-bold;
+    @apply text-3xl font-bold;
   }
   
   .text-heading-3 {
-    @apply text-xl font-semibold;
+    @apply text-2xl font-semibold;
   }
   
   .text-body {
-    @apply text-[17px] font-medium;
+    @apply text-lg font-medium;
   }
   
   .text-caption {
-    @apply text-sm font-medium;
+    @apply text-base font-medium;
   }
   
   .text-label {
-    @apply text-[15px] font-semibold;
+    @apply text-base font-semibold;
   }
 }
 

@@ -65,13 +65,13 @@ const LeaderboardBlock = () => {
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return <Trophy className="w-5 h-5 text-yellow-500" />;
+        return <Trophy className="w-6 h-6 text-yellow-500" />;
       case 2:
-        return <Medal className="w-5 h-5 text-gray-400" />;
+        return <Medal className="w-6 h-6 text-gray-400" />;
       case 3:
-        return <Award className="w-5 h-5 text-orange-500" />;
+        return <Award className="w-6 h-6 text-orange-500" />;
       default:
-        return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold">#{rank}</span>;
+        return <span className="w-6 h-6 flex items-center justify-center text-base font-bold">#{rank}</span>;
     }
   };
 
@@ -87,15 +87,15 @@ const LeaderboardBlock = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Trophy className="w-5 h-5 mr-2" />
+          <CardTitle className="flex items-center text-xl">
+            <Trophy className="w-6 h-6 mr-2" />
             🏆 Weekly Leaderboard
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <p className="text-red-600 font-medium">Failed to load leaderboard</p>
-            <p className="text-sm text-gray-500 mt-1">Please try again later</p>
+            <p className="text-red-600 font-medium text-lg">Failed to load leaderboard</p>
+            <p className="text-base text-gray-500 mt-1">Please try again later</p>
           </div>
         </CardContent>
       </Card>
@@ -106,14 +106,14 @@ const LeaderboardBlock = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Trophy className="w-5 h-5 mr-2" />
+          <CardTitle className="flex items-center text-xl">
+            <Trophy className="w-6 h-6 mr-2" />
             🏆 Weekly Leaderboard
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <div className="animate-pulse font-medium">Loading leaderboard...</div>
+            <div className="animate-pulse font-medium text-lg">Loading leaderboard...</div>
           </div>
         </CardContent>
       </Card>
@@ -123,17 +123,17 @@ const LeaderboardBlock = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <Trophy className="w-5 h-5 mr-2" />
+        <CardTitle className="flex items-center text-xl">
+          <Trophy className="w-6 h-6 mr-2" />
           🏆 Weekly Leaderboard (Top 10)
         </CardTitle>
       </CardHeader>
       <CardContent>
         {!leaderboard || leaderboard.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <Trophy className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-sm font-medium">No rankings yet this week</p>
-            <p className="text-xs mt-1">Be the first to earn points!</p>
+            <Trophy className="w-16 h-16 mx-auto mb-3 text-gray-300" />
+            <p className="text-base font-medium">No rankings yet this week</p>
+            <p className="text-sm mt-1">Be the first to earn points!</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -144,17 +144,17 @@ const LeaderboardBlock = () => {
               return (
                 <div
                   key={entry.id}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
+                  className={`flex items-center justify-between p-4 rounded-lg ${
                     rank <= 3 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200' : 'bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
                     {getRankIcon(rank)}
                     <div>
-                      <p className="font-mono text-sm font-medium">
+                      <p className="font-mono text-base font-medium">
                         {entry.user?.promo_code || 'Unknown'}
                       </p>
-                      <p className="text-xs text-gray-500 font-medium">
+                      <p className="text-sm text-gray-500 font-medium">
                         {entry.points} points
                       </p>
                     </div>
@@ -162,7 +162,7 @@ const LeaderboardBlock = () => {
                   
                   {reward && (
                     <div className="text-right">
-                      <span className="text-sm font-medium text-green-600">
+                      <span className="text-base font-medium text-green-600">
                         ✅ {reward}
                       </span>
                     </div>
@@ -175,8 +175,8 @@ const LeaderboardBlock = () => {
 
         {/* User's current position */}
         {userRank !== undefined && (
-          <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-            <p className="text-sm text-center font-medium">
+          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <p className="text-base text-center font-medium">
               <strong>Your current position:</strong> {userRank} points this week
               {userRank === 0 && " - Start referring to climb the ranks!"}
             </p>

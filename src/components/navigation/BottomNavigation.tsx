@@ -42,14 +42,14 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ role }) => {
               key={tab.path}
               variant="ghost"
               onClick={() => navigate(tab.path)}
-              className={`flex-1 flex flex-col items-center py-2 px-1 h-auto ${
+              className={`flex-1 flex flex-col items-center py-3 px-1 h-auto ${
                 isActive 
                   ? 'text-purple-600 bg-purple-50' 
                   : 'text-gray-600 hover:text-purple-600'
               }`}
             >
-              <Icon className="w-5 h-5 mb-1" />
-              <span className="text-[13px] font-semibold">{tab.label}</span>
+              <Icon className="w-6 h-6 mb-1" />
+              <span className="text-sm font-semibold">{tab.label}</span>
             </Button>
           );
         })}

@@ -57,15 +57,15 @@ const ReferralListBlock = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Users className="w-5 h-5 mr-2" />
+          <CardTitle className="flex items-center text-xl">
+            <Users className="w-6 h-6 mr-2" />
             👥 People You Referred
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <p className="text-red-600 font-medium">Failed to load referrals</p>
-            <p className="text-sm text-gray-500 mt-1">Please try again later</p>
+            <p className="text-red-600 font-medium text-lg">Failed to load referrals</p>
+            <p className="text-base text-gray-500 mt-1">Please try again later</p>
           </div>
         </CardContent>
       </Card>
@@ -76,14 +76,14 @@ const ReferralListBlock = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Users className="w-5 h-5 mr-2" />
+          <CardTitle className="flex items-center text-xl">
+            <Users className="w-6 h-6 mr-2" />
             👥 People You Referred
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <div className="animate-pulse font-medium">Loading referrals...</div>
+            <div className="animate-pulse font-medium text-lg">Loading referrals...</div>
           </div>
         </CardContent>
       </Card>
@@ -93,17 +93,17 @@ const ReferralListBlock = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <Users className="w-5 h-5 mr-2" />
+        <CardTitle className="flex items-center text-xl">
+          <Users className="w-6 h-6 mr-2" />
           👥 People You Referred ({referrals?.length || 0})
         </CardTitle>
       </CardHeader>
       <CardContent>
         {!referrals || referrals.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-sm font-medium">No referrals yet</p>
-            <p className="text-xs mt-1">Share your code to start earning points!</p>
+            <Users className="w-16 h-16 mx-auto mb-3 text-gray-300" />
+            <p className="text-base font-medium">No referrals yet</p>
+            <p className="text-sm mt-1">Share your code to start earning points!</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -114,23 +114,23 @@ const ReferralListBlock = () => {
               return (
                 <div
                   key={referral.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{roleIcon}</span>
+                    <span className="text-3xl">{roleIcon}</span>
                     <div>
-                      <p className="font-medium text-sm">
+                      <p className="font-medium text-base">
                         {referral.referee?.promo_code || `Referral #${index + 1}`}
                       </p>
-                      <p className="text-xs text-gray-500 capitalize font-medium">
+                      <p className="text-sm text-gray-500 capitalize font-medium">
                         {referral.referee_role}
                       </p>
                     </div>
                   </div>
                   
                   <div className="flex items-center space-x-2">
-                    <span className="text-lg">{status.icon}</span>
-                    <span className={`text-xs font-medium ${status.color}`}>
+                    <span className="text-xl">{status.icon}</span>
+                    <span className={`text-sm font-medium ${status.color}`}>
                       {status.text}
                     </span>
                   </div>
