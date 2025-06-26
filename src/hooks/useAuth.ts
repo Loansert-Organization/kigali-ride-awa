@@ -18,43 +18,42 @@ export const useAuth = () => {
         .from('users')
         .select('*')
         .eq('auth_user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error loading user profile:', error);
-        // If no profile exists, create one
-        if (error.code === 'PGRST116') {
-          const { data: newProfile, error: createError } = await supabase
-            .from('users')
-            .insert({
-              auth_user_id: userId,
-              role: null,
-              language: 'en',
-              location_enabled: false,
-              notifications_enabled: false,
-              onboarding_completed: false
-            })
-            .select()
-            .single();
-
-          if (createError) {
-            console.error('Error creating user profile:', createError);
-            throw createError;
-          }
-          
-          // Type assertion to ensure proper role type
-          const typedProfile = {
-            ...newProfile,
-            role: newProfile.role as 'passenger' | 'driver' | null
-          } as UserProfile;
-          
-          setUserProfile(typedProfile);
-          return typedProfile;
-        }
         throw error;
       }
 
-      // Type assertion to ensure proper role type
+      if (!data) {
+        console.log('No user profile found, creating one...');
+        const { data: newProfile, error: createError } = await supabase
+          .from('users')
+          .insert({
+            auth_user_id: userId,
+            role: null,
+            language: 'en',
+            location_enabled: false,
+            notifications_enabled: false,
+            onboarding_completed: false
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating user profile:', createError);
+          throw createError;
+        }
+        
+        const typedProfile = {
+          ...newProfile,
+          role: newProfile.role as 'passenger' | 'driver' | null
+        } as UserProfile;
+        
+        setUserProfile(typedProfile);
+        return typedProfile;
+      }
+
       const typedProfile = {
         ...data,
         role: data.role as 'passenger' | 'driver' | null
@@ -92,7 +91,6 @@ export const useAuth = () => {
 
       if (error) throw error;
 
-      // Type assertion to ensure proper role type
       const typedProfile = {
         ...data,
         role: data.role as 'passenger' | 'driver' | null
@@ -120,55 +118,55 @@ export const useAuth = () => {
   }, []);
 
   useEffect(() => {
-    // Get initial session
+    let mounted = true;
+
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Error getting session:', error);
-        } else {
+        } else if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
           
-          // Load user profile if we have a user
           if (session?.user) {
-            // Use setTimeout to avoid potential recursion
-            setTimeout(() => {
-              loadUserProfile(session.user.id);
-            }, 0);
+            await loadUserProfile(session.user.id);
           }
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     getInitialSession();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id ? { id: session.user.id } : null);
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Use setTimeout to prevent recursion in auth state change
-          setTimeout(() => {
-            loadUserProfile(session.user.id);
-          }, 0);
-        } else {
-          setUserProfile(null);
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            await loadUserProfile(session.user.id);
+          } else {
+            setUserProfile(null);
+          }
+          
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [loadUserProfile]);
 
   return {

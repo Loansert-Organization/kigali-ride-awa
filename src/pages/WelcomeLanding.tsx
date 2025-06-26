@@ -60,7 +60,6 @@ const WelcomeLanding = () => {
     setSelectedLanguage(lang);
     localStorage.setItem('language', lang);
     
-    // Smooth transition with confetti effect
     setTimeout(() => {
       setCurrentStep('role');
     }, 300);
@@ -79,35 +78,43 @@ const WelcomeLanding = () => {
       return;
     }
     
-    if (!user) {
-      console.log('No user found, cannot select role');
-      toast({
-        title: "Error",
-        description: "Please wait for authentication to complete",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setSelectedRole(role);
     setIsProcessing(true);
 
     try {
-      console.log('Updating user role to:', role, 'for user ID:', user.id);
+      // First ensure we have an authenticated user
+      if (!user) {
+        console.log('No authenticated user, signing in anonymously...');
+        const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+        
+        if (authError) {
+          console.error('Error with anonymous sign in:', authError);
+          throw authError;
+        }
+        
+        // Wait a moment for the auth state to update
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
 
-      // First check if we have a user profile
+      console.log('Updating user role to:', role, 'for user ID:', user?.id);
+
+      // Create or update user profile
+      const profileData = {
+        role: role,
+        language: selectedLanguage,
+        location_enabled: false,
+        notifications_enabled: false,
+        onboarding_completed: false,
+        updated_at: new Date().toISOString()
+      };
+
       if (!userProfile) {
         console.log('No user profile found, creating one first');
-        // Create profile first
         const { data: newProfile, error: createError } = await supabase
           .from('users')
           .insert({
-            auth_user_id: user.id,
-            role: role,
-            language: selectedLanguage,
-            location_enabled: false,
-            notifications_enabled: false,
-            onboarding_completed: false
+            ...profileData,
+            auth_user_id: user?.id || null,
           })
           .select()
           .single();
@@ -119,19 +126,14 @@ const WelcomeLanding = () => {
 
         console.log('User profile created successfully:', newProfile);
       } else {
-        // Update existing profile
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from('users')
-          .update({ 
-            role: role,
-            language: selectedLanguage,
-            updated_at: new Date().toISOString()
-          })
+          .update(profileData)
           .eq('id', userProfile.id);
 
-        if (error) {
-          console.error('Error updating user role:', error);
-          throw error;
+        if (updateError) {
+          console.error('Error updating user role:', updateError);
+          throw updateError;
         }
 
         console.log('User profile updated successfully');
@@ -140,7 +142,6 @@ const WelcomeLanding = () => {
       // Refresh the user profile to get the updated data
       await refreshUserProfile();
       
-      // Micro-interaction: pulse effect
       setTimeout(() => {
         setCurrentStep('permissions');
         setIsProcessing(false);
@@ -185,7 +186,6 @@ const WelcomeLanding = () => {
         description: "Perfect! Now we can find rides near you",
       });
 
-      // Navigate to appropriate onboarding page
       navigateToOnboarding();
       
     } catch (error) {
@@ -195,7 +195,6 @@ const WelcomeLanding = () => {
         variant: "destructive"
       });
       
-      // Still proceed to onboarding
       navigateToOnboarding();
     }
   };
