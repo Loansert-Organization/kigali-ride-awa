@@ -3,24 +3,29 @@ import { useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile } from '@/types/user';
+import { useAuthStateManager } from './useAuthStateManager';
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<any>({});
+  const {
+    authState,
+    updateState,
+    createUserProfile,
+    refreshProfile,
+    retryInitialization,
+    clearError
+  } = useAuthStateManager();
 
-  // Health check for Supabase connection
+  const [debugInfo, setDebugInfo] = useState<any>({});
+  const [initTimeout, setInitTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Health check for backend connectivity
   const performHealthCheck = useCallback(async (): Promise<boolean> => {
     try {
-      console.log('🏥 Performing Supabase health check...');
+      console.log('🏥 Performing health check...');
       const startTime = Date.now();
       
-      // Test basic connection with a simple query to a public table
       const { data, error } = await supabase
-        .from('agent_logs')
+        .from('users')
         .select('count')
         .limit(1);
       
@@ -29,15 +34,13 @@ export const useAuth = () => {
       
       if (error) {
         console.error('❌ Health check failed:', error);
-        setError('Backend connection failed. Please check your internet connection.');
         return false;
       }
       
-      console.log('✅ Supabase connection healthy');
+      console.log('✅ Backend is healthy');
       return true;
     } catch (error) {
       console.error('💥 Health check exception:', error);
-      setError('Unable to connect to backend services.');
       return false;
     }
   }, []);
@@ -49,339 +52,237 @@ export const useAuth = () => {
     
     const envInfo = {
       supabaseUrl,
-      supabaseKeyLength: supabaseKey?.length || 0,
+      authKey: supabaseKey?.substring(0, 20) + '...' || 'missing',
       environment: import.meta.env.MODE || 'unknown',
       timestamp: new Date().toISOString()
     };
     
-    console.log('🔧 Environment validation:', envInfo);
-    setDebugInfo(prev => ({ ...prev, environment: envInfo }));
+    console.log('🔧 Environment info:', envInfo);
+    setDebugInfo(envInfo);
     
-    if (!supabaseUrl || !supabaseKey) {
-      setError('Missing Supabase configuration. Please check environment setup.');
-      return false;
-    }
-    
-    return true;
+    return Boolean(supabaseUrl && supabaseKey);
   }, []);
 
-  const loadUserProfile = useCallback(async (userId: string, retries = 3): Promise<UserProfile | null> => {
-    console.log(`🔍 Loading user profile for: ${userId} (attempts left: ${retries})`);
+  // Load user profile with comprehensive error handling
+  const loadUserProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
+    console.log(`🔍 Loading profile for user: ${userId}`);
     
     try {
-      const startTime = Date.now();
-      
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('auth_user_id', userId)
         .maybeSingle();
 
-      const queryTime = Date.now() - startTime;
-      console.log(`📊 Profile query completed in ${queryTime}ms`);
-
       if (error) {
-        console.error('❌ Error loading user profile:', error);
+        console.error('❌ Profile load error:', error);
         
-        // Handle specific RLS policy errors
-        if (error.code === 'PGRST116' || error.message.includes('policy') || error.message.includes('denied')) {
-          console.log('🔐 RLS policy denied access, attempting to create user via edge function...');
-          
-          try {
-            // Use edge function to create user profile with service role privileges
-            const { data: edgeData, error: edgeError } = await supabase.functions.invoke('create-or-update-user-profile', {
-              body: {
-                profileData: {
-                  role: null,
-                  language: 'en',
-                  location_enabled: false,
-                  notifications_enabled: false,
-                  onboarding_completed: false,
-                  referred_by: null
-                }
-              }
-            });
-
-            if (edgeError) {
-              console.error('❌ Edge function error:', edgeError);
-              throw new Error(`Profile creation failed: ${edgeError.message}`);
-            }
-
-            console.log('✅ Profile created via edge function:', edgeData);
-            
-            if (edgeData?.profile) {
-              const typedProfile = {
-                ...edgeData.profile,
-                role: edgeData.profile.role as 'passenger' | 'driver' | null
-              } as UserProfile;
-              
-              setUserProfile(typedProfile);
-              return typedProfile;
-            }
-          } catch (edgeError: any) {
-            console.error('💥 Failed to create user via edge function:', edgeError);
-            setError('Database access denied. Please check Row Level Security policies.');
-            throw edgeError;
-          }
+        // Handle specific error types
+        if (error.code === '42P17') {
+          throw new Error('Database configuration error (infinite recursion in policies). Please try again.');
         }
         
-        // Retry on network or temporary errors
-        if (retries > 0 && (error.code === 'PGRST301' || error.message.includes('network'))) {
-          console.log(`🔄 Retrying profile load... (${retries} attempts left)`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          return loadUserProfile(userId, retries - 1);
+        if (error.message.includes('policy') || error.code === 'PGRST116') {
+          console.log('🔐 RLS policy issue, this should resolve automatically...');
+          // Don't throw here, let it return null and handle gracefully
+          return null;
         }
         
-        throw error;
+        throw new Error(`Database error: ${error.message}`);
       }
 
       if (!data) {
-        console.log('👤 No user profile found, will be created on role selection...');
+        console.log('👤 No profile found for user');
         return null;
       }
 
-      console.log('✅ Profile loaded successfully:', data);
-      const typedProfile = {
-        ...data,
-        role: data.role as 'passenger' | 'driver' | null
-      } as UserProfile;
+      const profile = data as UserProfile;
+      console.log('✅ Profile loaded:', profile);
+      updateState({ userProfile: profile });
+      return profile;
 
-      setUserProfile(typedProfile);
-      return typedProfile;
     } catch (error: any) {
-      console.error('💥 Failed to load user profile:', error);
-      
-      if (!error.message.includes('Database access denied')) {
-        setError(`Profile loading failed: ${error.message}`);
-      }
-      
-      setUserProfile(null);
-      return null;
+      console.error('💥 Failed to load profile:', error);
+      throw error;
     }
-  }, []);
+  }, [updateState]);
 
-  const refreshUserProfile = useCallback(async (): Promise<UserProfile | null> => {
-    if (user?.id) {
-      console.log('🔄 Refreshing user profile for:', user.id);
-      setError(null);
-      return await loadUserProfile(user.id);
-    }
-    console.log('⚠️ No user ID for profile refresh');
-    return null;
-  }, [user?.id, loadUserProfile]);
-
+  // Update user profile
   const updateUserProfile = useCallback(async (updates: Partial<UserProfile>): Promise<UserProfile | null> => {
-    if (!userProfile) {
-      setError('No user profile to update');
-      return null;
+    if (!authState.userProfile) {
+      throw new Error('No user profile to update');
     }
 
     try {
-      console.log('📝 Updating user profile:', updates);
+      console.log('📝 Updating profile:', updates);
       const { data, error } = await supabase
         .from('users')
         .update({
           ...updates,
           updated_at: new Date().toISOString()
         })
-        .eq('id', userProfile.id)
+        .eq('id', authState.userProfile.id)
         .select()
         .single();
 
       if (error) {
-        console.error('❌ Error updating user profile:', error);
-        setError(`Profile update failed: ${error.message}`);
-        throw error;
+        throw new Error(`Profile update failed: ${error.message}`);
       }
 
-      const typedProfile = {
-        ...data,
-        role: data.role as 'passenger' | 'driver' | null
-      } as UserProfile;
+      const updatedProfile = data as UserProfile;
+      updateState({ userProfile: updatedProfile });
+      return updatedProfile;
 
-      console.log('✅ Profile updated:', typedProfile);
-      setUserProfile(typedProfile);
-      setError(null);
-      return typedProfile;
     } catch (error: any) {
-      console.error('❌ Error updating user profile:', error);
-      return null;
+      console.error('❌ Profile update error:', error);
+      throw error;
     }
-  }, [userProfile]);
+  }, [authState.userProfile, updateState]);
 
+  // Sign out
   const signOut = useCallback(async (): Promise<void> => {
     try {
       console.log('🔓 Signing out...');
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      setUser(null);
-      setSession(null);
-      setUserProfile(null);
-      setError(null);
+      updateState({
+        user: null,
+        session: null,
+        userProfile: null,
+        error: null
+      });
+      
       console.log('✅ Signed out successfully');
     } catch (error: any) {
-      console.error('❌ Error signing out:', error);
-      setError(`Sign out failed: ${error.message}`);
+      console.error('❌ Sign out error:', error);
+      throw error;
     }
-  }, []);
+  }, [updateState]);
 
-  const retryInitialization = useCallback(async () => {
-    console.log('🔄 Retrying initialization...');
-    setLoading(true);
-    setError(null);
-    
-    // Validate environment first
-    if (!validateEnvironment()) {
-      setLoading(false);
-      return;
-    }
-    
-    // Perform health check
-    const isHealthy = await performHealthCheck();
-    if (!isHealthy) {
-      setLoading(false);
-      return;
-    }
-    
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('❌ Error getting session:', error);
-        setError(`Authentication failed: ${error.message}`);
-      } else {
-        console.log('📱 Session retrieved:', session ? { id: session.user?.id, expires: session.expires_at } : 'null');
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await loadUserProfile(session.user.id);
-        }
-      }
-    } catch (error: any) {
-      console.error('💥 Error in retry initialization:', error);
-      setError(`Initialization failed: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  }, [validateEnvironment, performHealthCheck, loadUserProfile]);
-
+  // Initialize auth state
   useEffect(() => {
     let mounted = true;
-    let initTimeout: NodeJS.Timeout;
 
-    const getInitialSession = async () => {
+    const initialize = async () => {
       try {
-        console.log('🔍 Getting initial session...');
-        setDebugInfo(prev => ({ ...prev, initStartTime: Date.now() }));
+        console.log('🚀 Initializing auth...');
+        updateState({ loading: true, error: null });
+        
+        // Set initialization timeout
+        const timeout = setTimeout(() => {
+          if (mounted) {
+            console.warn('⏰ Initialization timeout (8 seconds)');
+            updateState({ 
+              error: 'Setup is taking longer than expected. Please check your connection and try again.',
+              loading: false 
+            });
+          }
+        }, 8000);
+        setInitTimeout(timeout);
         
         // Validate environment
         if (!validateEnvironment()) {
-          setLoading(false);
-          return;
+          throw new Error('Invalid environment configuration');
         }
         
-        // Set timeout for initialization
-        initTimeout = setTimeout(() => {
-          if (mounted && loading) {
-            console.warn('⏰ Initialization timeout - taking longer than expected');
-            setError('Setup is taking longer than expected. Please check your connection and try again.');
-            setLoading(false);
-          }
-        }, 8000);
-        
-        // Perform health check
+        // Health check
         const isHealthy = await performHealthCheck();
-        if (!isHealthy && mounted) {
-          setLoading(false);
-          return;
+        if (!isHealthy) {
+          throw new Error('Backend services are currently unavailable');
         }
         
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('❌ Error getting session:', error);
-          if (mounted) {
-            setError(`Authentication error: ${error.message}`);
-            setLoading(false);
-          }
-        } else if (mounted) {
-          console.log('📱 Initial session:', session ? { id: session.user?.id, expires: session.expires_at } : 'null');
-          setSession(session);
-          setUser(session?.user ?? null);
+        // Get session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          throw new Error(`Authentication error: ${sessionError.message}`);
+        }
+        
+        if (mounted) {
+          updateState({ 
+            session, 
+            user: session?.user || null 
+          });
           
+          // Load profile if user exists
           if (session?.user) {
-            await loadUserProfile(session.user.id);
+            try {
+              await loadUserProfile(session.user.id);
+            } catch (profileError: any) {
+              console.warn('⚠️ Profile load failed, but continuing:', profileError.message);
+              // Don't block initialization for profile errors
+            }
           }
           
-          setLoading(false);
+          updateState({ loading: false });
+          clearTimeout(timeout);
         }
+
       } catch (error: any) {
-        console.error('💥 Error in getInitialSession:', error);
+        console.error('💥 Initialization failed:', error);
         if (mounted) {
-          setError(`Initialization error: ${error.message}`);
-          setLoading(false);
-        }
-      } finally {
-        if (initTimeout) {
-          clearTimeout(initTimeout);
-        }
-        if (mounted) {
-          console.log('✅ Auth initialization complete');
-          setDebugInfo(prev => ({ 
-            ...prev, 
-            initEndTime: Date.now(),
-            initDuration: Date.now() - (prev.initStartTime || Date.now())
-          }));
+          updateState({ 
+            error: error.message || 'Initialization failed',
+            loading: false 
+          });
+          if (initTimeout) clearTimeout(initTimeout);
         }
       }
     };
 
-    getInitialSession();
+    initialize();
 
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 Auth state changed:', event, session?.user?.id ? { id: session.user.id } : null);
+        console.log('🔄 Auth state changed:', event);
         
         if (mounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setError(null);
+          updateState({ 
+            session, 
+            user: session?.user || null,
+            error: null
+          });
           
-          // Defer profile loading to prevent deadlocks
-          if (session?.user) {
-            setTimeout(() => {
+          // Defer profile loading to avoid deadlocks
+          if (session?.user && event === 'SIGNED_IN') {
+            setTimeout(async () => {
               if (mounted) {
-                loadUserProfile(session.user.id);
+                try {
+                  await loadUserProfile(session.user.id);
+                } catch (error: any) {
+                  console.warn('⚠️ Deferred profile load failed:', error.message);
+                }
               }
-            }, 0);
-          } else {
-            setUserProfile(null);
+            }, 100);
+          } else if (event === 'SIGNED_OUT') {
+            updateState({ userProfile: null });
           }
-          
-          setLoading(false);
         }
       }
     );
 
     return () => {
       mounted = false;
-      if (initTimeout) {
-        clearTimeout(initTimeout);
-      }
+      if (initTimeout) clearTimeout(initTimeout);
       subscription.unsubscribe();
     };
-  }, [loadUserProfile, validateEnvironment, performHealthCheck]);
+  }, [updateState, validateEnvironment, performHealthCheck, loadUserProfile, initTimeout]);
 
   return {
-    user,
-    session,
-    userProfile,
-    loading,
-    error,
+    user: authState.user,
+    session: authState.session,
+    userProfile: authState.userProfile,
+    loading: authState.loading,
+    error: authState.error,
+    isRetrying: authState.isRetrying,
     debugInfo,
-    refreshUserProfile,
+    refreshUserProfile: refreshProfile,
     updateUserProfile,
+    createUserProfile,
     signOut,
-    retryInitialization
+    retryInitialization,
+    clearError,
+    performHealthCheck
   };
 };

@@ -10,7 +10,7 @@ export const useRoleSelection = (
   urlPromo: string | null,
   promoCode: string
 ) => {
-  const { user, refreshUserProfile } = useAuth();
+  const { user, refreshUserProfile, createUserProfile } = useAuth();
   const [selectedRole, setSelectedRole] = useState<'passenger' | 'driver' | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingTimeout, setProcessingTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -38,7 +38,8 @@ export const useRoleSelection = (
     // Set processing timeout
     const timeout = setTimeout(() => {
       console.warn('⏰ Role selection timeout');
-      throw new Error('Setup is taking longer than expected. Please try again.');
+      clearProcessingState();
+      throw new Error('Role selection is taking longer than expected. Please try again.');
     }, 10000);
     setProcessingTimeout(timeout);
 
@@ -51,7 +52,7 @@ export const useRoleSelection = (
         const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
         
         if (authError) {
-          console.error('❌ Error with anonymous sign in:', authError);
+          console.error('❌ Anonymous auth failed:', authError);
           throw new Error(`Authentication failed: ${authError.message}`);
         }
         
@@ -59,52 +60,38 @@ export const useRoleSelection = (
         currentUser = authData.user;
         
         // Wait for auth state to update
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       if (!currentUser) {
         throw new Error('Authentication failed - no user available');
       }
 
-      console.log('📝 Creating/updating user profile for user:', currentUser.id);
+      console.log('📝 Creating user profile...');
 
       // Store role in localStorage as backup
       localStorage.setItem('user_role', role);
 
-      // Use the edge function to create or update user profile
-      const requestPayload = {
-        profileData: {
-          role: role,
-          language: selectedLanguage,
-          location_enabled: false,
-          notifications_enabled: false,
-          onboarding_completed: false,
-          referred_by: urlPromo || promoCode || null
-        }
+      // Prepare profile data with proper validation
+      const profileData = {
+        role: role, // This should be a valid 'passenger' | 'driver' string
+        language: selectedLanguage,
+        location_enabled: false,
+        notifications_enabled: false,
+        onboarding_completed: false,
+        referred_by: urlPromo || promoCode || null
       };
 
-      console.log('🚀 Calling edge function with data:', requestPayload);
+      console.log('🚀 Creating profile with validated data:', profileData);
 
-      const { data, error } = await supabase.functions.invoke('create-or-update-user-profile', {
-        body: requestPayload
-      });
-
-      if (error) {
-        console.error('❌ Error from edge function:', error);
-        throw new Error(`Profile setup failed: ${error.message || 'Unknown error from server'}`);
+      // Use the auth manager's create profile method
+      const profile = await createUserProfile(profileData);
+      
+      if (!profile) {
+        throw new Error('Profile creation returned null');
       }
 
-      console.log('✅ Profile created/updated successfully:', data);
-
-      // Refresh the user profile to get the updated data
-      console.log('🔄 Refreshing user profile...');
-      const updatedProfile = await refreshUserProfile();
-      
-      if (!updatedProfile) {
-        throw new Error('Profile was created but could not be retrieved');
-      }
-      
-      // Clear timeout and return success
+      // Clear timeout and show success
       if (processingTimeout) {
         clearTimeout(processingTimeout);
         setProcessingTimeout(null);
@@ -115,6 +102,7 @@ export const useRoleSelection = (
         description: `Welcome as a ${role}! 🎉`,
       });
 
+      console.log('✅ Role selection completed successfully');
       return { success: true };
 
     } catch (error: any) {
@@ -122,13 +110,26 @@ export const useRoleSelection = (
       
       clearProcessingState();
       
+      // Provide user-friendly error messages
+      let errorMessage = 'An unexpected error occurred';
+      
+      if (error.message.includes('Authentication failed')) {
+        errorMessage = 'Could not authenticate. Please try again.';
+      } else if (error.message.includes('Invalid role')) {
+        errorMessage = 'Role validation failed. Please try again.';
+      } else if (error.message.includes('Profile creation failed')) {
+        errorMessage = 'Could not create your profile. Please try again.';
+      } else if (error.message.includes('timeout') || error.message.includes('longer than expected')) {
+        errorMessage = 'Setup is taking too long. Please check your connection and try again.';
+      }
+      
       toast({
         title: "Setup Error",
-        description: error.message || 'An unexpected error occurred',
+        description: errorMessage,
         variant: "destructive"
       });
 
-      throw error;
+      throw new Error(errorMessage);
     }
   };
 
