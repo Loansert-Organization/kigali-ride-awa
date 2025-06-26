@@ -56,7 +56,7 @@ serve(async (req) => {
       })
     }
 
-    // Send WhatsApp message
+    // Send WhatsApp message - using simple text message
     const whatsappResponse = await fetch(
       'https://graph.facebook.com/v19.0/396791596844039/messages',
       {
@@ -68,50 +68,23 @@ serve(async (req) => {
         body: JSON.stringify({
           messaging_product: 'whatsapp',
           to: phone,
-          type: 'template',
-          template: {
-            name: 'autho_rw',
-            language: { code: 'en' },
-            components: [
-              { 
-                type: 'body', 
-                parameters: [{ type: 'text', text: otp }] 
-              }
-            ]
+          type: 'text',
+          text: {
+            body: `🚗 *Kigali Ride* - Your verification code: ${otp}\n\nThis code expires in 5 minutes.\n\nMurakoze! 🇷🇼`
           }
         })
       }
     )
 
-    if (!whatsappResponse.ok) {
-      console.error('WhatsApp template failed, trying text fallback')
-      
-      const textResponse = await fetch(
-        'https://graph.facebook.com/v19.0/396791596844039/messages',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${Deno.env.get('WHATSAPP_API_TOKEN')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: phone,
-            type: 'text',
-            text: {
-              body: `🚗 *Kigali Ride* - Your verification code: ${otp}\n\nThis code expires in 5 minutes.\n\nMurakoze! 🇷🇼`
-            }
-          })
-        }
-      )
+    const whatsappResult = await whatsappResponse.json()
+    console.log('WhatsApp API response:', whatsappResult)
 
-      if (!textResponse.ok) {
-        console.error('WhatsApp text also failed')
-        return new Response(JSON.stringify({ error: 'Failed to send WhatsApp message' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
+    if (!whatsappResponse.ok) {
+      console.error('WhatsApp API error:', whatsappResult)
+      return new Response(JSON.stringify({ error: 'Failed to send WhatsApp message' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
     console.log('OTP sent successfully to:', phone)
