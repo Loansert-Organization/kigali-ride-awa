@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { LANGUAGES, LanguageCode } from '@/constants/languages';
+import { LANGUAGES, LanguageCode, Language } from '@/constants/languages';
 import { toast } from '@/hooks/use-toast';
 
 export const useLanguageSelection = () => {
@@ -9,7 +9,7 @@ export const useLanguageSelection = () => {
   // Auto-detect language from browser
   useEffect(() => {
     const savedLang = localStorage.getItem('language');
-    if (savedLang) {
+    if (savedLang && LANGUAGES.some(l => l.code === savedLang)) {
       setSelectedLanguage(savedLang as LanguageCode);
     } else {
       const browserLang = navigator.language.toLowerCase();

@@ -6,3 +6,5 @@ export const LANGUAGES = [
 ] as const;
 
 export type LanguageCode = typeof LANGUAGES[number]['code'];
+
+export type Language = typeof LANGUAGES[number];

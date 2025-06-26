@@ -18,9 +18,9 @@ export const useAuth = () => {
       console.log('🏥 Performing Supabase health check...');
       const startTime = Date.now();
       
-      // Test basic connection with a simple query
+      // Test basic connection with a simple query to a public table
       const { data, error } = await supabase
-        .from('users')
+        .from('agent_logs')
         .select('count')
         .limit(1);
       
@@ -83,10 +83,46 @@ export const useAuth = () => {
       if (error) {
         console.error('❌ Error loading user profile:', error);
         
-        // Check if it's an RLS policy issue
-        if (error.code === 'PGRST116' || error.message.includes('policy')) {
-          setError('Database access denied. Please check Row Level Security policies.');
-          return null;
+        // Handle specific RLS policy errors
+        if (error.code === 'PGRST116' || error.message.includes('policy') || error.message.includes('denied')) {
+          console.log('🔐 RLS policy denied access, attempting to create user via edge function...');
+          
+          try {
+            // Use edge function to create user profile with service role privileges
+            const { data: edgeData, error: edgeError } = await supabase.functions.invoke('create-or-update-user-profile', {
+              body: {
+                profileData: {
+                  role: null,
+                  language: 'en',
+                  location_enabled: false,
+                  notifications_enabled: false,
+                  onboarding_completed: false,
+                  referred_by: null
+                }
+              }
+            });
+
+            if (edgeError) {
+              console.error('❌ Edge function error:', edgeError);
+              throw new Error(`Profile creation failed: ${edgeError.message}`);
+            }
+
+            console.log('✅ Profile created via edge function:', edgeData);
+            
+            if (edgeData?.profile) {
+              const typedProfile = {
+                ...edgeData.profile,
+                role: edgeData.profile.role as 'passenger' | 'driver' | null
+              } as UserProfile;
+              
+              setUserProfile(typedProfile);
+              return typedProfile;
+            }
+          } catch (edgeError: any) {
+            console.error('💥 Failed to create user via edge function:', edgeError);
+            setError('Database access denied. Please check Row Level Security policies.');
+            throw edgeError;
+          }
         }
         
         // Retry on network or temporary errors
@@ -100,45 +136,8 @@ export const useAuth = () => {
       }
 
       if (!data) {
-        console.log('👤 No user profile found, creating one...');
-        
-        try {
-          const { data: newProfile, error: createError } = await supabase
-            .from('users')
-            .insert({
-              auth_user_id: userId,
-              role: null,
-              language: 'en',
-              location_enabled: false,
-              notifications_enabled: false,
-              onboarding_completed: false
-            })
-            .select()
-            .single();
-
-          if (createError) {
-            console.error('❌ Error creating user profile:', createError);
-            
-            if (createError.code === 'PGRST116' || createError.message.includes('policy')) {
-              setError('Cannot create user profile. Database permissions issue.');
-            } else {
-              setError('Failed to create user account. Please try again.');
-            }
-            throw createError;
-          }
-          
-          console.log('✅ New profile created:', newProfile);
-          const typedProfile = {
-            ...newProfile,
-            role: newProfile.role as 'passenger' | 'driver' | null
-          } as UserProfile;
-          
-          setUserProfile(typedProfile);
-          return typedProfile;
-        } catch (createError) {
-          console.error('💥 Failed to create user profile:', createError);
-          throw createError;
-        }
+        console.log('👤 No user profile found, will be created on role selection...');
+        return null;
       }
 
       console.log('✅ Profile loaded successfully:', data);
@@ -152,7 +151,7 @@ export const useAuth = () => {
     } catch (error: any) {
       console.error('💥 Failed to load user profile:', error);
       
-      if (!error.message.includes('Database access denied') && !error.message.includes('Cannot create user profile')) {
+      if (!error.message.includes('Database access denied')) {
         setError(`Profile loading failed: ${error.message}`);
       }
       
