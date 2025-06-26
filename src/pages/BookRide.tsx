@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Clock, Car } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Car, Navigation } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +12,7 @@ import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import GooglePlacesInput from '@/components/booking/GooglePlacesInput';
 
 interface TripData {
   fromLocation: string;
@@ -31,6 +31,7 @@ const BookRide = () => {
   const { isAuthenticated, userProfile, isGuest } = useAuth();
   const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   
   const [tripData, setTripData] = useState<TripData>({
     fromLocation: '',
@@ -39,6 +40,80 @@ const BookRide = () => {
     vehicleType: 'car',
     description: ''
   });
+
+  // Get current location and reverse geocode it
+  const handleUseCurrentLocation = async () => {
+    setIsGettingLocation(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+      
+      // Reverse geocode the coordinates to get address
+      try {
+        const { data, error } = await supabase.functions.invoke('reverse-geocode', {
+          body: { lat: latitude, lng: longitude }
+        });
+
+        if (error) throw error;
+
+        const address = data.success ? data.address : 'Current Location';
+        
+        setTripData(prev => ({
+          ...prev,
+          fromLocation: address,
+          fromLat: latitude,
+          fromLng: longitude
+        }));
+
+        toast({
+          title: "📍 Location set",
+          description: "Using your current location as pickup point",
+        });
+      } catch (geocodeError) {
+        console.warn('Reverse geocoding failed:', geocodeError);
+        setTripData(prev => ({
+          ...prev,
+          fromLocation: 'Current Location',
+          fromLat: latitude,
+          fromLng: longitude
+        }));
+      }
+    } catch (error) {
+      console.error('Location error:', error);
+      toast({
+        title: "Location access denied",
+        description: "Please enter your pickup location manually",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
+  const handleFromLocationChange = (value: string, coordinates?: { lat: number; lng: number }) => {
+    setTripData(prev => ({
+      ...prev,
+      fromLocation: value,
+      fromLat: coordinates?.lat,
+      fromLng: coordinates?.lng
+    }));
+  };
+
+  const handleToLocationChange = (value: string, coordinates?: { lat: number; lng: number }) => {
+    setTripData(prev => ({
+      ...prev,
+      toLocation: value,
+      toLat: coordinates?.lat,
+      toLng: coordinates?.lng
+    }));
+  };
 
   // Guest users can fill the form, but auth is required only on booking
   const proceedWithBooking = async () => {
@@ -147,21 +222,33 @@ const BookRide = () => {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="from">From (Pickup Location)</Label>
-              <Input
-                id="from"
-                placeholder="Enter pickup location..."
-                value={tripData.fromLocation}
-                onChange={(e) => setTripData(prev => ({ ...prev, fromLocation: e.target.value }))}
-              />
+              <div className="space-y-2">
+                <GooglePlacesInput
+                  value={tripData.fromLocation}
+                  onChange={handleFromLocationChange}
+                  placeholder="Enter pickup location..."
+                  className="w-full"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUseCurrentLocation}
+                  disabled={isGettingLocation}
+                  className="w-full"
+                >
+                  <Navigation className="w-4 h-4 mr-2" />
+                  {isGettingLocation ? 'Getting location...' : '📍 Use Current Location'}
+                </Button>
+              </div>
             </div>
             
             <div>
               <Label htmlFor="to">To (Destination)</Label>
-              <Input
-                id="to"
-                placeholder="Enter destination..."
+              <GooglePlacesInput
                 value={tripData.toLocation}
-                onChange={(e) => setTripData(prev => ({ ...prev, toLocation: e.target.value }))}
+                onChange={handleToLocationChange}
+                placeholder="Enter destination..."
+                className="w-full"
               />
             </div>
           </CardContent>
@@ -178,11 +265,12 @@ const BookRide = () => {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="time">When do you want to travel?</Label>
-              <Input
+              <input
                 id="time"
                 type="datetime-local"
                 value={tripData.scheduledTime}
                 onChange={(e) => setTripData(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
 

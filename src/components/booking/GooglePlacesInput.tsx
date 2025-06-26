@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { MapPin } from 'lucide-react';
 
@@ -18,15 +18,42 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+
+  // Check if Google Maps is loaded
+  useEffect(() => {
+    const checkGoogleMaps = () => {
+      if (window.google?.maps?.places) {
+        console.log('✅ Google Maps Places API loaded');
+        setIsGoogleLoaded(true);
+        return true;
+      }
+      return false;
+    };
+
+    if (checkGoogleMaps()) return;
+
+    // If not loaded immediately, check periodically
+    const interval = setInterval(() => {
+      if (checkGoogleMaps()) {
+        clearInterval(interval);
+      }
+    }, 500);
+
+    // Clean up after 10 seconds
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      console.warn('⚠️ Google Maps Places API not loaded within 10 seconds');
+    }, 10000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, []);
 
   useEffect(() => {
-    if (!inputRef.current) {
-      console.warn('⚠️ GooglePlacesInput: Input ref not available');
-      return;
-    }
-
-    if (!window.google?.maps?.places) {
-      console.warn('⚠️ GooglePlacesInput: Google Maps Places not available yet');
+    if (!inputRef.current || !isGoogleLoaded) {
       return;
     }
 
@@ -39,7 +66,7 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
         {
           types: ['geocode'],
           componentRestrictions: { country: 'rw' }, // Restrict to Rwanda
-          fields: ['formatted_address', 'geometry']
+          fields: ['formatted_address', 'geometry', 'name']
         }
       );
 
@@ -66,6 +93,19 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
           });
           
           onChange(place.formatted_address, coordinates);
+        } else if (place?.name && place?.geometry?.location) {
+          // Fallback to place name if formatted_address is not available
+          const coordinates = {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng()
+          };
+          
+          console.log('✅ Place selected with name:', {
+            name: place.name,
+            coordinates
+          });
+          
+          onChange(place.name, coordinates);
         } else {
           console.warn('⚠️ Invalid place selected - missing address or geometry');
         }
@@ -75,14 +115,14 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
       
       return () => {
         console.log('🧹 Cleaning up Google Places listener');
-        if (listener) {
+        if (listener && window.google?.maps?.event) {
           window.google.maps.event.removeListener(listener);
         }
       };
     } catch (error) {
       console.error('❌ Failed to initialize Google Places Autocomplete:', error);
     }
-  }, [onChange]);
+  }, [onChange, isGoogleLoaded]);
 
   return (
     <div className="relative">
@@ -94,9 +134,15 @@ const GooglePlacesInput: React.FC<GooglePlacesInputProps> = ({
           console.log('✏️ Manual input change:', e.target.value);
           onChange(e.target.value);
         }}
-        placeholder={placeholder}
+        placeholder={isGoogleLoaded ? placeholder : `${placeholder} (Loading...)`}
         className={`pl-10 h-12 text-base ${className}`}
+        disabled={!isGoogleLoaded}
       />
+      {!isGoogleLoaded && (
+        <div className="absolute right-3 top-3">
+          <div className="animate-spin w-5 h-5 border-2 border-gray-300 border-t-purple-600 rounded-full"></div>
+        </div>
+      )}
     </div>
   );
 };
