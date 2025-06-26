@@ -87,19 +87,17 @@ export const useErrorHandler = (options?: UseErrorHandlerOptions) => {
 
     // Show user-friendly toast with optional WhatsApp login action
     if (showWhatsAppButton) {
+      const whatsAppAction = React.createElement(ToastAction, {
+        altText: "Login with WhatsApp",
+        onClick: options.onWhatsAppLogin,
+        className: "text-xs"
+      }, "📱 Login with WhatsApp");
+
       toast({
         title: "Something went wrong",
         description: displayMessage,
         variant: "destructive",
-        action: (
-          <ToastAction
-            altText="Login with WhatsApp"
-            onClick={options.onWhatsAppLogin}
-            className="text-xs"
-          >
-            📱 Login with WhatsApp
-          </ToastAction>
-        )
+        action: whatsAppAction
       });
     } else {
       toast({
