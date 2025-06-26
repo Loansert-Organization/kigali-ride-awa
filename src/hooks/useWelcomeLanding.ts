@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -68,10 +69,10 @@ export const useWelcomeLanding = () => {
   };
 
   const handleRoleSelect = async (role: 'passenger' | 'driver') => {
-    console.log('Role selection clicked:', role);
+    console.log('🔄 Role selection started:', role);
     
     if (isProcessing) {
-      console.log('Already processing, ignoring click');
+      console.log('⚠️ Already processing, ignoring click');
       return;
     }
     
@@ -82,26 +83,36 @@ export const useWelcomeLanding = () => {
       // First ensure we have an authenticated user
       let currentUser = user;
       if (!currentUser) {
-        console.log('No authenticated user, signing in anonymously...');
+        console.log('🔐 No authenticated user, signing in anonymously...');
         const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
         
         if (authError) {
-          console.error('Error with anonymous sign in:', authError);
+          console.error('❌ Error with anonymous sign in:', authError);
           throw new Error('Failed to authenticate. Please try again.');
         }
         
+        console.log('✅ Anonymous auth successful:', authData.user?.id);
         currentUser = authData.user;
         
         // Wait a moment for the auth state to update
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      console.log('Using edge function to create/update user profile for user:', currentUser?.id);
+      console.log('📝 Creating/updating user profile for user:', currentUser?.id);
 
       // Store role in localStorage as backup
       localStorage.setItem('user_role', role);
 
       // Use the edge function to create or update user profile
+      console.log('🚀 Calling edge function with data:', {
+        role: role,
+        language: selectedLanguage,
+        location_enabled: false,
+        notifications_enabled: false,
+        onboarding_completed: false,
+        referred_by: urlPromo || promoCode || null
+      });
+
       const { data, error } = await supabase.functions.invoke('create-or-update-user-profile', {
         body: {
           profileData: {
@@ -116,16 +127,18 @@ export const useWelcomeLanding = () => {
       });
 
       if (error) {
-        console.error('Error from edge function:', error);
+        console.error('❌ Error from edge function:', error);
         throw new Error(`Profile setup failed: ${error.message}`);
       }
 
-      console.log('Profile created/updated successfully:', data);
+      console.log('✅ Profile created/updated successfully:', data);
 
       // Refresh the user profile to get the updated data
+      console.log('🔄 Refreshing user profile...');
       await refreshUserProfile();
       
       // Navigate to permissions step
+      console.log('➡️ Navigating to permissions step');
       setTimeout(() => {
         setCurrentStep('permissions');
         setIsProcessing(false);
@@ -137,7 +150,7 @@ export const useWelcomeLanding = () => {
       });
 
     } catch (error: any) {
-      console.error('Role selection error:', error);
+      console.error('❌ Role selection error:', error);
       setIsProcessing(false);
       setSelectedRole(null);
       

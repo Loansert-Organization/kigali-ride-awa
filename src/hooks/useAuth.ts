@@ -12,7 +12,7 @@ export const useAuth = () => {
 
   const loadUserProfile = useCallback(async (userId: string) => {
     try {
-      console.log('Loading user profile for:', userId);
+      console.log('🔍 Loading user profile for:', userId);
       
       const { data, error } = await supabase
         .from('users')
@@ -21,12 +21,12 @@ export const useAuth = () => {
         .maybeSingle();
 
       if (error) {
-        console.error('Error loading user profile:', error);
+        console.error('❌ Error loading user profile:', error);
         throw error;
       }
 
       if (!data) {
-        console.log('No user profile found, creating one...');
+        console.log('👤 No user profile found, creating one...');
         const { data: newProfile, error: createError } = await supabase
           .from('users')
           .insert({
@@ -41,10 +41,11 @@ export const useAuth = () => {
           .single();
 
         if (createError) {
-          console.error('Error creating user profile:', createError);
+          console.error('❌ Error creating user profile:', createError);
           throw createError;
         }
         
+        console.log('✅ New profile created:', newProfile);
         const typedProfile = {
           ...newProfile,
           role: newProfile.role as 'passenger' | 'driver' | null
@@ -54,6 +55,7 @@ export const useAuth = () => {
         return typedProfile;
       }
 
+      console.log('✅ Profile loaded:', data);
       const typedProfile = {
         ...data,
         role: data.role as 'passenger' | 'driver' | null
@@ -62,7 +64,7 @@ export const useAuth = () => {
       setUserProfile(typedProfile);
       return typedProfile;
     } catch (error) {
-      console.error('Failed to load user profile:', error);
+      console.error('💥 Failed to load user profile:', error);
       setUserProfile(null);
       return null;
     }
@@ -70,8 +72,10 @@ export const useAuth = () => {
 
   const refreshUserProfile = useCallback(async (): Promise<UserProfile | null> => {
     if (user?.id) {
+      console.log('🔄 Refreshing user profile for:', user.id);
       return await loadUserProfile(user.id);
     }
+    console.log('⚠️ No user ID for profile refresh');
     return null;
   }, [user?.id, loadUserProfile]);
 
@@ -79,6 +83,7 @@ export const useAuth = () => {
     if (!userProfile) return null;
 
     try {
+      console.log('📝 Updating user profile:', updates);
       const { data, error } = await supabase
         .from('users')
         .update({
@@ -96,24 +101,27 @@ export const useAuth = () => {
         role: data.role as 'passenger' | 'driver' | null
       } as UserProfile;
 
+      console.log('✅ Profile updated:', typedProfile);
       setUserProfile(typedProfile);
       return typedProfile;
     } catch (error) {
-      console.error('Error updating user profile:', error);
+      console.error('❌ Error updating user profile:', error);
       return null;
     }
   }, [userProfile]);
 
   const signOut = useCallback(async (): Promise<void> => {
     try {
+      console.log('🔓 Signing out...');
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
       setUser(null);
       setSession(null);
       setUserProfile(null);
+      console.log('✅ Signed out successfully');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('❌ Error signing out:', error);
     }
   }, []);
 
@@ -122,10 +130,12 @@ export const useAuth = () => {
 
     const getInitialSession = async () => {
       try {
+        console.log('🔍 Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
-          console.error('Error getting session:', error);
+          console.error('❌ Error getting session:', error);
         } else if (mounted) {
+          console.log('📱 Initial session:', session ? { id: session.user?.id, expires: session.expires_at } : 'null');
           setSession(session);
           setUser(session?.user ?? null);
           
@@ -134,9 +144,10 @@ export const useAuth = () => {
           }
         }
       } catch (error) {
-        console.error('Error in getInitialSession:', error);
+        console.error('💥 Error in getInitialSession:', error);
       } finally {
         if (mounted) {
+          console.log('✅ Auth initialization complete');
           setLoading(false);
         }
       }
@@ -146,7 +157,7 @@ export const useAuth = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id ? { id: session.user.id } : null);
+        console.log('🔄 Auth state changed:', event, session?.user?.id ? { id: session.user.id } : null);
         
         if (mounted) {
           setSession(session);
