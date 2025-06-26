@@ -18,6 +18,8 @@ serve(async (req) => {
     try {
       const text = await req.text();
       requestBody = text ? JSON.parse(text) : {};
+      console.log('Raw request text:', text);
+      console.log('Parsed request body:', requestBody);
     } catch (error) {
       console.error('Failed to parse request body:', error);
       requestBody = {};
@@ -25,7 +27,14 @@ serve(async (req) => {
 
     const { task_type, payload } = requestBody;
 
-    console.log('Queue worker processing request:', { task_type, payload, hasTaskType: !!task_type });
+    console.log('Queue worker processing request:', { 
+      task_type, 
+      payload, 
+      hasTaskType: !!task_type,
+      requestMethod: req.method,
+      contentType: req.headers.get('content-type'),
+      contentLength: req.headers.get('content-length')
+    });
 
     // If no task_type is provided, check if we have any pending tasks in the database
     if (!task_type) {
@@ -82,6 +91,8 @@ async function processPendingTasks() {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    console.log('Checking for pending OTP codes...');
+
     // Check for pending OTP codes that need to be sent
     const { data: pendingOTPs, error: otpError } = await supabase
       .from('otp_codes')
@@ -109,6 +120,8 @@ async function processPendingTasks() {
           console.error('Failed to process OTP:', otp.id, error)
         }
       }
+    } else {
+      console.log('No pending OTP codes found');
     }
 
     return new Response(
@@ -140,8 +153,14 @@ async function processPendingTasks() {
 async function handleWhatsAppOTP(payload: any, supabase: any) {
   const { phone_number, user_id, otp_code } = payload
 
+  if (!phone_number) {
+    throw new Error('Phone number is required')
+  }
+
   // Generate OTP code if not provided
   const otpCode = otp_code || Math.floor(100000 + Math.random() * 900000).toString()
+
+  console.log('Processing WhatsApp OTP for phone:', phone_number, 'OTP:', otpCode);
 
   // Store OTP code in database if not already stored
   if (!otp_code) {
@@ -151,7 +170,8 @@ async function handleWhatsAppOTP(payload: any, supabase: any) {
         phone_number: phone_number,
         otp_code: otpCode,
         user_id: user_id,
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+        sent: false
       })
 
     if (otpError) {
@@ -160,101 +180,34 @@ async function handleWhatsAppOTP(payload: any, supabase: any) {
     }
   }
 
-  // WhatsApp Business API credentials
-  const WHATSAPP_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN')
-  const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')
-  
-  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
-    console.error('WhatsApp API credentials missing')
-    throw new Error('WhatsApp API credentials not configured')
-  }
-
-  // Format phone number (remove + if present)
-  const formattedPhone = phone_number.replace('+', '')
-  
-  console.log('Sending WhatsApp OTP to:', formattedPhone, 'with code:', otpCode)
-
-  // Try template first, fall back to text message
+  // Instead of sending directly, we'll call the send-whatsapp-template function
   try {
-    const whatsappResponse = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: formattedPhone,
-        type: 'template',
-        template: {
-          name: 'auth_rw',
-          language: {
-            code: 'en'
-          },
-          components: [
-            {
-              type: 'body',
-              parameters: [
-                {
-                  type: 'text',
-                  text: otpCode
-                }
-              ]
-            }
-          ]
-        }
-      })
-    })
-
-    const whatsappResult = await whatsappResponse.json()
-
-    if (!whatsappResponse.ok) {
-      console.log('Template failed, trying text message fallback...')
-      
-      const textResponse = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: formattedPhone,
-          type: 'text',
-          text: {
-            body: `🚗 *Kigali Ride* - Muraho! Welcome!\n\n*Your verification code:* ${otpCode}\n\nUwakangye neza ku Kigali Ride - igikoresho cyawe cyo gushaka n'ugutanga amatwara mu Kigali.\n\n*This code expires in 10 minutes.*\n\nMurakoze! 🇷🇼`
-          }
-        })
-      })
-      
-      const textResult = await textResponse.json()
-      
-      if (!textResponse.ok) {
-        throw new Error(`WhatsApp text message failed: ${textResult.error?.message || 'Unknown error'}`)
+    const { data, error } = await supabase.functions.invoke('send-whatsapp-template', {
+      body: {
+        phone_number: phone_number,
+        user_id: user_id
       }
-      
-      console.log('Text message sent successfully:', textResult)
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          messageId: textResult.messages?.[0]?.id,
-          method: 'text_fallback'
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        },
-      )
+    });
+
+    if (error) {
+      console.error('Failed to invoke send-whatsapp-template:', error);
+      throw error;
     }
 
-    console.log('WhatsApp template sent successfully:', whatsappResult)
+    // Mark OTP as sent
+    await supabase
+      .from('otp_codes')
+      .update({ sent: true })
+      .eq('phone_number', phone_number)
+      .eq('otp_code', otpCode);
+
+    console.log('WhatsApp OTP sent successfully via template function');
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        messageId: whatsappResult.messages?.[0]?.id,
-        method: 'template'
+        messageId: data?.messageId,
+        method: data?.method || 'template_function'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -270,6 +223,12 @@ async function handleWhatsAppOTP(payload: any, supabase: any) {
 
 async function handleWhatsAppNotification(payload: any, supabase: any) {
   const { phone_number, message, user_id } = payload
+
+  if (!phone_number || !message) {
+    throw new Error('Phone number and message are required')
+  }
+
+  console.log('Processing WhatsApp notification for phone:', phone_number);
 
   const WHATSAPP_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN')
   const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')
