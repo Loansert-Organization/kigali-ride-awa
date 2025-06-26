@@ -499,6 +499,30 @@ export type Database = {
           },
         ]
       }
+      otps: {
+        Row: {
+          code_hash: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          phone: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          phone: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          phone?: string
+        }
+        Relationships: []
+      }
       push_tokens: {
         Row: {
           created_at: string | null
