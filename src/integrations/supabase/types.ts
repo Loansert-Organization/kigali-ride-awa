@@ -448,8 +448,10 @@ export type Database = {
           id: string
           otp_code: string
           phone_number: string
+          sent: boolean
           updated_at: string
           used: boolean
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -457,8 +459,10 @@ export type Database = {
           id?: string
           otp_code: string
           phone_number: string
+          sent?: boolean
           updated_at?: string
           used?: boolean
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -466,10 +470,34 @@ export type Database = {
           id?: string
           otp_code?: string
           phone_number?: string
+          sent?: boolean
           updated_at?: string
           used?: boolean
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "otp_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "otp_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "otp_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_rewards_leaderboard_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       push_tokens: {
         Row: {

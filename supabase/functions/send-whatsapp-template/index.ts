@@ -13,15 +13,25 @@ serve(async (req) => {
   }
 
   try {
-    const { phone_number, user_id } = await req.json()
+    const { phone_number, user_id } = await req.json();
+
+    console.log('WhatsApp template request received:', {
+      phone_number,
+      user_id,
+      timestamp: new Date().toISOString()
+    });
+
+    if (!phone_number) {
+      throw new Error('Phone number is required');
+    }
 
     // Generate 6-digit OTP code
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString()
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    );
 
     // Store OTP code in database
     const { error: otpError } = await supabase
@@ -30,72 +40,119 @@ serve(async (req) => {
         phone_number: phone_number,
         otp_code: otpCode,
         user_id: user_id,
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
-      })
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+        sent: false,
+        used: false
+      });
 
     if (otpError) {
-      console.error('Failed to store OTP:', otpError)
-      throw new Error(`Failed to store OTP: ${otpError.message}`)
+      console.error('Failed to store OTP:', otpError);
+      throw new Error(`Failed to store OTP: ${otpError.message}`);
     }
 
-    // WhatsApp Business API credentials
-    const WHATSAPP_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN')
-    const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')
+    // Check WhatsApp API credentials with detailed logging
+    const WHATSAPP_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN');
+    const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
+    
+    console.log('WhatsApp credentials check:', {
+      hasToken: !!WHATSAPP_TOKEN,
+      hasPhoneId: !!PHONE_NUMBER_ID,
+      tokenLength: WHATSAPP_TOKEN ? WHATSAPP_TOKEN.length : 0,
+      phoneNumberId: PHONE_NUMBER_ID ? `${PHONE_NUMBER_ID.substring(0, 4)}...` : 'missing'
+    });
     
     if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
-      console.error('WhatsApp API credentials missing:', { 
-        hasToken: !!WHATSAPP_TOKEN, 
-        hasPhoneId: !!PHONE_NUMBER_ID 
-      })
-      throw new Error('WhatsApp API credentials not configured')
+      throw new Error(`WhatsApp API credentials not configured: Token=${!!WHATSAPP_TOKEN}, PhoneId=${!!PHONE_NUMBER_ID}`);
     }
 
-    // Format phone number (remove + if present)
-    const formattedPhone = phone_number.replace('+', '')
+    // Format phone number (remove + if present, ensure it's E.164 compatible)
+    let formattedPhone = phone_number.replace('+', '');
     
-    console.log('Sending WhatsApp template to:', formattedPhone, 'with OTP:', otpCode)
-    console.log('Using Phone Number ID:', PHONE_NUMBER_ID)
+    // Ensure Rwanda numbers start with 250
+    if (formattedPhone.startsWith('788') || formattedPhone.startsWith('789') || formattedPhone.startsWith('780')) {
+      formattedPhone = '250' + formattedPhone;
+    }
+    
+    console.log('Phone number formatting:', {
+      original: phone_number,
+      formatted: formattedPhone,
+      isRwanda: formattedPhone.startsWith('250')
+    });
 
-    // Send WhatsApp template message - simplified without buttons
-    const whatsappResponse = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: formattedPhone,
-        type: 'template',
-        template: {
-          name: 'auth_rw',
-          language: {
-            code: 'en'
-          },
-          components: [
-            {
-              type: 'body',
-              parameters: [
-                {
-                  type: 'text',
-                  text: otpCode
-                }
-              ]
-            }
-          ]
-        }
-      })
-    })
+    console.log('Sending WhatsApp template:', {
+      to: formattedPhone,
+      otpCode,
+      phoneNumberId: PHONE_NUMBER_ID,
+      timestamp: new Date().toISOString()
+    });
 
-    const whatsappResult = await whatsappResponse.json()
+    // Try template message first with comprehensive error logging
+    try {
+      const templateResponse = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: formattedPhone,
+          type: 'template',
+          template: {
+            name: 'auth_rw',
+            language: {
+              code: 'en'
+            },
+            components: [
+              {
+                type: 'body',
+                parameters: [
+                  {
+                    type: 'text',
+                    text: otpCode
+                  }
+                ]
+              }
+            ]
+          }
+        })
+      });
 
-    if (!whatsappResponse.ok) {
-      console.error('WhatsApp API error:', whatsappResult)
-      
-      // If template has issues, fall back to regular text message
-      if (whatsappResult.error?.code === 131008) {
-        console.log('Template failed, trying text message fallback...')
+      const templateResult = await templateResponse.json();
+
+      console.log('WhatsApp template API response:', {
+        status: templateResponse.status,
+        statusText: templateResponse.statusText,
+        headers: Object.fromEntries(templateResponse.headers.entries()),
+        result: templateResult
+      });
+
+      if (templateResponse.ok && templateResult.messages?.[0]?.id) {
+        console.log('Template message sent successfully:', templateResult);
         
+        // Mark OTP as sent
+        await supabase
+          .from('otp_codes')
+          .update({ sent: true })
+          .eq('phone_number', phone_number)
+          .eq('otp_code', otpCode);
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            messageId: templateResult.messages[0].id,
+            method: 'template',
+            timestamp: new Date().toISOString()
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          },
+        );
+      } else {
+        console.error('Template failed, attempting text fallback:', templateResult);
+        
+        // Fall back to text message
         const textResponse = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
           method: 'POST',
           headers: {
@@ -110,57 +167,68 @@ serve(async (req) => {
               body: `🚗 *Kigali Ride* - Muraho! Welcome!\n\n*Your verification code:* ${otpCode}\n\nUwakangye neza ku Kigali Ride - igikoresho cyawe cyo gushaka n'ugutanga amatwara mu Kigali.\n\n*This code expires in 10 minutes.*\n\nMurakoze! 🇷🇼`
             }
           })
-        })
+        });
         
-        const textResult = await textResponse.json()
+        const textResult = await textResponse.json();
         
-        if (!textResponse.ok) {
-          throw new Error(`WhatsApp text message failed: ${textResult.error?.message || 'Unknown error'}`)
+        console.log('WhatsApp text fallback response:', {
+          status: textResponse.status,
+          statusText: textResponse.statusText,
+          result: textResult
+        });
+        
+        if (textResponse.ok && textResult.messages?.[0]?.id) {
+          console.log('Text message sent successfully:', textResult);
+          
+          // Mark OTP as sent
+          await supabase
+            .from('otp_codes')
+            .update({ sent: true })
+            .eq('phone_number', phone_number)
+            .eq('otp_code', otpCode);
+          
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              messageId: textResult.messages[0].id,
+              method: 'text_fallback',
+              timestamp: new Date().toISOString()
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            },
+          );
+        } else {
+          throw new Error(`Both template and text message failed: Template=${JSON.stringify(templateResult)}, Text=${JSON.stringify(textResult)}`);
         }
-        
-        console.log('Text message sent successfully:', textResult)
-        
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            messageId: textResult.messages?.[0]?.id,
-            method: 'text_fallback'
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          },
-        )
       }
-      
-      throw new Error(`WhatsApp API error: ${whatsappResult.error?.message || 'Unknown error'}`)
+    } catch (networkError) {
+      console.error('Network error calling WhatsApp API:', {
+        error: networkError.message,
+        stack: networkError.stack
+      });
+      throw new Error(`WhatsApp API network error: ${networkError.message}`);
     }
 
-    console.log('WhatsApp template sent successfully:', whatsappResult)
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        messageId: whatsappResult.messages?.[0]?.id,
-        method: 'template'
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      },
-    )
-
   } catch (error) {
-    console.error('Send WhatsApp template error:', error)
+    console.error('Send WhatsApp template error:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message 
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 500,
       },
-    )
+    );
   }
-})
+});
