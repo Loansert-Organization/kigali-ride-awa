@@ -86,11 +86,11 @@ export const useErrorHandler = (options?: UseErrorHandlerOptions) => {
     const showWhatsAppButton = shouldShowWhatsAppLogin(errorMessage) && options?.onWhatsAppLogin;
 
     // Show user-friendly toast with optional WhatsApp login button
-    toast({
-      title: "Something went wrong",
-      description: displayMessage,
-      variant: "destructive",
-      ...(showWhatsAppButton && {
+    if (showWhatsAppButton) {
+      toast({
+        title: "Something went wrong",
+        description: displayMessage,
+        variant: "destructive",
         action: (
           <Button
             variant="outline"
@@ -101,8 +101,14 @@ export const useErrorHandler = (options?: UseErrorHandlerOptions) => {
             📱 Login with WhatsApp
           </Button>
         )
-      })
-    });
+      });
+    } else {
+      toast({
+        title: "Something went wrong",
+        description: displayMessage,
+        variant: "destructive"
+      });
+    }
 
     console.error(`Error in ${component}:`, error);
   }, [logError, shouldShowWhatsAppLogin, options?.onWhatsAppLogin]);
