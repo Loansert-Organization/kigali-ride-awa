@@ -2,11 +2,31 @@
 import { supabase } from '@/integrations/supabase/client';
 import { googleOAuth } from '@/config/environment';
 
+// Extend the Window interface to include Google API
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          prompt: () => void;
+          disableAutoSelect: () => void;
+        };
+        oauth2: {
+          initCodeClient: (config: any) => {
+            requestCode: () => void;
+          };
+        };
+      };
+    };
+  }
+}
+
 class GoogleOAuthService {
   private clientId = googleOAuth.clientId;
 
   constructor() {
-    console.log('🔐 Initializing Google OAuth Service');
+    console.log('🔐 Initializing Google OAuth Service with Client ID:', this.clientId);
     this.loadGoogleAPI();
   }
 
@@ -40,15 +60,22 @@ class GoogleOAuthService {
     try {
       await this.loadGoogleAPI();
 
-      console.log('🔐 Starting Google OAuth flow...');
+      if (!window.google?.accounts?.oauth2) {
+        throw new Error('Google OAuth API not available');
+      }
+
+      console.log('🔐 Starting Google OAuth flow with Client ID:', this.clientId);
 
       return new Promise((resolve) => {
-        window.google.accounts.oauth2.initCodeClient({
+        const client = window.google!.accounts.oauth2.initCodeClient({
           client_id: this.clientId,
           scope: 'email profile openid',
           ux_mode: 'popup',
-          callback: async (response) => {
-            console.log('📝 Google OAuth response received');
+          callback: async (response: any) => {
+            console.log('📝 Google OAuth response received:', { 
+              hasCode: !!response.code,
+              hasError: !!response.error 
+            });
             
             if (response.error) {
               console.error('❌ Google OAuth error:', response.error);
@@ -57,6 +84,8 @@ class GoogleOAuthService {
             }
 
             try {
+              console.log('📤 Sending authorization code to edge function...');
+              
               // Send the authorization code to our edge function
               const { data, error } = await supabase.functions.invoke('google-oauth', {
                 body: {
@@ -65,19 +94,25 @@ class GoogleOAuthService {
                 }
               });
 
+              console.log('📥 Edge function response:', { 
+                hasData: !!data,
+                hasError: !!error,
+                success: data?.success 
+              });
+
               if (error) {
                 console.error('❌ OAuth processing error:', error);
                 resolve({ success: false, error: error.message });
                 return;
               }
 
-              if (!data.success) {
-                console.error('❌ OAuth failed:', data.error);
-                resolve({ success: false, error: data.error });
+              if (!data?.success) {
+                console.error('❌ OAuth failed:', data?.error);
+                resolve({ success: false, error: data?.error || 'OAuth processing failed' });
                 return;
               }
 
-              console.log('✅ Google OAuth successful:', data.user);
+              console.log('✅ Google OAuth successful');
               resolve({ success: true, user: data.user });
 
             } catch (error: any) {
@@ -85,7 +120,10 @@ class GoogleOAuthService {
               resolve({ success: false, error: error.message });
             }
           },
-        }).requestCode();
+        });
+
+        console.log('🚀 Requesting authorization code...');
+        client.requestCode();
       });
 
     } catch (error: any) {
