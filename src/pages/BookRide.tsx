@@ -27,16 +27,31 @@ const BookRide = () => {
 
   // Load Google Maps script
   useEffect(() => {
+    console.log('🗺️ BookRide: Loading Google Maps...');
     if (!window.google) {
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDMtyp8L8_Dvr6k7BTtCpZYJgXHdWqzNdA&libraries=places`;
       script.async = true;
       script.defer = true;
+      script.onload = () => console.log('✅ Google Maps loaded successfully');
+      script.onerror = () => console.error('❌ Failed to load Google Maps');
       document.head.appendChild(script);
+    } else {
+      console.log('✅ Google Maps already loaded');
     }
   }, []);
 
+  // Debug auth state
+  useEffect(() => {
+    console.log('🔐 BookRide Auth State:', {
+      user: user ? { id: user.id } : null,
+      userProfile: userProfile ? { id: userProfile.id, role: userProfile.role } : null,
+      loading: isLoading
+    });
+  }, [user, userProfile, isLoading]);
+
   const handleFromLocationChange = (value: string, coordinates?: { lat: number; lng: number }) => {
+    console.log('📍 From location changed:', { value, coordinates });
     setTripData(prev => ({
       ...prev,
       fromLocation: value,
@@ -46,6 +61,7 @@ const BookRide = () => {
   };
 
   const handleToLocationChange = (value: string, coordinates?: { lat: number; lng: number }) => {
+    console.log('📍 To location changed:', { value, coordinates });
     setTripData(prev => ({
       ...prev,
       toLocation: value,
@@ -55,10 +71,12 @@ const BookRide = () => {
   };
 
   const handleUpdate = (updates: Partial<TripData>) => {
+    console.log('🔄 Trip data update:', updates);
     setTripData(prev => ({ ...prev, ...updates }));
   };
 
   const handleMapPickerSelect = (location: { lat: number; lng: number; address: string }) => {
+    console.log('🗺️ Map picker selection:', { location, mode: showMapPicker });
     if (showMapPicker === 'pickup') {
       handleFromLocationChange(location.address, { lat: location.lat, lng: location.lng });
     } else if (showMapPicker === 'destination') {
@@ -68,8 +86,12 @@ const BookRide = () => {
   };
 
   const handleBookRide = async () => {
+    console.log('🚗 Starting ride booking process...');
+    console.log('📊 Current trip data:', tripData);
+    
     // Check authentication
     if (!user || !userProfile) {
+      console.error('❌ Authentication check failed:', { user: !!user, userProfile: !!userProfile });
       toast({
         title: "Authentication required",
         description: "Please complete your profile to book a ride",
@@ -81,6 +103,10 @@ const BookRide = () => {
 
     // Validate required fields
     if (!tripData.fromLocation || !tripData.toLocation) {
+      console.error('❌ Missing location information:', {
+        fromLocation: tripData.fromLocation,
+        toLocation: tripData.toLocation
+      });
       toast({
         title: "Missing information",
         description: "Please enter both pickup and destination locations",
@@ -89,20 +115,30 @@ const BookRide = () => {
       return;
     }
 
-    // Validate coordinates if possible
-    if (!tripData.fromLat || !tripData.fromLng || !tripData.toLat || !tripData.toLng) {
+    // More lenient coordinate validation - allow booking even without precise coordinates
+    if (!tripData.fromLat && !tripData.fromLng && !tripData.toLat && !tripData.toLng) {
+      console.warn('⚠️ No coordinates available, but allowing booking to proceed');
       toast({
-        title: "Location precision needed",
-        description: "Please use the location picker or autocomplete for better accuracy",
-        variant: "destructive"
+        title: "Location precision limited",
+        description: "Proceeding with text-based locations. Driver will contact you for details.",
       });
-      return;
     }
 
     try {
-      await createPassengerTrip(tripData);
+      console.log('📤 Calling createPassengerTrip...');
+      const success = await createPassengerTrip(tripData);
+      console.log('📥 Booking result:', success);
+      
+      if (!success) {
+        console.error('❌ Booking failed - createPassengerTrip returned false');
+        toast({
+          title: "Booking failed",
+          description: "Please try again or contact support",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
-      console.error('Booking error:', error);
+      console.error('💥 Booking error caught:', error);
       toast({
         title: "Booking failed",
         description: "Please try again or contact support",
@@ -111,12 +147,15 @@ const BookRide = () => {
     }
   };
 
-  const canBookRide = tripData.fromLocation && 
-                     tripData.toLocation && 
-                     tripData.fromLat && 
-                     tripData.fromLng && 
-                     tripData.toLat && 
-                     tripData.toLng;
+  const canBookRide = tripData.fromLocation && tripData.toLocation;
+
+  console.log('🎯 Render state:', {
+    canBookRide,
+    isLoading,
+    fromLocation: tripData.fromLocation,
+    toLocation: tripData.toLocation,
+    hasCoordinates: !!(tripData.fromLat && tripData.fromLng && tripData.toLat && tripData.toLng)
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -173,8 +212,6 @@ const BookRide = () => {
             <div className="text-xs text-gray-400 space-y-1">
               {!tripData.fromLocation && <p>• Enter pickup location</p>}
               {!tripData.toLocation && <p>• Enter destination</p>}
-              {(!tripData.fromLat || !tripData.fromLng) && <p>• Confirm pickup coordinates</p>}
-              {(!tripData.toLat || !tripData.toLng) && <p>• Confirm destination coordinates</p>}
             </div>
           </div>
         )}

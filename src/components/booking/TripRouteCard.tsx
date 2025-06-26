@@ -24,7 +24,10 @@ const TripRouteCard: React.FC<TripRouteCardProps> = ({
   onDestinationMapOpen
 }) => {
   const handleUseCurrentLocation = async () => {
+    console.log('📍 Requesting current location...');
+    
     if (!navigator.geolocation) {
+      console.error('❌ Geolocation not supported');
       toast({
         title: "Location not available",
         description: "Your device doesn't support location services",
@@ -34,6 +37,7 @@ const TripRouteCard: React.FC<TripRouteCardProps> = ({
     }
 
     try {
+      console.log('🔍 Getting position...');
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
@@ -42,8 +46,15 @@ const TripRouteCard: React.FC<TripRouteCardProps> = ({
         });
       });
 
+      console.log('✅ Position obtained:', {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy
+      });
+
       // Reverse geocode to get address
       if (window.google?.maps) {
+        console.log('🗺️ Reverse geocoding...');
         const geocoder = new window.google.maps.Geocoder();
         const latLng = new window.google.maps.LatLng(
           position.coords.latitude,
@@ -51,7 +62,10 @@ const TripRouteCard: React.FC<TripRouteCardProps> = ({
         );
 
         geocoder.geocode({ location: latLng }, (results, status) => {
+          console.log('📍 Geocoding result:', { status, results: results?.length });
+          
           if (status === 'OK' && results && results[0]) {
+            console.log('✅ Address found:', results[0].formatted_address);
             onFromChange(results[0].formatted_address, {
               lat: position.coords.latitude,
               lng: position.coords.longitude
@@ -61,6 +75,7 @@ const TripRouteCard: React.FC<TripRouteCardProps> = ({
               description: "Using your current location as pickup point"
             });
           } else {
+            console.warn('⚠️ Geocoding failed, using coordinates only');
             onFromChange('Current Location', {
               lat: position.coords.latitude,
               lng: position.coords.longitude
@@ -72,6 +87,7 @@ const TripRouteCard: React.FC<TripRouteCardProps> = ({
           }
         });
       } else {
+        console.warn('⚠️ Google Maps not available, using coordinates only');
         onFromChange('Current Location', {
           lat: position.coords.latitude,
           lng: position.coords.longitude
@@ -82,10 +98,14 @@ const TripRouteCard: React.FC<TripRouteCardProps> = ({
         });
       }
     } catch (error) {
-      console.error('Geolocation error:', error);
+      console.error('❌ Geolocation error:', error);
+      const errorMsg = error instanceof GeolocationPositionError 
+        ? `Location error: ${error.message}` 
+        : 'Failed to get location';
+      
       toast({
         title: "Location access denied",
-        description: "Please enter your pickup location manually",
+        description: "Please enter your pickup location manually or enable location permissions",
         variant: "destructive"
       });
     }
