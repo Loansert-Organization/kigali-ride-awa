@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import * as bcrypt from 'https://deno.land/x/bcrypt/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,9 +16,9 @@ serve(async (req) => {
     const { phone, code } = await req.json()
     
     if (!phone || !code) {
-      return new Response(JSON.stringify({ error: 'Phone and code are required' }), {
+      return new Response('no-code', {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
       })
     }
 
@@ -41,28 +40,33 @@ serve(async (req) => {
 
     if (fetchError || !otpData) {
       console.error('No OTP found for phone:', phone)
-      return new Response(JSON.stringify({ error: 'No OTP found' }), {
+      return new Response('no-code', {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
       })
     }
 
     // Check if OTP has expired
     if (new Date() > new Date(otpData.expires_at)) {
       console.log('OTP expired for phone:', phone)
-      return new Response(JSON.stringify({ error: 'OTP expired' }), {
+      return new Response('expired', {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
       })
     }
 
-    // Verify the OTP code
-    const isValidCode = await bcrypt.compare(code, otpData.code_hash)
-    if (!isValidCode) {
+    // Verify the OTP code using the same hashing method
+    const encoder = new TextEncoder()
+    const data = encoder.encode(code + 'salt_kigali_ride')
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const inputCodeHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+
+    if (inputCodeHash !== otpData.code_hash) {
       console.log('Invalid OTP code for phone:', phone)
-      return new Response(JSON.stringify({ error: 'Invalid code' }), {
+      return new Response('wrong', {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
       })
     }
 
@@ -104,6 +108,16 @@ serve(async (req) => {
         .eq('id', user.id)
     }
 
+    // Create a simple JWT-like token for the user
+    const tokenData = {
+      user_id: user.id,
+      phone: user.phone_number,
+      verified: true,
+      exp: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+    }
+    
+    const tokenString = btoa(JSON.stringify(tokenData))
+
     // Clean up the used OTP
     await supabase
       .from('otps')
@@ -112,16 +126,7 @@ serve(async (req) => {
 
     console.log('OTP verification successful for phone:', phone)
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      user: {
-        id: user.id,
-        phone_number: user.phone_number,
-        phone_verified: user.phone_verified,
-        role: user.role,
-        promo_code: user.promo_code
-      }
-    }), {
+    return new Response(JSON.stringify({ token: tokenString }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })

@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import * as bcrypt from 'https://deno.land/x/bcrypt/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,12 +32,19 @@ serve(async (req) => {
     // Generate 6-digit OTP
     const otp = (Math.floor(100000 + Math.random() * 900000)).toString()
 
-    // Store OTP with bcrypt hash
+    // Create a simple hash using built-in crypto API (compatible with edge functions)
+    const encoder = new TextEncoder()
+    const data = encoder.encode(otp + 'salt_kigali_ride')
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const code_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+
+    // Store OTP with hash
     const { error: insertError } = await supabase
       .from('otps')
       .insert({
         phone,
-        code_hash: await bcrypt.hash(otp),
+        code_hash,
         expires_at: new Date(Date.now() + 5 * 60_000) // 5-minute expiry
       })
 
@@ -50,7 +56,7 @@ serve(async (req) => {
       })
     }
 
-    // Send WhatsApp message using the autho_rw template
+    // Send WhatsApp message using the correct template
     const whatsappResponse = await fetch(
       'https://graph.facebook.com/v19.0/396791596844039/messages',
       {
@@ -80,18 +86,42 @@ serve(async (req) => {
     if (!whatsappResponse.ok) {
       const errorText = await whatsappResponse.text()
       console.error('WhatsApp API error:', errorText)
-      return new Response(JSON.stringify({ error: 'WhatsApp send failed' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      
+      // Fallback to text message if template fails
+      const textResponse = await fetch(
+        'https://graph.facebook.com/v19.0/396791596844039/messages',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get('WHATSAPP_API_TOKEN')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: phone,
+            type: 'text',
+            text: {
+              body: `🚗 *Kigali Ride* - Your verification code: ${otp}\n\nThis code expires in 5 minutes.\n\nMurakoze! 🇷🇼`
+            }
+          })
+        }
+      )
+
+      if (!textResponse.ok) {
+        const textError = await textResponse.text()
+        console.error('WhatsApp text fallback error:', textError)
+        return new Response(JSON.stringify({ error: 'WhatsApp send failed' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
     }
 
-    const whatsappResult = await whatsappResponse.json()
-    console.log('WhatsApp OTP sent successfully:', whatsappResult)
+    console.log('WhatsApp OTP sent successfully')
 
-    return new Response(JSON.stringify({ success: true, messageId: whatsappResult.messages?.[0]?.id }), {
+    return new Response('sent', {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'text/plain' }
     })
 
   } catch (error) {
