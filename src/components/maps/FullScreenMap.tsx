@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
+import { googleMaps } from '@/config/environment';
 
 declare global {
   interface Window {
@@ -51,7 +52,7 @@ const FullScreenMap: React.FC<FullScreenMapProps> = ({ onMapReady, children }) =
     if (!document.querySelector('script[src*="maps.googleapis.com"]')) {
       const script = document.createElement('script');
       script.async = true;
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&callback=initMap`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMaps.apiKey}&callback=initMap`;
       document.head.appendChild(script);
     } else if (window.google?.maps) {
       window.initMap();

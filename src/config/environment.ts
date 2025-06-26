@@ -2,7 +2,7 @@
 // Environment configuration for the application
 export const config = {
   googleMaps: {
-    apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBYpPx6SxS7_7cJ5Rw5R5oOgKqW8D5J1A0' // Fallback for development
+    apiKey: 'AIzaSyDGw_ZPNxHL7DFJ3dnxQ_LbtKz_jhHHFr8'
   },
   googleOAuth: {
     clientId: '378544894308-56vi69m88k8cc29b4fikf7g8a93fhoap.apps.googleusercontent.com'
