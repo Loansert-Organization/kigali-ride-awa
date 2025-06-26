@@ -8,8 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WhatsAppLoginModal } from '@/components/auth/WhatsAppLoginModal';
-import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { WhatsAppOTPFlow } from '@/components/auth/WhatsAppOTPFlow';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -26,9 +25,9 @@ interface TripData {
 
 const CreateTrip = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, userProfile, isGuest } = useAuth();
-  const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
+  const { isAuthenticated, userProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showWhatsAppOTP, setShowWhatsAppOTP] = useState(false);
   
   const [tripData, setTripData] = useState<TripData>({
     fromLocation: '',
@@ -100,7 +99,22 @@ const CreateTrip = () => {
   };
 
   const handleCreateTrip = () => {
-    requireAuth(proceedWithTripCreation);
+    // If not authenticated, show WhatsApp login wizard
+    if (!isAuthenticated) {
+      setShowWhatsAppOTP(true);
+      return;
+    }
+    
+    // If authenticated, proceed with trip creation
+    proceedWithTripCreation();
+  };
+
+  const handleWhatsAppSuccess = async (phoneNumber: string) => {
+    setShowWhatsAppOTP(false);
+    // After successful WhatsApp login, proceed with trip creation
+    setTimeout(() => {
+      proceedWithTripCreation();
+    }, 500);
   };
 
   const canCreateTrip = tripData.fromLocation && tripData.toLocation;
@@ -124,7 +138,7 @@ const CreateTrip = () => {
 
       <div className="p-4 max-w-md mx-auto space-y-4">
         {/* Auth Status Banner */}
-        {isGuest && (
+        {!isAuthenticated && (
           <div className="bg-green-50 p-3 rounded-lg text-center">
             <p className="text-sm text-green-800">
               🚗 Fill in your trip details. You'll verify your WhatsApp when posting.
@@ -253,7 +267,7 @@ const CreateTrip = () => {
           size="lg"
         >
           <Car className="w-5 h-5 mr-2" />
-          {isLoading ? 'Posting Trip...' : isGuest ? '📱 Verify WhatsApp & Post Trip' : '🚗 Post Trip Now'}
+          {isLoading ? 'Posting Trip...' : !isAuthenticated ? '📱 Verify WhatsApp & Post Trip' : '🚗 Post Trip Now'}
         </Button>
 
         {!canCreateTrip && (
@@ -276,12 +290,11 @@ const CreateTrip = () => {
         </div>
       </div>
 
-      <WhatsAppLoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onSuccess={() => handleLoginSuccess(proceedWithTripCreation)}
-        title="Post Your Trip"
-        description="Verify your WhatsApp number to post trips and connect with passengers"
+      <WhatsAppOTPFlow
+        isOpen={showWhatsAppOTP}
+        onClose={() => setShowWhatsAppOTP(false)}
+        onSuccess={handleWhatsAppSuccess}
+        userProfile={userProfile}
       />
     </div>
   );

@@ -8,18 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Car } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { WhatsAppLoginModal } from "@/components/auth/WhatsAppLoginModal";
-import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { WhatsAppOTPFlow } from "@/components/auth/WhatsAppOTPFlow";
 import { useAuth } from "@/contexts/AuthContext";
 
 const VehicleSetup = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, userProfile, isGuest } = useAuth();
-  const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
+  const { isAuthenticated, userProfile } = useAuth();
   
   const [vehicleType, setVehicleType] = useState<string>("");
   const [plateNumber, setPlateNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showWhatsAppOTP, setShowWhatsAppOTP] = useState(false);
 
   const proceedWithVehicleSetup = async () => {
     if (!vehicleType || !plateNumber.trim()) {
@@ -83,8 +82,22 @@ const VehicleSetup = () => {
   };
 
   const handleVehicleSetup = () => {
-    // Use auth guard - will show WhatsApp login if not authenticated
-    requireAuth(proceedWithVehicleSetup);
+    // If not authenticated, show WhatsApp login wizard
+    if (!isAuthenticated) {
+      setShowWhatsAppOTP(true);
+      return;
+    }
+    
+    // If authenticated, proceed with vehicle setup
+    proceedWithVehicleSetup();
+  };
+
+  const handleWhatsAppSuccess = async (phoneNumber: string) => {
+    setShowWhatsAppOTP(false);
+    // After successful WhatsApp login, proceed with vehicle setup
+    setTimeout(() => {
+      proceedWithVehicleSetup();
+    }, 500);
   };
 
   return (
@@ -115,7 +128,7 @@ const VehicleSetup = () => {
           </div>
 
           {/* Auth Status */}
-          {isGuest && (
+          {!isAuthenticated && (
             <div className="bg-green-50 p-3 rounded-lg text-center">
               <p className="text-sm text-green-800">
                 🚗 Fill in your vehicle details. You'll verify your WhatsApp when saving.
@@ -161,7 +174,7 @@ const VehicleSetup = () => {
             className="w-full bg-purple-600 hover:bg-purple-700"
             size="lg"
           >
-            {isLoading ? 'Setting up...' : isGuest ? '📱 Verify WhatsApp & Complete Setup' : '🚗 Complete Vehicle Setup'}
+            {isLoading ? 'Setting up...' : !isAuthenticated ? '📱 Verify WhatsApp & Complete Setup' : '🚗 Complete Vehicle Setup'}
           </Button>
 
           {!isAuthenticated && (
@@ -174,12 +187,11 @@ const VehicleSetup = () => {
         </div>
       </div>
 
-      <WhatsAppLoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onSuccess={() => handleLoginSuccess(proceedWithVehicleSetup)}
-        title="Complete Vehicle Setup"
-        description="Verify your WhatsApp number to add your vehicle and start offering rides"
+      <WhatsAppOTPFlow
+        isOpen={showWhatsAppOTP}
+        onClose={() => setShowWhatsAppOTP(false)}
+        onSuccess={handleWhatsAppSuccess}
+        userProfile={userProfile}
       />
     </div>
   );
