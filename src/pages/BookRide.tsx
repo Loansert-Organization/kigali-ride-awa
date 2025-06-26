@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Clock, Car, Navigation } from 'lucide-react';
@@ -43,25 +42,66 @@ const BookRide = () => {
 
   // Get current location and reverse geocode it
   const handleUseCurrentLocation = async () => {
+    console.log('🎯 Starting location detection process...');
     setIsGettingLocation(true);
+    
     try {
+      // First check if geolocation is supported
+      if (!navigator.geolocation) {
+        console.error('❌ Geolocation is not supported by this browser');
+        throw new Error('Geolocation is not supported by this browser');
+      }
+      
+      console.log('✅ Geolocation API is available');
+      console.log('📡 Requesting current position...');
+      
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000
-        });
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            console.log('✅ Position received:', {
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+              accuracy: pos.coords.accuracy
+            });
+            resolve(pos);
+          },
+          (error) => {
+            console.error('❌ Geolocation error:', {
+              code: error.code,
+              message: error.message,
+              PERMISSION_DENIED: error.code === 1,
+              POSITION_UNAVAILABLE: error.code === 2,
+              TIMEOUT: error.code === 3
+            });
+            reject(error);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000
+          }
+        );
       });
 
       const { latitude, longitude } = position.coords;
+      console.log('🌍 Coordinates obtained:', { latitude, longitude });
       
       // Try reverse geocoding with fallback
       try {
+        console.log('🔍 Starting reverse geocoding...');
         const { data, error } = await supabase.functions.invoke('reverse-geocode', {
           body: { lat: latitude, lng: longitude }
         });
 
+        console.log('📍 Reverse geocoding response:', { data, error });
+
+        if (error) {
+          console.error('❌ Reverse geocoding error:', error);
+          throw error;
+        }
+
         const address = (data?.success && data?.address) ? data.address : 'Current Location';
+        console.log('✅ Address resolved:', address);
         
         setTripData(prev => ({
           ...prev,
@@ -75,6 +115,7 @@ const BookRide = () => {
           description: "Using your current location as pickup point",
         });
       } catch (geocodeError) {
+        console.warn('⚠️ Reverse geocoding failed, using coordinates:', geocodeError);
         // Fallback to coordinates display
         setTripData(prev => ({
           ...prev,
@@ -88,15 +129,39 @@ const BookRide = () => {
           description: "Location coordinates captured",
         });
       }
-    } catch (error) {
-      console.error('Location error:', error);
+    } catch (error: any) {
+      console.error('💥 Location detection failed:', {
+        error: error,
+        message: error?.message,
+        code: error?.code,
+        name: error?.name
+      });
+      
+      let errorMessage = "Please enter your pickup location manually";
+      let errorTitle = "Location access denied";
+
+      if (error?.code === 1) {
+        errorMessage = "Location permission denied. Please enable location access in your browser settings and try again.";
+        errorTitle = "Location permission denied";
+      } else if (error?.code === 2) {
+        errorMessage = "Location not available. Please check your GPS/internet connection.";
+        errorTitle = "Location unavailable";
+      } else if (error?.code === 3) {
+        errorMessage = "Location request timed out. Please try again or enter manually.";
+        errorTitle = "Location timeout";
+      } else if (error?.message?.includes('not supported')) {
+        errorMessage = "Location services not supported on this device/browser.";
+        errorTitle = "Location not supported";
+      }
+
       toast({
-        title: "Location access denied",
-        description: "Please enter your pickup location manually",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
       setIsGettingLocation(false);
+      console.log('🏁 Location detection process completed');
     }
   };
 
