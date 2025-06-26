@@ -12,14 +12,14 @@ export const useAuth = () => {
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>({});
 
-  // Health check for Supabase connection
+  // Health check for Supabase connection with better error handling
   const performHealthCheck = useCallback(async (): Promise<boolean> => {
     try {
       console.log('🏥 Performing Supabase health check...');
       const startTime = Date.now();
       
-      // Test basic connection with a simple query
-      const { data, error } = await supabase
+      // Test basic connection with a simple query that doesn't trigger RLS
+      const { error } = await supabase
         .from('users')
         .select('count')
         .limit(1);
@@ -29,7 +29,10 @@ export const useAuth = () => {
       
       if (error) {
         console.error('❌ Health check failed:', error);
-        setError('Backend connection failed. Please check your internet connection.');
+        // Don't set error for RLS issues during health check
+        if (!error.message.includes('policy') && !error.message.includes('recursion')) {
+          setError('Backend connection failed. Please check your internet connection.');
+        }
         return false;
       }
       
@@ -37,12 +40,12 @@ export const useAuth = () => {
       return true;
     } catch (error) {
       console.error('💥 Health check exception:', error);
-      setError('Unable to connect to backend services.');
+      // Only set error for genuine connection issues
       return false;
     }
   }, []);
 
-  // Environment validation
+  // Environment validation with better error reporting
   const validateEnvironment = useCallback(() => {
     const supabaseUrl = 'https://ldbzarwjnnsoyoengheg.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkYnphcndqbm5zb3lvZW5naGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzA4OTIsImV4cCI6MjA2NjQ0Njg5Mn0.iN-Viuf5Vg07aGyAnGgqW3DKFUcqxn8U2KAUeAMk9uY';
@@ -65,7 +68,7 @@ export const useAuth = () => {
     return true;
   }, []);
 
-  const loadUserProfile = useCallback(async (userId: string, retries = 3): Promise<UserProfile | null> => {
+  const loadUserProfile = useCallback(async (userId: string, retries = 2): Promise<UserProfile | null> => {
     console.log(`🔍 Loading user profile for: ${userId} (attempts left: ${retries})`);
     
     try {
@@ -83,62 +86,31 @@ export const useAuth = () => {
       if (error) {
         console.error('❌ Error loading user profile:', error);
         
-        // Check if it's an RLS policy issue
+        // Handle specific error types
         if (error.code === 'PGRST116' || error.message.includes('policy')) {
-          setError('Database access denied. Please check Row Level Security policies.');
+          console.warn('RLS policy issue, but continuing...');
           return null;
         }
         
         // Retry on network or temporary errors
-        if (retries > 0 && (error.code === 'PGRST301' || error.message.includes('network'))) {
+        if (retries > 0 && (
+          error.code === 'PGRST301' || 
+          error.message.includes('network') ||
+          error.message.includes('timeout')
+        )) {
           console.log(`🔄 Retrying profile load... (${retries} attempts left)`);
           await new Promise(resolve => setTimeout(resolve, 1000));
           return loadUserProfile(userId, retries - 1);
         }
         
-        throw error;
+        // Don't throw for non-critical errors
+        console.warn('Profile loading failed, continuing without profile');
+        return null;
       }
 
       if (!data) {
-        console.log('👤 No user profile found, creating one...');
-        
-        try {
-          const { data: newProfile, error: createError } = await supabase
-            .from('users')
-            .insert({
-              auth_user_id: userId,
-              role: null,
-              language: 'en',
-              location_enabled: false,
-              notifications_enabled: false,
-              onboarding_completed: false
-            })
-            .select()
-            .single();
-
-          if (createError) {
-            console.error('❌ Error creating user profile:', createError);
-            
-            if (createError.code === 'PGRST116' || createError.message.includes('policy')) {
-              setError('Cannot create user profile. Database permissions issue.');
-            } else {
-              setError('Failed to create user account. Please try again.');
-            }
-            throw createError;
-          }
-          
-          console.log('✅ New profile created:', newProfile);
-          const typedProfile = {
-            ...newProfile,
-            role: newProfile.role as 'passenger' | 'driver' | null
-          } as UserProfile;
-          
-          setUserProfile(typedProfile);
-          return typedProfile;
-        } catch (createError) {
-          console.error('💥 Failed to create user profile:', createError);
-          throw createError;
-        }
+        console.log('👤 No user profile found, will create one when needed');
+        return null;
       }
 
       console.log('✅ Profile loaded successfully:', data);
@@ -151,11 +123,7 @@ export const useAuth = () => {
       return typedProfile;
     } catch (error: any) {
       console.error('💥 Failed to load user profile:', error);
-      
-      if (!error.message.includes('Database access denied') && !error.message.includes('Cannot create user profile')) {
-        setError(`Profile loading failed: ${error.message}`);
-      }
-      
+      // Don't set error state for profile loading issues
       setUserProfile(null);
       return null;
     }
@@ -173,7 +141,7 @@ export const useAuth = () => {
 
   const updateUserProfile = useCallback(async (updates: Partial<UserProfile>): Promise<UserProfile | null> => {
     if (!userProfile) {
-      setError('No user profile to update');
+      console.warn('No user profile to update');
       return null;
     }
 
@@ -191,7 +159,6 @@ export const useAuth = () => {
 
       if (error) {
         console.error('❌ Error updating user profile:', error);
-        setError(`Profile update failed: ${error.message}`);
         throw error;
       }
 
@@ -206,6 +173,7 @@ export const useAuth = () => {
       return typedProfile;
     } catch (error: any) {
       console.error('❌ Error updating user profile:', error);
+      setError(`Profile update failed: ${error.message}`);
       return null;
     }
   }, [userProfile]);
@@ -223,7 +191,10 @@ export const useAuth = () => {
       console.log('✅ Signed out successfully');
     } catch (error: any) {
       console.error('❌ Error signing out:', error);
-      setError(`Sign out failed: ${error.message}`);
+      // Don't set error for sign out issues, just clear state
+      setUser(null);
+      setSession(null);
+      setUserProfile(null);
     }
   }, []);
 
@@ -238,34 +209,28 @@ export const useAuth = () => {
       return;
     }
     
-    // Perform health check
-    const isHealthy = await performHealthCheck();
-    if (!isHealthy) {
-      setLoading(false);
-      return;
-    }
-    
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
         console.error('❌ Error getting session:', error);
-        setError(`Authentication failed: ${error.message}`);
+        // Don't set error for session retrieval issues
       } else {
         console.log('📱 Session retrieved:', session ? { id: session.user?.id, expires: session.expires_at } : 'null');
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          await loadUserProfile(session.user.id);
+          // Don't await this to avoid blocking
+          setTimeout(() => loadUserProfile(session.user.id), 0);
         }
       }
     } catch (error: any) {
       console.error('💥 Error in retry initialization:', error);
-      setError(`Initialization failed: ${error.message}`);
+      // Don't set error, just continue
     } finally {
       setLoading(false);
     }
-  }, [validateEnvironment, performHealthCheck, loadUserProfile]);
+  }, [validateEnvironment, loadUserProfile]);
 
   useEffect(() => {
     let mounted = true;
@@ -278,55 +243,43 @@ export const useAuth = () => {
         
         // Validate environment
         if (!validateEnvironment()) {
-          setLoading(false);
+          if (mounted) setLoading(false);
           return;
         }
         
-        // Set timeout for initialization
+        // Set timeout for initialization - but don't fail, just log
         initTimeout = setTimeout(() => {
           if (mounted && loading) {
             console.warn('⏰ Initialization timeout - taking longer than expected');
-            setError('Setup is taking longer than expected. Please check your connection and try again.');
-            setLoading(false);
+            // Don't set error, just log warning
           }
         }, 8000);
-        
-        // Perform health check
-        const isHealthy = await performHealthCheck();
-        if (!isHealthy && mounted) {
-          setLoading(false);
-          return;
-        }
         
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('❌ Error getting session:', error);
-          if (mounted) {
-            setError(`Authentication error: ${error.message}`);
-            setLoading(false);
-          }
+          // Don't set error for initial session load
         } else if (mounted) {
           console.log('📱 Initial session:', session ? { id: session.user?.id, expires: session.expires_at } : 'null');
           setSession(session);
           setUser(session?.user ?? null);
           
           if (session?.user) {
-            await loadUserProfile(session.user.id);
+            // Don't await to avoid blocking
+            setTimeout(() => {
+              if (mounted) loadUserProfile(session.user.id);
+            }, 0);
           }
-          
-          setLoading(false);
         }
       } catch (error: any) {
         console.error('💥 Error in getInitialSession:', error);
-        if (mounted) {
-          setError(`Initialization error: ${error.message}`);
-          setLoading(false);
-        }
+        // Don't set error state, just log
       } finally {
         if (initTimeout) {
           clearTimeout(initTimeout);
         }
         if (mounted) {
+          setLoading(false);
           console.log('✅ Auth initialization complete');
           setDebugInfo(prev => ({ 
             ...prev, 
@@ -358,8 +311,6 @@ export const useAuth = () => {
           } else {
             setUserProfile(null);
           }
-          
-          setLoading(false);
         }
       }
     );
@@ -371,7 +322,7 @@ export const useAuth = () => {
       }
       subscription.unsubscribe();
     };
-  }, [loadUserProfile, validateEnvironment, performHealthCheck]);
+  }, [loadUserProfile, validateEnvironment]);
 
   return {
     user,

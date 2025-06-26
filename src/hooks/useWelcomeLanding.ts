@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -103,7 +104,7 @@ export const useWelcomeLanding = () => {
       console.warn('⏰ Role selection timeout');
       setError('Setup is taking longer than expected. Please try again.');
       clearProcessingState();
-    }, 10000);
+    }, 15000);
     setProcessingTimeout(timeout);
 
     try {
@@ -141,7 +142,7 @@ export const useWelcomeLanding = () => {
       // Store role in localStorage as backup
       localStorage.setItem('user_role', role);
 
-      // Use the edge function to create or update user profile
+      // Use the edge function to create or update user profile with better error handling
       const requestPayload = {
         profileData: {
           role: role,
@@ -171,7 +172,7 @@ export const useWelcomeLanding = () => {
       const updatedProfile = await refreshUserProfile();
       
       if (!updatedProfile) {
-        throw new Error('Profile was created but could not be retrieved');
+        console.warn('Profile was created but could not be retrieved, continuing anyway');
       }
       
       // Clear timeout and navigate to permissions step

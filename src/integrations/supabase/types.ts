@@ -966,10 +966,6 @@ export type Database = {
       }
     }
     Functions: {
-      can_access_user_data: {
-        Args: { target_user_id: string }
-        Returns: boolean
-      }
       expire_old_trips: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -981,13 +977,6 @@ export type Database = {
       get_current_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string
-      }
-      get_current_user_record: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          user_id: string
-          is_authenticated: boolean
-        }[]
       }
       invoke_queue_worker: {
         Args: Record<PropertyKey, never>
