@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -94,55 +93,34 @@ export const useWelcomeLanding = () => {
         currentUser = authData.user;
         
         // Wait a moment for the auth state to update
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      console.log('Updating user role to:', role, 'for user ID:', currentUser?.id);
+      console.log('Using edge function to create/update user profile for user:', currentUser?.id);
 
       // Store role in localStorage as backup
       localStorage.setItem('user_role', role);
 
-      // Create or update user profile with better error handling
-      const profileData = {
-        role: role,
-        language: selectedLanguage,
-        location_enabled: false,
-        notifications_enabled: false,
-        onboarding_completed: false,
-        updated_at: new Date().toISOString()
-      };
-
-      if (!userProfile) {
-        console.log('Creating new user profile...');
-        const { data: newProfile, error: createError } = await supabase
-          .from('users')
-          .insert({
-            ...profileData,
-            auth_user_id: currentUser?.id || null,
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating user profile:', createError);
-          throw new Error(`Profile creation failed: ${createError.message}`);
+      // Use the edge function to create or update user profile
+      const { data, error } = await supabase.functions.invoke('create-or-update-user-profile', {
+        body: {
+          profileData: {
+            role: role,
+            language: selectedLanguage,
+            location_enabled: false,
+            notifications_enabled: false,
+            onboarding_completed: false,
+            referred_by: urlPromo || promoCode || null
+          }
         }
+      });
 
-        console.log('User profile created successfully:', newProfile);
-      } else {
-        console.log('Updating existing user profile...');
-        const { error: updateError } = await supabase
-          .from('users')
-          .update(profileData)
-          .eq('id', userProfile.id);
-
-        if (updateError) {
-          console.error('Error updating user role:', updateError);
-          throw new Error(`Profile update failed: ${updateError.message}`);
-        }
-
-        console.log('User profile updated successfully');
+      if (error) {
+        console.error('Error from edge function:', error);
+        throw new Error(`Profile setup failed: ${error.message}`);
       }
+
+      console.log('Profile created/updated successfully:', data);
 
       // Refresh the user profile to get the updated data
       await refreshUserProfile();
@@ -151,7 +129,7 @@ export const useWelcomeLanding = () => {
       setTimeout(() => {
         setCurrentStep('permissions');
         setIsProcessing(false);
-      }, 800);
+      }, 500);
 
       toast({
         title: "Role selected!",
