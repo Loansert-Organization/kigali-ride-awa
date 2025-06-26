@@ -14,7 +14,14 @@ interface TripDetailsCardProps {
   fare: string;
   description: string;
   isNegotiable: boolean;
-  onUpdate: (updates: any) => void;
+  onUpdate: (updates: {
+    scheduledTime?: string;
+    vehicleType?: string;
+    seatsAvailable?: number;
+    fare?: string;
+    description?: string;
+    isNegotiable?: boolean;
+  }) => void;
 }
 
 const TripDetailsCard: React.FC<TripDetailsCardProps> = ({
