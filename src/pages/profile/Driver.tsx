@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Car, Share, Copy } from 'lucide-react';
 import BottomNavigation from '@/components/navigation/BottomNavigation';
-import WhatsAppStatusBlock from '@/components/profile/WhatsAppStatusBlock';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -159,9 +158,6 @@ const DriverProfile = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* WhatsApp Status */}
-        <WhatsAppStatusBlock />
 
         {/* Promo Code Section */}
         <Card>

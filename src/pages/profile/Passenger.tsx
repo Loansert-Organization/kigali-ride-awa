@@ -5,8 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Share, Copy, User } from 'lucide-react';
 import BottomNavigation from '@/components/navigation/BottomNavigation';
-import WhatsAppStatusBlock from '@/components/profile/WhatsAppStatusBlock';
-import WhatsAppOTPBlock from '@/components/profile/WhatsAppOTPBlock';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
@@ -78,12 +76,6 @@ const PassengerProfile = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* WhatsApp OTP Authentication */}
-        <WhatsAppOTPBlock />
-
-        {/* Original WhatsApp Status */}
-        <WhatsAppStatusBlock />
 
         {/* Promo Code Section */}
         <Card>
