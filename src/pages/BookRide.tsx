@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import GooglePlacesInput from '@/components/booking/GooglePlacesInput';
+import { useGlobalErrorHandler } from '@/hooks/useGlobalErrorHandler';
 
 interface TripData {
   fromLocation: string;
@@ -29,6 +30,7 @@ const BookRide = () => {
   const navigate = useNavigate();
   const { isAuthenticated, userProfile, isGuest } = useAuth();
   const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
+  const { handleError } = useGlobalErrorHandler();
   const [isBooking, setIsBooking] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   
@@ -130,44 +132,12 @@ const BookRide = () => {
         });
       }
     } catch (error: any) {
-      console.error('💥 Location detection failed:', {
-        error: error,
-        message: error?.message,
-        code: error?.code,
-        name: error?.name
-      });
+      console.error('💥 Location detection failed:', error);
       
-      let errorMessage = "Please enter your pickup location manually";
-      let errorTitle = "Location access denied";
-
-      if (error?.code === 1) {
-        errorMessage = "Location permission denied. Please enable location access in your browser settings and try again.";
-        errorTitle = "Location permission denied";
-      } else if (error?.code === 2) {
-        errorMessage = "Location not available. Please check your GPS/internet connection.";
-        errorTitle = "Location unavailable";
-      } else if (error?.code === 3) {
-        errorMessage = "Location request timed out. Please try again or enter manually.";
-        errorTitle = "Location timeout";
-      } else if (error?.message?.includes('not supported')) {
-        errorMessage = "Location services not supported on this device/browser.";
-        errorTitle = "Location not supported";
-      }
-
-      toast({
-        title: errorTitle,
-        description: errorMessage,
-        variant: "destructive",
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowLoginModal(true)}
-            className="text-xs"
-          >
-            📱 Login with WhatsApp
-          </Button>
-        )
+      // Use the global error handler which will show WhatsApp login button if appropriate
+      await handleError(error, 'BookRide-LocationDetection', {
+        action: 'getCurrentLocation',
+        userAgent: navigator.userAgent
       });
     } finally {
       setIsGettingLocation(false);

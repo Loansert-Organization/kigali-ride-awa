@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 interface ErrorLogEntry {
   event_type: string;
@@ -12,7 +13,11 @@ interface ErrorLogEntry {
   severity?: 'info' | 'warning' | 'error' | 'critical';
 }
 
-export const useErrorHandler = () => {
+interface UseErrorHandlerOptions {
+  onWhatsAppLogin?: () => void;
+}
+
+export const useErrorHandler = (options?: UseErrorHandlerOptions) => {
   const { user } = useAuth();
 
   const logError = useCallback(async (entry: ErrorLogEntry) => {
@@ -36,6 +41,27 @@ export const useErrorHandler = () => {
     }
   }, [user?.id]);
 
+  const shouldShowWhatsAppLogin = useCallback((errorMessage: string): boolean => {
+    const authRelatedKeywords = [
+      'authentication',
+      'login',
+      'permission',
+      'unauthorized',
+      'verify',
+      'phone',
+      'whatsapp',
+      'location',
+      'access denied',
+      'not authenticated',
+      'session',
+      'token'
+    ];
+    
+    return authRelatedKeywords.some(keyword => 
+      errorMessage.toLowerCase().includes(keyword.toLowerCase())
+    );
+  }, []);
+
   const handleError = useCallback(async (
     error: any,
     component: string,
@@ -56,15 +82,30 @@ export const useErrorHandler = () => {
       severity: 'error'
     });
 
-    // Show user-friendly toast
+    const displayMessage = getDisplayMessage(errorMessage);
+    const showWhatsAppButton = shouldShowWhatsAppLogin(errorMessage) && options?.onWhatsAppLogin;
+
+    // Show user-friendly toast with optional WhatsApp login button
     toast({
       title: "Something went wrong",
-      description: getDisplayMessage(errorMessage),
-      variant: "destructive"
+      description: displayMessage,
+      variant: "destructive",
+      ...(showWhatsAppButton && {
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={options.onWhatsAppLogin}
+            className="text-xs"
+          >
+            📱 Login with WhatsApp
+          </Button>
+        )
+      })
     });
 
     console.error(`Error in ${component}:`, error);
-  }, [logError]);
+  }, [logError, shouldShowWhatsAppLogin, options?.onWhatsAppLogin]);
 
   const handleSuccess = useCallback(async (
     message: string,
@@ -102,6 +143,12 @@ const getDisplayMessage = (errorMessage: string): string => {
   }
   if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
     return 'Please check your input and try again';
+  }
+  if (errorMessage.includes('location') || errorMessage.includes('access denied')) {
+    return 'Location access is required for this feature';
+  }
+  if (errorMessage.includes('authentication') || errorMessage.includes('login')) {
+    return 'Please login to continue using this feature';
   }
   return 'Something went wrong. Please try again later';
 };
