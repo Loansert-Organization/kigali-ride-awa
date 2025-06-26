@@ -9,9 +9,12 @@ interface AuthContextType {
   session: Session | null;
   userProfile: UserProfile | null;
   loading: boolean;
+  error: string | null;
+  debugInfo: any;
   refreshUserProfile: () => Promise<UserProfile | null>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<UserProfile | null>;
   signOut: () => Promise<void>;
+  retryInitialization: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
