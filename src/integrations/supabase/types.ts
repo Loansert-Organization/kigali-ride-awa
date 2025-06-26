@@ -978,6 +978,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_whatsapp_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       invoke_queue_worker: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -988,6 +992,10 @@ export type Database = {
       }
       is_owner: {
         Args: { check_user_id: string }
+        Returns: boolean
+      }
+      is_whatsapp_verified: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       merge_anonymous_to_verified_user: {

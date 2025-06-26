@@ -1,131 +1,88 @@
 
-import React from 'react';
-import { useWelcomeLanding } from '@/hooks/useWelcomeLanding';
-import { useAuth } from '@/contexts/AuthContext';
-import WelcomeStep from '@/components/welcome/WelcomeStep';
-import LanguageStep from '@/components/welcome/LanguageStep';
-import RoleStep from '@/components/welcome/RoleStep';
-import PermissionsStep from '@/components/welcome/PermissionsStep';
-import ErrorRecoveryModal from '@/components/welcome/ErrorRecoveryModal';
-import AuthDebug from '@/components/debug/AuthDebug';
-import { Loader2 } from 'lucide-react';
+import { useState } from "react";
+import WelcomeStep from "@/components/welcome/WelcomeStep";
+import LanguageStep from "@/components/welcome/LanguageStep";
+import RoleStep from "@/components/welcome/RoleStep";
+import PermissionsStep from "@/components/welcome/PermissionsStep";
+import { useNavigate } from "react-router-dom";
 
 const WelcomeLanding = () => {
-  const { loading: authLoading, error: authError } = useAuth();
-  const {
-    currentStep,
-    setCurrentStep,
-    selectedLanguage,
-    selectedRole,
-    showPromoInput,
-    setShowPromoInput,
-    promoCode,
-    setPromoCode,
-    showPWAPrompt,
-    setShowPWAPrompt,
-    isProcessing,
-    error,
-    urlPromo,
-    languages,
-    currentLang,
-    handleLanguageSelect,
-    handleRoleSelect,
-    requestLocationPermission,
-    skipLocation,
-    retrySetup
-  } = useWelcomeLanding();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [selectedRole, setSelectedRole] = useState<"passenger" | "driver" | null>(null);
+  const navigate = useNavigate();
 
-  // Show error recovery modal if there's an error
-  if (error || authError) {
-    return (
-      <>
-        <ErrorRecoveryModal
-          error={error || authError || 'An unexpected error occurred'}
-          onRetry={retrySetup}
-          isRetrying={authLoading}
-        />
-        <AuthDebug />
-      </>
-    );
-  }
+  const steps = [
+    { component: WelcomeStep, title: "Welcome to Kigali Ride" },
+    { component: LanguageStep, title: "Choose Language" },
+    { component: RoleStep, title: "I want to..." },
+    { component: PermissionsStep, title: "App Permissions" }
+  ];
 
-  // Show loading state during initial auth
-  if (authLoading) {
-    return (
-      <>
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
-            <p className="text-gray-600 font-medium">Setting up your ride experience...</p>
-            <p className="text-sm text-gray-500 mt-2">This should only take a moment</p>
-          </div>
-        </div>
-        <AuthDebug />
-      </>
-    );
-  }
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
 
-  // Welcome Step
-  if (currentStep === 'welcome') {
-    return (
-      <>
-        <WelcomeStep onGetStarted={() => setCurrentStep('language')} />
-        <AuthDebug />
-      </>
-    );
-  }
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
-  // Language Selection Step
-  if (currentStep === 'language') {
-    return (
-      <>
-        <LanguageStep
-          languages={languages}
-          selectedLanguage={selectedLanguage}
-          onLanguageSelect={handleLanguageSelect}
-        />
-        <AuthDebug />
-      </>
-    );
-  }
+  const handleLanguageSelect = (language: string) => {
+    setSelectedLanguage(language);
+    handleNext();
+  };
 
-  // Role Selection Step
-  if (currentStep === 'role') {
-    return (
-      <>
-        <RoleStep
-          currentLang={currentLang}
-          onRoleSelect={handleRoleSelect}
-          isProcessing={isProcessing}
-          selectedRole={selectedRole}
-          urlPromo={urlPromo}
-          showPromoInput={showPromoInput}
-          setShowPromoInput={setShowPromoInput}
-          promoCode={promoCode}
-          setPromoCode={setPromoCode}
-        />
-        <AuthDebug />
-      </>
-    );
-  }
+  const handleRoleSelect = (role: "passenger" | "driver") => {
+    setSelectedRole(role);
+    handleNext();
+  };
 
-  // Permissions Step
-  if (currentStep === 'permissions') {
-    return (
-      <>
-        <PermissionsStep
-          selectedRole={selectedRole}
-          onRequestLocation={requestLocationPermission}
-          onSkipLocation={skipLocation}
-          showPWAPrompt={showPWAPrompt}
-          setShowPWAPrompt={setShowPWAPrompt}
-        />
-        <AuthDebug />
-      </>
-    );
-  }
+  const handleComplete = () => {
+    console.log('🎯 Welcome completed:', { selectedLanguage, selectedRole });
+    
+    // Store selections in localStorage for later use
+    localStorage.setItem('preferred_language', selectedLanguage);
+    if (selectedRole) {
+      localStorage.setItem('preferred_role', selectedRole);
+    }
 
-  return null;
+    // Navigate to main app based on role preference
+    if (selectedRole === 'passenger') {
+      navigate('/home/passenger');
+    } else if (selectedRole === 'driver') {
+      navigate('/home/driver');
+    } else {
+      navigate('/home/passenger'); // Default to passenger view
+    }
+  };
+
+  const handleSkipToApp = () => {
+    // Allow users to skip directly to the app
+    navigate('/home/passenger');
+  };
+
+  const CurrentStepComponent = steps[currentStep].component;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+      <CurrentStepComponent
+        onNext={handleNext}
+        onBack={handleBack}
+        onLanguageSelect={handleLanguageSelect}
+        onRoleSelect={handleRoleSelect}
+        onComplete={handleComplete}
+        onSkipToApp={handleSkipToApp}
+        selectedLanguage={selectedLanguage}
+        selectedRole={selectedRole}
+        currentStep={currentStep}
+        totalSteps={steps.length}
+      />
+    </div>
+  );
 };
 
 export default WelcomeLanding;

@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from '@/hooks/useAuth';
+import { useWhatsAppAuth } from '@/contexts/WhatsAppAuthContext';
 import { useErrorHandler } from './useErrorHandler';
 import { useNavigate } from 'react-router-dom';
 
@@ -29,14 +29,14 @@ interface BookingFlowService {
 }
 
 export const useBookingFlow = (): BookingFlowService => {
-  const { user } = useAuth();
+  const { userProfile, isAuthenticated } = useWhatsAppAuth();
   const { handleError, handleSuccess } = useErrorHandler();
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const createPassengerTrip = useCallback(async (tripData: TripData): Promise<boolean> => {
-    if (!user) {
-      handleError(new Error('User not authenticated'), 'BookingFlow.createPassengerTrip');
+    if (!isAuthenticated || !userProfile) {
+      handleError(new Error('WhatsApp authentication required'), 'BookingFlow.createPassengerTrip');
       return false;
     }
 
@@ -45,7 +45,7 @@ export const useBookingFlow = (): BookingFlowService => {
       const { data, error } = await supabase
         .from('trips')
         .insert({
-          user_id: user.id,
+          user_id: userProfile.id,
           from_location: tripData.fromLocation,
           to_location: tripData.toLocation,
           from_lat: tripData.fromLat,
@@ -79,14 +79,14 @@ export const useBookingFlow = (): BookingFlowService => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, handleError, handleSuccess, navigate]);
+  }, [userProfile, isAuthenticated, handleError, handleSuccess, navigate]);
 
   const createBooking = useCallback(async (
     passengerTripId: string, 
     driverTripId: string
   ): Promise<boolean> => {
-    if (!user) {
-      handleError(new Error('User not authenticated'), 'BookingFlow.createBooking');
+    if (!isAuthenticated || !userProfile) {
+      handleError(new Error('WhatsApp authentication required'), 'BookingFlow.createBooking');
       return false;
     }
 
@@ -120,17 +120,16 @@ export const useBookingFlow = (): BookingFlowService => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, handleError, handleSuccess]);
+  }, [userProfile, isAuthenticated, handleError, handleSuccess]);
 
   const confirmBooking = useCallback(async (bookingId: string): Promise<boolean> => {
-    if (!user) {
-      handleError(new Error('User not authenticated'), 'BookingFlow.confirmBooking');
+    if (!isAuthenticated || !userProfile) {
+      handleError(new Error('WhatsApp authentication required'), 'BookingFlow.confirmBooking');
       return false;
     }
 
     setIsLoading(true);
     try {
-      // Update booking confirmation
       const { error: bookingError } = await supabase
         .from('bookings')
         .update({ confirmed: true })
@@ -138,7 +137,6 @@ export const useBookingFlow = (): BookingFlowService => {
 
       if (bookingError) throw bookingError;
 
-      // Update trip status to matched
       const { data: booking } = await supabase
         .from('bookings')
         .select(`
@@ -169,7 +167,7 @@ export const useBookingFlow = (): BookingFlowService => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, handleError, handleSuccess]);
+  }, [userProfile, isAuthenticated, handleError, handleSuccess]);
 
   const cancelBooking = useCallback(async (bookingId: string): Promise<boolean> => {
     setIsLoading(true);
@@ -206,12 +204,10 @@ export const useBookingFlow = (): BookingFlowService => {
       
       let whatsappUrl: string;
       if (phoneNumber) {
-        // Remove any non-numeric characters and ensure it starts with country code
         const cleanNumber = phoneNumber.replace(/\D/g, '');
         const formattedNumber = cleanNumber.startsWith('250') ? cleanNumber : `250${cleanNumber}`;
         whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodedMessage}`;
       } else {
-        // Open WhatsApp without specific number
         whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
       }
 
@@ -225,7 +221,6 @@ export const useBookingFlow = (): BookingFlowService => {
     } catch (error) {
       handleError(error, 'BookingFlow.launchWhatsApp', { phoneNumber });
       
-      // Fallback: copy message to clipboard
       const fallbackMessage = tripDetails 
         ? `Hi! Ride: ${tripDetails.from_location} to ${tripDetails.to_location}`
         : "Hi! Kigali Ride booking - let's coordinate!";

@@ -1,62 +1,31 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Car, Save, AlertCircle } from 'lucide-react';
-import { WhatsAppLoginModal } from '@/components/auth/WhatsAppLoginModal';
-import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { useWhatsAppAuth } from '@/contexts/WhatsAppAuthContext';
+import { ArrowLeft, Car } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { WhatsAppLoginModal } from "@/components/auth/WhatsAppLoginModal";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useWhatsAppAuth } from "@/contexts/WhatsAppAuthContext";
 
 const VehicleSetup = () => {
   const navigate = useNavigate();
   const { isAuthenticated, userProfile } = useWhatsAppAuth();
   const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
+  
+  const [vehicleType, setVehicleType] = useState<string>("");
+  const [plateNumber, setPlateNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    vehicleType: '',
-    plateNumber: '',
-    preferredZone: ''
-  });
 
-  useEffect(() => {
-    if (isAuthenticated && userProfile) {
-      loadExistingProfile();
-    }
-  }, [isAuthenticated, userProfile]);
-
-  const loadExistingProfile = async () => {
-    if (!userProfile) return;
-
-    try {
-      const { data: profile } = await supabase
-        .from('driver_profiles')
-        .select('*')
-        .eq('user_id', userProfile.id)
-        .single();
-
-      if (profile) {
-        setFormData({
-          vehicleType: profile.vehicle_type || '',
-          plateNumber: profile.plate_number || '',
-          preferredZone: profile.preferred_zone || ''
-        });
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    }
-  };
-
-  const saveVehicleData = async () => {
-    if (!formData.vehicleType || !formData.plateNumber) {
+  const proceedWithVehicleSetup = async () => {
+    if (!vehicleType || !plateNumber.trim()) {
       toast({
-        title: "Required Fields",
-        description: "Please fill in vehicle type and plate number",
+        title: "Missing information",
+        description: "Please fill in all vehicle details",
         variant: "destructive"
       });
       return;
@@ -64,8 +33,8 @@ const VehicleSetup = () => {
 
     if (!userProfile) {
       toast({
-        title: "Authentication Error",
-        description: "Please login with WhatsApp first",
+        title: "Authentication required",
+        description: "Please verify your WhatsApp number first",
         variant: "destructive"
       });
       return;
@@ -73,28 +42,39 @@ const VehicleSetup = () => {
 
     setIsLoading(true);
     try {
+      // Create or update driver profile
       const { error } = await supabase
         .from('driver_profiles')
         .upsert({
           user_id: userProfile.id,
-          vehicle_type: formData.vehicleType,
-          plate_number: formData.plateNumber,
-          preferred_zone: formData.preferredZone || null
+          vehicle_type: vehicleType,
+          plate_number: plateNumber.toUpperCase(),
+          is_online: false
         });
 
       if (error) throw error;
 
+      // Update user role to driver if not already set
+      if (userProfile.role !== 'driver') {
+        const { error: roleError } = await supabase
+          .from('users')
+          .update({ role: 'driver' })
+          .eq('id', userProfile.id);
+
+        if (roleError) throw roleError;
+      }
+
       toast({
-        title: "Vehicle Setup Complete",
-        description: "Your vehicle information has been saved successfully"
+        title: "🚗 Vehicle setup complete!",
+        description: "You can now start receiving ride requests",
       });
 
-      navigate('/driver');
+      navigate('/home/driver');
     } catch (error) {
-      console.error('Error saving vehicle setup:', error);
+      console.error('Vehicle setup error:', error);
       toast({
-        title: "Error",
-        description: "Failed to save vehicle information",
+        title: "Setup failed",
+        description: "Please try again or contact support",
         variant: "destructive"
       });
     } finally {
@@ -102,30 +82,10 @@ const VehicleSetup = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleVehicleSetup = () => {
     // Use auth guard - will show WhatsApp login if not authenticated
-    requireAuth(saveVehicleData);
+    requireAuth(proceedWithVehicleSetup);
   };
-
-  const vehicleTypes = [
-    { value: 'moto', label: '🛵 Moto', icon: '🛵' },
-    { value: 'car', label: '🚗 Car', icon: '🚗' },
-    { value: 'tuktuk', label: '🛺 Tuktuk', icon: '🛺' },
-    { value: 'minibus', label: '🚐 Minibus', icon: '🚐' }
-  ];
-
-  const zones = [
-    'Kigali City Center',
-    'Nyarugenge',
-    'Gasabo',
-    'Kicukiro',
-    'Kimisagara',
-    'Nyabugogo',
-    'Remera',
-    'Kacyiru',
-    'Gikondo',
-    'Kanombe'
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -145,91 +105,72 @@ const VehicleSetup = () => {
       </div>
 
       <div className="p-4 max-w-md mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Car className="w-5 h-5 mr-2" />
-              Vehicle Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
+          <div className="text-center">
+            <Car className="w-16 h-16 mx-auto text-purple-600 mb-4" />
+            <h2 className="text-lg font-semibold">Add Your Vehicle</h2>
+            <p className="text-gray-600 text-sm">
+              Set up your vehicle to start receiving ride requests
+            </p>
+          </div>
+
+          <div className="space-y-4">
             <div>
-              <Label htmlFor="vehicleType">Vehicle Type *</Label>
-              <Select
-                value={formData.vehicleType}
-                onValueChange={(value) => setFormData({ ...formData, vehicleType: value })}
-              >
+              <Label htmlFor="vehicleType">Vehicle Type</Label>
+              <Select value={vehicleType} onValueChange={setVehicleType}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select your vehicle type" />
+                  <SelectValue placeholder="Select vehicle type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vehicleTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="moto">🏍️ Moto</SelectItem>
+                  <SelectItem value="car">🚗 Car</SelectItem>
+                  <SelectItem value="tuktuk">🛺 Tuktuk</SelectItem>
+                  <SelectItem value="minibus">🚐 Minibus</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="plateNumber">Plate Number *</Label>
+              <Label htmlFor="plateNumber">Plate Number</Label>
               <Input
                 id="plateNumber"
-                value={formData.plateNumber}
-                onChange={(e) => setFormData({ ...formData, plateNumber: e.target.value.toUpperCase() })}
-                placeholder="e.g., RBA 123 A"
+                type="text"
+                placeholder="e.g., RAD 123 A"
+                value={plateNumber}
+                onChange={(e) => setPlateNumber(e.target.value)}
                 className="uppercase"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Enter your vehicle's license plate number
+              </p>
             </div>
+          </div>
 
-            <div>
-              <Label htmlFor="preferredZone">Preferred Zone (Optional)</Label>
-              <Select
-                value={formData.preferredZone}
-                onValueChange={(value) => setFormData({ ...formData, preferredZone: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select preferred operating zone" />
-                </SelectTrigger>
-                <SelectContent>
-                  {zones.map((zone) => (
-                    <SelectItem key={zone} value={zone}>
-                      {zone}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <Button
+            onClick={handleVehicleSetup}
+            disabled={isLoading}
+            className="w-full bg-purple-600 hover:bg-purple-700"
+            size="lg"
+          >
+            {isLoading ? 'Setting up...' : '🚗 Complete Vehicle Setup'}
+          </Button>
+
+          {!isAuthenticated && (
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                You'll need to verify your WhatsApp number to continue
+              </p>
             </div>
-
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <div className="flex items-start">
-                <AlertCircle className="w-4 h-4 text-blue-600 mr-2 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">WhatsApp Verification Required</p>
-                  <p>You'll need to verify your WhatsApp number to save your vehicle information and start driving.</p>
-                </div>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleSave}
-              disabled={isLoading}
-              className="w-full"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {isLoading ? 'Saving...' : 'Save Vehicle Info'}
-            </Button>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       </div>
 
       <WhatsAppLoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
-        onSuccess={() => handleLoginSuccess(saveVehicleData)}
-        title="Driver Verification Required"
-        description="Verify your WhatsApp number to save your vehicle and start driving"
+        onSuccess={() => handleLoginSuccess(proceedWithVehicleSetup)}
+        title="Verify WhatsApp to Add Vehicle"
+        description="Drivers must verify their WhatsApp number to add vehicles and receive ride requests"
       />
     </div>
   );
