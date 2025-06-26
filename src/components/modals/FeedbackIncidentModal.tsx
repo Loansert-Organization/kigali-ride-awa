@@ -9,11 +9,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
+type IncidentType = 'feedback' | 'safety' | 'payment' | 'driver' | 'app' | 'other';
+
 interface FeedbackIncidentModalProps {
   isOpen: boolean;
   onClose: () => void;
   tripId?: string;
-  incidentType?: 'feedback' | 'safety' | 'payment' | 'other';
+  incidentType?: IncidentType;
 }
 
 export const FeedbackIncidentModal: React.FC<FeedbackIncidentModalProps> = ({
@@ -23,17 +25,17 @@ export const FeedbackIncidentModal: React.FC<FeedbackIncidentModalProps> = ({
   incidentType = 'feedback'
 }) => {
   const { userProfile } = useAuth();
-  const [type, setType] = useState(incidentType);
+  const [type, setType] = useState<IncidentType>(incidentType);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const incidentTypes = [
-    { value: 'feedback', label: '💬 General Feedback', icon: MessageSquare },
-    { value: 'safety', label: '🚨 Safety Concern', icon: AlertTriangle },
-    { value: 'payment', label: '💳 Payment Issue', icon: MessageSquare },
-    { value: 'driver', label: '🚗 Driver Behavior', icon: MessageSquare },
-    { value: 'app', label: '📱 App Issue', icon: MessageSquare },
-    { value: 'other', label: '📝 Other', icon: MessageSquare }
+    { value: 'feedback' as const, label: '💬 General Feedback', icon: MessageSquare },
+    { value: 'safety' as const, label: '🚨 Safety Concern', icon: AlertTriangle },
+    { value: 'payment' as const, label: '💳 Payment Issue', icon: MessageSquare },
+    { value: 'driver' as const, label: '🚗 Driver Behavior', icon: MessageSquare },
+    { value: 'app' as const, label: '📱 App Issue', icon: MessageSquare },
+    { value: 'other' as const, label: '📝 Other', icon: MessageSquare }
   ];
 
   const selectedType = incidentTypes.find(t => t.value === type);
@@ -89,6 +91,10 @@ export const FeedbackIncidentModal: React.FC<FeedbackIncidentModalProps> = ({
     }
   };
 
+  const handleTypeChange = (value: string) => {
+    setType(value as IncidentType);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -104,7 +110,7 @@ export const FeedbackIncidentModal: React.FC<FeedbackIncidentModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Type of report
             </label>
-            <Select value={type} onValueChange={setType}>
+            <Select value={type} onValueChange={handleTypeChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
