@@ -58,5 +58,8 @@ verify_jwt = false
 [functions.send-whatsapp-template]
 verify_jwt = false
 
-[functions.verify-whatsapp-otp]
+[functions.send-otp]
+verify_jwt = false
+
+[functions.verify-otp]
 verify_jwt = false
