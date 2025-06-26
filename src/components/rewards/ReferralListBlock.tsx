@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const ReferralListBlock = () => {
   const { user } = useAuth();
 
-  const { data: referrals, isLoading } = useQuery({
+  const { data: referrals, isLoading, error } = useQuery({
     queryKey: ['user-referrals', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -23,21 +23,28 @@ const ReferralListBlock = () => {
         .eq('referrer_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching referrals:', error);
+        return [];
+      }
       return data || [];
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    retry: 2,
+    staleTime: 30000 // Cache for 30 seconds
   });
 
   const getStatusInfo = (referral: any) => {
     switch (referral.validation_status) {
       case 'valid':
         return { icon: '✅', text: 'Completed', color: 'text-green-600' };
+      case 'validated':
+        return { icon: '✅', text: 'Completed', color: 'text-green-600' };
       case 'pending':
         if (referral.referee_role === 'passenger') {
           return { icon: '⏳', text: '0/1 trips', color: 'text-yellow-600' };
         } else {
-          return { icon: '⏳', text: `${Math.min(referral.points_awarded, 4)}/5 trips`, color: 'text-yellow-600' };
+          return { icon: '⏳', text: `${Math.min(referral.points_awarded || 0, 4)}/5 trips`, color: 'text-yellow-600' };
         }
       case 'rejected':
         return { icon: '❌', text: 'Invalid', color: 'text-red-600' };
@@ -45,6 +52,25 @@ const ReferralListBlock = () => {
         return { icon: '⏳', text: 'Pending', color: 'text-gray-600' };
     }
   };
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Users className="w-5 h-5 mr-2" />
+            👥 People You Referred
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">
+            <p className="text-red-600 font-medium">Failed to load referrals</p>
+            <p className="text-sm text-gray-500 mt-1">Please try again later</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -57,7 +83,7 @@ const ReferralListBlock = () => {
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <div className="animate-pulse">Loading referrals...</div>
+            <div className="animate-pulse font-medium">Loading referrals...</div>
           </div>
         </CardContent>
       </Card>
@@ -76,7 +102,7 @@ const ReferralListBlock = () => {
         {!referrals || referrals.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-sm">No referrals yet</p>
+            <p className="text-sm font-medium">No referrals yet</p>
             <p className="text-xs mt-1">Share your code to start earning points!</p>
           </div>
         ) : (
@@ -96,7 +122,7 @@ const ReferralListBlock = () => {
                       <p className="font-medium text-sm">
                         {referral.referee?.promo_code || `Referral #${index + 1}`}
                       </p>
-                      <p className="text-xs text-gray-500 capitalize">
+                      <p className="text-xs text-gray-500 capitalize font-medium">
                         {referral.referee_role}
                       </p>
                     </div>

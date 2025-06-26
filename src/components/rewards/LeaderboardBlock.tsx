@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const LeaderboardBlock = () => {
   const { user } = useAuth();
 
-  const { data: leaderboard, isLoading } = useQuery({
+  const { data: leaderboard, isLoading, error } = useQuery({
     queryKey: ['weekly-leaderboard'],
     queryFn: async () => {
       const currentWeek = new Date();
@@ -26,9 +26,14 @@ const LeaderboardBlock = () => {
         .order('points', { ascending: false })
         .limit(10);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching leaderboard:', error);
+        return [];
+      }
       return data || [];
-    }
+    },
+    retry: 2,
+    staleTime: 60000 // Cache for 1 minute
   });
 
   const { data: userRank } = useQuery({
@@ -47,10 +52,14 @@ const LeaderboardBlock = () => {
         .eq('week', monday.toISOString().split('T')[0])
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user rank:', error);
+        return 0;
+      }
       return data?.points || 0;
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    retry: 1
   });
 
   const getRankIcon = (rank: number) => {
@@ -74,6 +83,25 @@ const LeaderboardBlock = () => {
     return '';
   };
 
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Trophy className="w-5 h-5 mr-2" />
+            🏆 Weekly Leaderboard
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">
+            <p className="text-red-600 font-medium">Failed to load leaderboard</p>
+            <p className="text-sm text-gray-500 mt-1">Please try again later</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -85,7 +113,7 @@ const LeaderboardBlock = () => {
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <div className="animate-pulse">Loading leaderboard...</div>
+            <div className="animate-pulse font-medium">Loading leaderboard...</div>
           </div>
         </CardContent>
       </Card>
@@ -104,7 +132,7 @@ const LeaderboardBlock = () => {
         {!leaderboard || leaderboard.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Trophy className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-sm">No rankings yet this week</p>
+            <p className="text-sm font-medium">No rankings yet this week</p>
             <p className="text-xs mt-1">Be the first to earn points!</p>
           </div>
         ) : (
@@ -126,7 +154,7 @@ const LeaderboardBlock = () => {
                       <p className="font-mono text-sm font-medium">
                         {entry.user?.promo_code || 'Unknown'}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 font-medium">
                         {entry.points} points
                       </p>
                     </div>
@@ -148,7 +176,7 @@ const LeaderboardBlock = () => {
         {/* User's current position */}
         {userRank !== undefined && (
           <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-            <p className="text-sm text-center">
+            <p className="text-sm text-center font-medium">
               <strong>Your current position:</strong> {userRank} points this week
               {userRank === 0 && " - Start referring to climb the ranks!"}
             </p>

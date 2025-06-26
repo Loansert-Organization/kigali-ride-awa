@@ -15,23 +15,30 @@ const Rewards = () => {
   const navigate = useNavigate();
   const { userProfile, loading } = useAuth();
 
-  if (loading) {
+  // Only show loading if auth is still loading AND no userProfile exists
+  if (loading && !userProfile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
-          <p className="text-gray-600">Loading rewards...</p>
+          <p className="text-gray-600 font-medium">Loading rewards...</p>
         </div>
       </div>
     );
   }
 
-  if (!userProfile) {
+  // If not loading but no profile, redirect to role selection
+  if (!loading && !userProfile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Please select your role first</p>
-          <a href="/" className="text-purple-600 underline">Go to Home</a>
+          <p className="text-gray-600 mb-4 font-medium">Please select your role first</p>
+          <Button 
+            onClick={() => navigate('/')}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold"
+          >
+            Go to Home
+          </Button>
         </div>
       </div>
     );
@@ -58,7 +65,7 @@ const Rewards = () => {
 
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Promo Code Section */}
-        <PromoCodeDisplayBlock promoCode={userProfile.promo_code || ''} />
+        <PromoCodeDisplayBlock promoCode={userProfile?.promo_code || ''} />
 
         {/* Referrals Progress */}
         <ReferralListBlock />
@@ -70,7 +77,7 @@ const Rewards = () => {
         <RewardsExplainerBlock />
       </div>
 
-      {userProfile.role && <BottomNavigation role={userProfile.role} />}
+      {userProfile?.role && <BottomNavigation role={userProfile.role} />}
     </div>
   );
 };
