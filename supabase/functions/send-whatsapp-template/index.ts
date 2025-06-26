@@ -54,6 +54,7 @@ serve(async (req) => {
     const formattedPhone = phone_number.replace('+', '')
     
     console.log('Sending WhatsApp template to:', formattedPhone, 'with OTP:', otpCode)
+    console.log('Using Phone Number ID:', PHONE_NUMBER_ID)
 
     // Send WhatsApp template message - simplified without buttons
     const whatsappResponse = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {

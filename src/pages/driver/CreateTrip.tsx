@@ -43,6 +43,7 @@ const CreateTrip = () => {
           seatsAvailable={tripData.seatsAvailable}
           fare={tripData.fare}
           description={tripData.description}
+          isNegotiable={tripData.isNegotiable}
           onUpdate={(updates) => setTripData(prev => ({ ...prev, ...updates }))}
         />
 
