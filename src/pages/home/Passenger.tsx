@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Car, User, TrendingUp, Plus } from 'lucide-react';
+import { MapPin, Plus, User, TrendingUp } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from "@/integrations/supabase/client";
+import FullScreenMap from '@/components/maps/FullScreenMap';
 
 interface Trip {
   id: string;
@@ -25,6 +25,7 @@ const PassengerHome = () => {
   const { isAuthenticated, userProfile, isGuest, setGuestRole } = useAuth();
   const [availableTrips, setAvailableTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+  const mapRef = useRef<google.maps.Map | null>(null);
 
   useEffect(() => {
     // Set role for guest users
@@ -57,159 +58,138 @@ const PassengerHome = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b p-4">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">Find a Ride</h1>
-              <p className="text-sm text-gray-600">
-                {isGuest ? 'Browsing as Guest' : `Welcome, ${userProfile?.promo_code}`}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/profile')}
-            >
-              <User className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      </div>
+  const handleMapReady = (map: google.maps.Map) => {
+    mapRef.current = map;
+    console.log('🗺️ Map is ready for driver markers');
+    // TODO: Add driver markers here
+  };
 
-      <div className="p-4 max-w-md mx-auto space-y-4">
-        {/* Auth Status */}
+  return (
+    <div className="relative">
+      {/* Full-screen map */}
+      <FullScreenMap onMapReady={handleMapReady}>
+        {/* Auth Status Banner - Floating */}
         {isGuest && (
-          <div className="bg-blue-50 p-3 rounded-lg text-center">
-            <p className="text-sm text-blue-800">
-              👋 You're browsing as a guest. Book a ride to verify with WhatsApp.
-            </p>
+          <div className="absolute top-4 left-4 right-4 z-10">
+            <Card className="bg-blue-50/90 backdrop-blur-sm border-blue-200">
+              <CardContent className="p-3">
+                <p className="text-sm text-blue-800 text-center">
+                  👋 You're browsing as a guest. Book a ride to verify with WhatsApp.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         )}
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Header - Floating */}
+        <div className="absolute top-4 left-4 right-16 z-10">
+          <Card className="bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold">Find a Ride</h1>
+                  <p className="text-sm text-gray-600">
+                    {isGuest ? 'Browsing as Guest' : `Welcome, ${userProfile?.promo_code}`}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Profile Button - Floating */}
+        <div className="absolute top-4 right-4 z-10">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/profile')}
+            className="bg-white/90 backdrop-blur-sm"
+          >
+            <User className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Quick Action - Book Ride (Floating) */}
+        <div className="absolute bottom-24 right-4 z-10">
           <Button
             onClick={() => navigate('/book-ride')}
-            className="h-20 flex-col space-y-2 bg-blue-600 hover:bg-blue-700"
+            className="h-16 w-16 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg"
+            size="lg"
           >
-            <Plus className="w-6 h-6" />
-            <span className="text-sm">Book a Ride</span>
-          </Button>
-          
-          <Button
-            onClick={() => navigate('/leaderboard')}
-            variant="outline"
-            className="h-20 flex-col space-y-2"
-          >
-            <TrendingUp className="w-6 h-6" />
-            <span className="text-sm">Leaderboard</span>
+            <Plus className="w-8 h-8" />
           </Button>
         </div>
 
-        {/* Available Trips */}
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Available Rides</h2>
-          
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading available rides...</p>
-            </div>
-          ) : availableTrips.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <Car className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-600 mb-2">No rides available right now</p>
-                <p className="text-sm text-gray-500">Check back soon or post your own ride request!</p>
-              </CardContent>
-            </Card>
-          ) : (
-            availableTrips.map((trip) => (
-              <Card key={trip.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Badge variant="secondary">{trip.vehicle_type}</Badge>
-                        <Badge variant="outline">Driver: {trip.users.promo_code}</Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center text-sm">
-                          <MapPin className="w-4 h-4 mr-2 text-green-600" />
-                          <span>{trip.from_location} → {trip.to_location}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Clock className="w-4 h-4 mr-2" />
-                          <span>{new Date(trip.scheduled_time).toLocaleString()}</span>
-                        </div>
+        {/* Available Trips Panel - Floating Bottom */}
+        <div className="absolute bottom-4 left-4 right-4 z-10 max-h-32 overflow-hidden">
+          <Card className="bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-sm">Available Rides</h3>
+                <span className="text-xs text-gray-500">{availableTrips.length} trips</span>
+              </div>
+              
+              {loading ? (
+                <div className="text-center py-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto"></div>
+                </div>
+              ) : availableTrips.length === 0 ? (
+                <p className="text-xs text-gray-600 text-center py-2">No rides available right now</p>
+              ) : (
+                <div className="space-y-1 max-h-20 overflow-y-auto">
+                  {availableTrips.slice(0, 2).map((trip) => (
+                    <div key={trip.id} className="text-xs p-2 bg-white/50 rounded border">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium truncate">{trip.from_location} → {trip.to_location}</span>
+                        <span className="text-green-600 font-bold ml-2">{trip.vehicle_type}</span>
                       </div>
                     </div>
-                    {trip.fare && (
-                      <div className="ml-4 text-right">
-                        <div className="font-semibold text-green-600">{trip.fare} RWF</div>
-                        <div className="text-xs text-gray-500">per person</div>
-                      </div>
-                    )}
-                  </div>
-                  <Button 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => navigate(`/ride-matches?driverTripId=${trip.id}`)}
-                  >
-                    View Details
-                  </Button>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Bottom Navigation Placeholder */}
-        <div className="h-20"></div>
-      </div>
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t">
-        <div className="max-w-md mx-auto px-4 py-2">
-          <div className="flex justify-around">
-            <Button variant="ghost" size="sm" className="flex-col space-y-1 text-blue-600">
-              <MapPin className="w-5 h-5" />
-              <span className="text-xs">Home</span>
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="flex-col space-y-1"
-              onClick={() => navigate('/book-ride')}
-            >
-              <Plus className="w-5 h-5" />
-              <span className="text-xs">Book</span>
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="flex-col space-y-1"
-              onClick={() => navigate('/leaderboard')}
-            >
-              <TrendingUp className="w-5 h-5" />
-              <span className="text-xs">Rewards</span>
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="flex-col space-y-1"
-              onClick={() => navigate('/profile')}
-            >
-              <User className="w-5 h-5" />
-              <span className="text-xs">Profile</span>
-            </Button>
+        {/* Bottom Navigation - Fixed */}
+        <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t z-10">
+          <div className="max-w-md mx-auto px-4 py-2">
+            <div className="flex justify-around">
+              <Button variant="ghost" size="sm" className="flex-col space-y-1 text-blue-600">
+                <MapPin className="w-5 h-5" />
+                <span className="text-xs">Home</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="flex-col space-y-1"
+                onClick={() => navigate('/book-ride')}
+              >
+                <Plus className="w-5 h-5" />
+                <span className="text-xs">Book</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="flex-col space-y-1"
+                onClick={() => navigate('/leaderboard')}
+              >
+                <TrendingUp className="w-5 h-5" />
+                <span className="text-xs">Rewards</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="flex-col space-y-1"
+                onClick={() => navigate('/profile')}
+              >
+                <User className="w-5 h-5" />
+                <span className="text-xs">Profile</span>
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </FullScreenMap>
     </div>
   );
 };
