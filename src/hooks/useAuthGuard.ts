@@ -1,9 +1,9 @@
 
 import { useState } from 'react';
-import { useWhatsAppAuth } from '@/contexts/WhatsAppAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useAuthGuard = () => {
-  const { isAuthenticated } = useWhatsAppAuth();
+  const { isAuthenticated } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const requireAuth = (callback?: () => void) => {

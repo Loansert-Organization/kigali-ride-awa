@@ -10,11 +10,11 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { WhatsAppLoginModal } from "@/components/auth/WhatsAppLoginModal";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
-import { useWhatsAppAuth } from "@/contexts/WhatsAppAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const VehicleSetup = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, userProfile } = useWhatsAppAuth();
+  const { isAuthenticated, userProfile, isGuest } = useAuth();
   const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
   
   const [vehicleType, setVehicleType] = useState<string>("");
@@ -66,7 +66,7 @@ const VehicleSetup = () => {
 
       toast({
         title: "🚗 Vehicle setup complete!",
-        description: "You can now start receiving ride requests",
+        description: "You can now start posting trips and earning money",
       });
 
       navigate('/home/driver');
@@ -91,7 +91,7 @@ const VehicleSetup = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b p-4">
-        <div className="flex items-center">
+        <div className="flex items-center max-w-md mx-auto">
           <Button
             variant="ghost"
             size="sm"
@@ -110,9 +110,18 @@ const VehicleSetup = () => {
             <Car className="w-16 h-16 mx-auto text-purple-600 mb-4" />
             <h2 className="text-lg font-semibold">Add Your Vehicle</h2>
             <p className="text-gray-600 text-sm">
-              Set up your vehicle to start receiving ride requests
+              Set up your vehicle to start posting trips and receiving ride requests
             </p>
           </div>
+
+          {/* Auth Status */}
+          {isGuest && (
+            <div className="bg-green-50 p-3 rounded-lg text-center">
+              <p className="text-sm text-green-800">
+                🚗 Fill in your vehicle details. You'll verify your WhatsApp when saving.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-4">
             <div>
@@ -152,7 +161,7 @@ const VehicleSetup = () => {
             className="w-full bg-purple-600 hover:bg-purple-700"
             size="lg"
           >
-            {isLoading ? 'Setting up...' : '🚗 Complete Vehicle Setup'}
+            {isLoading ? 'Setting up...' : isGuest ? '📱 Verify WhatsApp & Complete Setup' : '🚗 Complete Vehicle Setup'}
           </Button>
 
           {!isAuthenticated && (
@@ -169,8 +178,8 @@ const VehicleSetup = () => {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onSuccess={() => handleLoginSuccess(proceedWithVehicleSetup)}
-        title="Verify WhatsApp to Add Vehicle"
-        description="Drivers must verify their WhatsApp number to add vehicles and receive ride requests"
+        title="Complete Vehicle Setup"
+        description="Verify your WhatsApp number to add your vehicle and start offering rides"
       />
     </div>
   );

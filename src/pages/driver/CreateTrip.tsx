@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Clock, Car } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Car, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,13 +20,11 @@ interface TripData {
   scheduledTime: string;
   vehicleType: string;
   description: string;
-  fromLat?: number;
-  fromLng?: number;
-  toLat?: number;
-  toLng?: number;
+  fare: string;
+  seatsAvailable: string;
 }
 
-const BookRide = () => {
+const CreateTrip = () => {
   const navigate = useNavigate();
   const { isAuthenticated, userProfile, isGuest } = useAuth();
   const { requireAuth, showLoginModal, setShowLoginModal, handleLoginSuccess } = useAuthGuard();
@@ -35,17 +33,18 @@ const BookRide = () => {
   const [tripData, setTripData] = useState<TripData>({
     fromLocation: '',
     toLocation: '',
-    scheduledTime: new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 16),
+    scheduledTime: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
     vehicleType: 'car',
-    description: ''
+    description: '',
+    fare: '',
+    seatsAvailable: '3'
   });
 
-  // Guest users can fill the form, but auth is required only on booking
-  const proceedWithBooking = async () => {
+  const proceedWithTripCreation = async () => {
     if (!tripData.fromLocation || !tripData.toLocation) {
       toast({
         title: "Missing information",
-        description: "Please enter both pickup and destination locations",
+        description: "Please enter both departure and destination locations",
         variant: "destructive"
       });
       return;
@@ -54,7 +53,7 @@ const BookRide = () => {
     if (!userProfile) {
       toast({
         title: "Authentication required",
-        description: "Please verify your WhatsApp number to book",
+        description: "Please verify your WhatsApp number to post trips",
         variant: "destructive"
       });
       return;
@@ -68,16 +67,14 @@ const BookRide = () => {
           user_id: userProfile.id,
           from_location: tripData.fromLocation,
           to_location: tripData.toLocation,
-          from_lat: tripData.fromLat,
-          from_lng: tripData.fromLng,
-          to_lat: tripData.toLat,
-          to_lng: tripData.toLng,
           scheduled_time: tripData.scheduledTime,
           vehicle_type: tripData.vehicleType,
           description: tripData.description,
-          role: 'passenger',
+          fare: tripData.fare ? parseFloat(tripData.fare) : null,
+          seats_available: parseInt(tripData.seatsAvailable),
+          role: 'driver',
           status: 'pending',
-          seats_available: 1
+          is_negotiable: !tripData.fare
         })
         .select()
         .single();
@@ -85,15 +82,15 @@ const BookRide = () => {
       if (error) throw error;
 
       toast({
-        title: "🚗 Ride booked successfully!",
-        description: "Looking for available drivers...",
+        title: "🚗 Trip posted successfully!",
+        description: "Passengers can now see and book your trip",
       });
 
-      navigate(`/ride-matches?tripId=${data.id}`);
+      navigate('/home/driver');
     } catch (error) {
-      console.error('Booking error:', error);
+      console.error('Trip creation error:', error);
       toast({
-        title: "Booking failed",
+        title: "Failed to post trip",
         description: "Please try again or contact support",
         variant: "destructive"
       });
@@ -102,12 +99,11 @@ const BookRide = () => {
     }
   };
 
-  const handleBookRide = () => {
-    // Use auth guard - will show WhatsApp login if not authenticated
-    requireAuth(proceedWithBooking);
+  const handleCreateTrip = () => {
+    requireAuth(proceedWithTripCreation);
   };
 
-  const canBookRide = tripData.fromLocation && tripData.toLocation;
+  const canCreateTrip = tripData.fromLocation && tripData.toLocation;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -122,16 +118,16 @@ const BookRide = () => {
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h1 className="text-xl font-bold">Book a Ride</h1>
+          <h1 className="text-xl font-bold">Post a Trip</h1>
         </div>
       </div>
 
       <div className="p-4 max-w-md mx-auto space-y-4">
         {/* Auth Status Banner */}
         {isGuest && (
-          <div className="bg-blue-50 p-3 rounded-lg text-center">
-            <p className="text-sm text-blue-800">
-              👋 Fill in your trip details. You'll verify your WhatsApp when booking.
+          <div className="bg-green-50 p-3 rounded-lg text-center">
+            <p className="text-sm text-green-800">
+              🚗 Fill in your trip details. You'll verify your WhatsApp when posting.
             </p>
           </div>
         )}
@@ -146,10 +142,10 @@ const BookRide = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="from">From (Pickup Location)</Label>
+              <Label htmlFor="from">From (Starting Point)</Label>
               <Input
                 id="from"
-                placeholder="Enter pickup location..."
+                placeholder="Where are you starting from?"
                 value={tripData.fromLocation}
                 onChange={(e) => setTripData(prev => ({ ...prev, fromLocation: e.target.value }))}
               />
@@ -159,7 +155,7 @@ const BookRide = () => {
               <Label htmlFor="to">To (Destination)</Label>
               <Input
                 id="to"
-                placeholder="Enter destination..."
+                placeholder="Where are you going?"
                 value={tripData.toLocation}
                 onChange={(e) => setTripData(prev => ({ ...prev, toLocation: e.target.value }))}
               />
@@ -177,7 +173,7 @@ const BookRide = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="time">When do you want to travel?</Label>
+              <Label htmlFor="time">Departure Time</Label>
               <Input
                 id="time"
                 type="datetime-local"
@@ -187,7 +183,7 @@ const BookRide = () => {
             </div>
 
             <div>
-              <Label htmlFor="vehicle">Preferred Vehicle</Label>
+              <Label htmlFor="vehicle">Vehicle Type</Label>
               <Select
                 value={tripData.vehicleType}
                 onValueChange={(value) => setTripData(prev => ({ ...prev, vehicleType: value }))}
@@ -204,11 +200,43 @@ const BookRide = () => {
               </Select>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="seats">Available Seats</Label>
+                <Select
+                  value={tripData.seatsAvailable}
+                  onValueChange={(value) => setTripData(prev => ({ ...prev, seatsAvailable: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 seat</SelectItem>
+                    <SelectItem value="2">2 seats</SelectItem>
+                    <SelectItem value="3">3 seats</SelectItem>
+                    <SelectItem value="4">4 seats</SelectItem>
+                    <SelectItem value="5">5+ seats</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="fare">Fare per person (RWF)</Label>
+                <Input
+                  id="fare"
+                  type="number"
+                  placeholder="Optional"
+                  value={tripData.fare}
+                  onChange={(e) => setTripData(prev => ({ ...prev, fare: e.target.value }))}
+                />
+              </div>
+            </div>
+
             <div>
-              <Label htmlFor="notes">Additional Notes (Optional)</Label>
+              <Label htmlFor="notes">Trip Description</Label>
               <Textarea
                 id="notes"
-                placeholder="Any special requests or landmarks..."
+                placeholder="Any details passengers should know? (meetup point, stops, etc.)"
                 value={tripData.description}
                 onChange={(e) => setTripData(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
@@ -217,24 +245,24 @@ const BookRide = () => {
           </CardContent>
         </Card>
 
-        {/* Book Button */}
+        {/* Post Trip Button */}
         <Button
-          onClick={handleBookRide}
-          disabled={!canBookRide || isLoading}
-          className="w-full bg-purple-600 hover:bg-purple-700"
+          onClick={handleCreateTrip}
+          disabled={!canCreateTrip || isLoading}
+          className="w-full bg-green-600 hover:bg-green-700"
           size="lg"
         >
           <Car className="w-5 h-5 mr-2" />
-          {isLoading ? 'Booking Ride...' : isGuest ? '📱 Verify WhatsApp & Book Ride' : '🚗 Book Ride Now'}
+          {isLoading ? 'Posting Trip...' : isGuest ? '📱 Verify WhatsApp & Post Trip' : '🚗 Post Trip Now'}
         </Button>
 
-        {!canBookRide && (
+        {!canCreateTrip && (
           <div className="text-center space-y-2">
             <p className="text-sm text-gray-500">
               Please complete the following:
             </p>
             <div className="text-xs text-gray-400 space-y-1">
-              {!tripData.fromLocation && <p>• Enter pickup location</p>}
+              {!tripData.fromLocation && <p>• Enter starting location</p>}
               {!tripData.toLocation && <p>• Enter destination</p>}
             </div>
           </div>
@@ -243,7 +271,7 @@ const BookRide = () => {
         {/* Help Text */}
         <div className="bg-gray-50 p-4 rounded-lg">
           <p className="text-sm text-gray-600 text-center">
-            💡 Tip: Use landmarks like "Near Nyabugogo Bus Park" or "Kigali City Market" for better pickup coordination
+            💡 Tip: Be specific about pickup points and mention if fare is negotiable
           </p>
         </div>
       </div>
@@ -251,12 +279,12 @@ const BookRide = () => {
       <WhatsAppLoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
-        onSuccess={() => handleLoginSuccess(proceedWithBooking)}
-        title="Complete Your Booking"
-        description="Verify your WhatsApp number to book your ride and connect with drivers"
+        onSuccess={() => handleLoginSuccess(proceedWithTripCreation)}
+        title="Post Your Trip"
+        description="Verify your WhatsApp number to post trips and connect with passengers"
       />
     </div>
   );
 };
 
-export default BookRide;
+export default CreateTrip;
