@@ -50,7 +50,12 @@ export const WhatsAppAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
           .single();
 
         if (profile) {
-          setUserProfile(profile);
+          // Type-safe conversion of the role field
+          const typedProfile: UserProfile = {
+            ...profile,
+            role: profile.role as 'passenger' | 'driver' | null
+          };
+          setUserProfile(typedProfile);
           setPhoneNumber(storedPhone);
           setIsAuthenticated(true);
         } else {
@@ -110,7 +115,12 @@ export const WhatsAppAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (error) throw error;
 
       if (data?.success && data?.user) {
-        setUserProfile(data.user);
+        // Type-safe conversion of the user data
+        const typedProfile: UserProfile = {
+          ...data.user,
+          role: data.user.role as 'passenger' | 'driver' | null
+        };
+        setUserProfile(typedProfile);
         setPhoneNumber(formattedPhone);
         setIsAuthenticated(true);
         
@@ -148,7 +158,12 @@ export const WhatsAppAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .single();
 
       if (profile) {
-        setUserProfile(profile);
+        // Type-safe conversion of the refreshed profile
+        const typedProfile: UserProfile = {
+          ...profile,
+          role: profile.role as 'passenger' | 'driver' | null
+        };
+        setUserProfile(typedProfile);
       }
     } catch (error) {
       console.error('Profile refresh error:', error);
