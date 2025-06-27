@@ -16,11 +16,13 @@ interface CompletedTrip {
 
 interface CompletedTripsBlockProps {
   trips?: CompletedTrip[];
+  formatCurrency?: (amount: number) => string;
   isLoading?: boolean;
 }
 
-const CompletedTripsBlock: React.FC<CompletedTripsBlockProps> = ({
+export const CompletedTripsBlock: React.FC<CompletedTripsBlockProps> = ({
   trips = [],
+  formatCurrency = (amount) => `RWF ${amount.toLocaleString()}`,
   isLoading = false
 }) => {
   // Mock data if no trips provided
@@ -122,7 +124,7 @@ const CompletedTripsBlock: React.FC<CompletedTripsBlockProps> = ({
                 <div className="text-right">
                   <div className="flex items-center space-x-1">
                     <DollarSign className="w-4 h-4 text-green-600" />
-                    <span className="font-medium">RWF {trip.fare.toLocaleString()}</span>
+                    <span className="font-medium">{formatCurrency(trip.fare)}</span>
                   </div>
                   <Badge className={getStatusColor(trip.status)}>
                     {trip.status}
@@ -145,4 +147,5 @@ const CompletedTripsBlock: React.FC<CompletedTripsBlockProps> = ({
   );
 };
 
+// Also export as default for backward compatibility
 export default CompletedTripsBlock;
