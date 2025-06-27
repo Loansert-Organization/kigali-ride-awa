@@ -12,13 +12,11 @@ interface EarningsData {
 
 interface EarningsChartBlockProps {
   data?: EarningsData[];
-  formatCurrency?: (amount: number) => string;
   isLoading?: boolean;
 }
 
-export const EarningsChartBlock: React.FC<EarningsChartBlockProps> = ({
+const EarningsChartBlock: React.FC<EarningsChartBlockProps> = ({
   data = [],
-  formatCurrency = (amount) => `RWF ${amount.toLocaleString()}`,
   isLoading = false
 }) => {
   // Mock data if none provided
@@ -46,7 +44,7 @@ export const EarningsChartBlock: React.FC<EarningsChartBlockProps> = ({
       return (
         <div className="bg-white p-3 border rounded-lg shadow-lg">
           <p className="font-medium">{`Date: ${label}`}</p>
-          <p className="text-green-600">{`Earnings: ${formatCurrency(payload[0].value)}`}</p>
+          <p className="text-green-600">{`Earnings: RWF ${payload[0].value.toLocaleString()}`}</p>
           <p className="text-blue-600">{`Trips: ${payload[0].payload?.trips || 0}`}</p>
         </div>
       );
