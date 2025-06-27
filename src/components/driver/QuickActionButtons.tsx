@@ -1,73 +1,68 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, MapPin, FileText, DollarSign, Zap } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from "@/components/ui/card";
+import { Plus, Users, Settings } from 'lucide-react';
 
 interface QuickActionButtonsProps {
-  onQuickStart?: () => void;
-  isOnline: boolean;
+  onCreateTrip: () => void;
+  onViewRequests: () => void;
+  onOpenSettings: () => void;
 }
 
 const QuickActionButtons: React.FC<QuickActionButtonsProps> = ({
-  onQuickStart,
-  isOnline
+  onCreateTrip,
+  onViewRequests,
+  onOpenSettings
 }) => {
-  const navigate = useNavigate();
+  const actions = [
+    {
+      label: 'Create Trip',
+      icon: Plus,
+      onClick: onCreateTrip,
+      variant: 'default' as const,
+      description: 'Post a new trip'
+    },
+    {
+      label: 'View Requests',
+      icon: Users,
+      onClick: onViewRequests,
+      variant: 'outline' as const,
+      description: 'See passenger requests'
+    },
+    {
+      label: 'Settings',
+      icon: Settings,
+      onClick: onOpenSettings,
+      variant: 'ghost' as const,
+      description: 'Adjust preferences'
+    }
+  ];
 
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <Button
-        onClick={() => navigate('/create-trip')}
-        className="h-20 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white"
-      >
-        <div className="text-center">
-          <Plus className="w-6 h-6 mx-auto mb-1" />
-          <span className="text-sm font-medium">📍 Create Trip</span>
-          <div className="text-xs opacity-90">Plan your route</div>
+    <Card>
+      <CardContent className="p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {actions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Button
+                key={action.label}
+                variant={action.variant}
+                onClick={action.onClick}
+                className="h-auto p-4 flex flex-col items-center space-y-2"
+              >
+                <Icon className="w-5 h-5" />
+                <div className="text-center">
+                  <div className="font-medium">{action.label}</div>
+                  <div className="text-xs opacity-70">{action.description}</div>
+                </div>
+              </Button>
+            );
+          })}
         </div>
-      </Button>
-
-      <Button
-        onClick={onQuickStart}
-        disabled={!isOnline}
-        variant={isOnline ? "default" : "outline"}
-        className={`h-20 ${isOnline 
-          ? 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white' 
-          : 'opacity-50'
-        }`}
-      >
-        <div className="text-center">
-          <Zap className="w-6 h-6 mx-auto mb-1" />
-          <span className="text-sm font-medium">🚀 Go Live Now</span>
-          <div className="text-xs opacity-90">
-            {isOnline ? 'Start from here' : 'Go online first'}
-          </div>
-        </div>
-      </Button>
-
-      <Button
-        onClick={() => navigate('/past-trips')}
-        variant="outline"
-        className="h-16"
-      >
-        <div className="text-center">
-          <FileText className="w-5 h-5 mx-auto mb-1" />
-          <span className="text-sm">📖 My Trips</span>
-        </div>
-      </Button>
-
-      <Button
-        onClick={() => navigate('/rewards')}
-        variant="outline"
-        className="h-16"
-      >
-        <div className="text-center">
-          <DollarSign className="w-5 h-5 mx-auto mb-1" />
-          <span className="text-sm">💰 Earnings</span>
-        </div>
-      </Button>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

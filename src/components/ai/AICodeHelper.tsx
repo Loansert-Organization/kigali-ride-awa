@@ -1,167 +1,137 @@
 
 import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Code, Bug, FileText, Copy, Check } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { logError } from "@/utils/errorHandlers";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Code, Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
-interface AIResult {
-  result: string;
-  model?: string;
+interface CodeSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  code: string;
+  language: string;
+  status: 'pending' | 'success' | 'error';
 }
 
-interface AICodeHelperProps {
-  code?: string;
-  error?: string;
-  context?: string;
-  className?: string;
-}
+const AICodeHelper: React.FC = () => {
+  const [prompt, setPrompt] = useState('');
+  const [suggestions, setSuggestions] = useState<CodeSuggestion[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-const AICodeHelper: React.FC<AICodeHelperProps> = ({ code, error, context, className }) => {
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<AIResult | null>(null);
-  const [copied, setCopied] = useState(false);
+  const handleGenerateCode = async () => {
+    if (!prompt.trim()) return;
 
-  const handleAction = async (action: 'fix' | 'explain' | 'improve') => {
-    setLoading(true);
-    try {
-      let prompt = '';
-      let taskType = 'fix-code';
+    setIsLoading(true);
+    
+    // Simulate AI code generation
+    setTimeout(() => {
+      const newSuggestion: CodeSuggestion = {
+        id: Date.now().toString(),
+        title: 'Component Solution',
+        description: `Generated code for: ${prompt}`,
+        code: `// Generated code for: ${prompt}\nconst ExampleComponent = () => {\n  return <div>Hello World</div>;\n};`,
+        language: 'typescript',
+        status: 'success'
+      };
+      
+      setSuggestions(prev => [newSuggestion, ...prev]);
+      setPrompt('');
+      setIsLoading(false);
+    }, 2000);
+  };
 
-      switch (action) {
-        case 'fix':
-          prompt = `Fix this code issue:\n\nError: ${error}\n\nCode:\n${code}`;
-          taskType = 'fix-code';
-          break;
-        case 'explain':
-          prompt = `Explain this code in simple terms:\n\n${code}`;
-          taskType = 'docs';
-          break;
-        case 'improve':
-          prompt = `Suggest improvements for this code:\n\n${code}`;
-          taskType = 'code-generation';
-          break;
-      }
-
-      const { data, error: apiError } = await supabase.functions.invoke('ai-router', {
-        body: {
-          taskType,
-          prompt,
-          context: context || 'React TypeScript component'
-        }
-      });
-
-      if (apiError) throw apiError;
-
-      setResult(data);
-      toast({
-        title: "AI Code Helper",
-        description: `${action} completed successfully`,
-      });
-    } catch (err) {
-      logError('AI Code Helper Error:', err);
-      toast({
-        title: "Error",
-        description: `Failed to ${action} code`,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'success': return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'error': return <AlertCircle className="w-4 h-4 text-red-500" />;
+      default: return <Loader2 className="w-4 h-4 animate-spin" />;
     }
   };
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({
-        title: "Copied",
-        description: "Code copied to clipboard",
-      });
-    } catch (_error) {
-      toast({
-        title: "Copy failed",
-        description: "Unable to copy to clipboard",
-        variant: "destructive"
-      });
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'success': return 'bg-green-100 text-green-800';
+      case 'error': return 'bg-red-100 text-red-800';
+      default: return 'bg-yellow-100 text-yellow-800';
     }
   };
 
   return (
-    <div className={`flex flex-wrap gap-2 ${className}`}>
-      <Tooltip>
-        <TooltipTrigger asChild>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Code className="w-5 h-5 mr-2" />
+            AI Code Helper
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Textarea
+            placeholder="Describe the code you need help with or want to generate..."
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={3}
+          />
+          
           <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleAction('fix')}
-            disabled={loading || !code}
+            onClick={handleGenerateCode}
+            disabled={!prompt.trim() || isLoading}
+            className="w-full"
           >
-            <Bug className="w-4 h-4 mr-1" />
-            Fix with AI
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                Generate Code
+              </>
+            )}
           </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          Use AI to fix code errors and issues
-        </TooltipContent>
-      </Tooltip>
+        </CardContent>
+      </Card>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleAction('explain')}
-            disabled={loading || !code}
-          >
-            <FileText className="w-4 h-4 mr-1" />
-            Explain
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          Get AI explanation of the code
-        </TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleAction('improve')}
-            disabled={loading || !code}
-          >
-            <Code className="w-4 h-4 mr-1" />
-            Improve
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          Get AI suggestions for improvements
-        </TooltipContent>
-      </Tooltip>
-
-      {result && (
-        <Card className="w-full mt-4">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-center mb-2">
-              <h4 className="font-medium">AI Suggestion</h4>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => copyToClipboard(result.result)}
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </Button>
+      <div className="space-y-4">
+        {suggestions.map((suggestion) => (
+          <Card key={suggestion.id}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  {getStatusIcon(suggestion.status)}
+                  <h3 className="font-semibold">{suggestion.title}</h3>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge className={getStatusColor(suggestion.status)}>
+                    {suggestion.status}
+                  </Badge>
+                  <Badge variant="outline">
+                    {suggestion.language}
+                  </Badge>
+                </div>
               </div>
-            </div>
-            <pre className="text-sm bg-gray-50 p-3 rounded overflow-auto max-h-64">
-              {result.result}
-            </pre>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">{suggestion.description}</p>
+              <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+                <pre><code>{suggestion.code}</code></pre>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {suggestions.length === 0 && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Code className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">No code suggestions yet</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Enter a prompt above to generate code suggestions
+            </p>
           </CardContent>
         </Card>
       )}

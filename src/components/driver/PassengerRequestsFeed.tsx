@@ -6,15 +6,8 @@ import { RefreshCw, Users, MapPin } from 'lucide-react';
 import PassengerRequestCard from './PassengerRequestCard';
 import PassengerRequestModal from './PassengerRequestModal';
 import { usePassengerRequests } from '@/hooks/driver/usePassengerRequests';
-import { TripData } from '@/types/api';
+import type { TripData } from '@/types/api';
 import { logError } from '@/utils/errorHandlers';
-
-interface PassengerRequest extends TripData {
-  suggested_fare?: number;
-  pickup_location?: string;
-  dropoff_location?: string;
-  [key: string]: unknown;
-}
 
 interface PassengerRequestsFeedProps {
   driverLocation?: { lat: number; lng: number };
@@ -27,7 +20,7 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
   vehicleType,
   isOnline
 }) => {
-  const [selectedTrip, setSelectedTrip] = useState<PassengerRequest | null>(null);
+  const [selectedTrip, setSelectedTrip] = useState<TripData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
@@ -47,7 +40,6 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
     }
   };
 
-  // Wrapper function to handle the Promise<boolean> return and convert to Promise<void>
   const handleAcceptWrapper = async (tripId: string): Promise<void> => {
     try {
       await handleAcceptRequest(tripId);
@@ -56,7 +48,6 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
     }
   };
 
-  // Wrapper function for modal accept that also returns Promise<void>
   const handleModalAccept = async (tripId: string): Promise<void> => {
     try {
       await handleAcceptRequest(tripId);
@@ -67,7 +58,7 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
     }
   };
 
-  const handleModalWhatsAppContact = (trip: PassengerRequest) => {
+  const handleModalWhatsAppContact = (trip: TripData) => {
     try {
       handleWhatsAppContact(trip);
       setIsModalOpen(false);
@@ -124,7 +115,7 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
                   trip={request}
                   onAccept={handleAcceptWrapper}
                   onViewDetails={handleViewDetails}
-                  suggestedFare={request.suggested_fare}
+                  suggestedFare={request.fare}
                 />
               ))}
             </div>

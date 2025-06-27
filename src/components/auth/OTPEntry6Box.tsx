@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect, KeyboardEvent, ClipboardEvent, ChangeEvent } from 'react';
+
+import React, { useState, useRef, useEffect, KeyboardEvent, ClipboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ interface OTPEntry6BoxProps {
   phoneNumber?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
+  onBack?: () => void;
 }
 
 const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
@@ -39,6 +41,7 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
   phoneNumber,
   onSuccess,
   onCancel,
+  onBack,
 }) => {
   const navigate = useNavigate();
   const [otp, setOtp] = useState<string[]>(
@@ -74,7 +77,6 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
   const handleChange = (index: number, value: string) => {
     if (disabled || loading) return;
 
-    // Only allow digits
     const digit = value.replace(/\D/g, '').slice(-1);
     
     const newOtp = [...otp];
@@ -84,12 +86,10 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
     const otpString = newOtp.join('');
     onChange?.(otpString);
 
-    // Auto-advance to next input
     if (digit && index < length - 1) {
       focusInput(index + 1);
     }
 
-    // Check if complete
     if (newOtp.every(d => d !== '') && newOtp.length === length) {
       onComplete?.(otpString);
       handleVerifyOTP(otpString);
@@ -103,13 +103,11 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
       e.preventDefault();
       
       if (otp[index]) {
-        // Clear current box
         const newOtp = [...otp];
         newOtp[index] = '';
         setOtp(newOtp);
         onChange?.(newOtp.join(''));
       } else if (index > 0) {
-        // Move to previous box and clear it
         const newOtp = [...otp];
         newOtp[index - 1] = '';
         setOtp(newOtp);
@@ -147,7 +145,6 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
     const otpString = newOtp.join('');
     onChange?.(otpString);
 
-    // Focus the next empty box or the last box
     const nextEmptyIndex = newOtp.findIndex((digit, idx) => !digit && idx >= pastedData.length);
     if (nextEmptyIndex !== -1) {
       focusInput(nextEmptyIndex);
@@ -155,7 +152,6 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
       focusInput(length - 1);
     }
 
-    // Check if complete
     if (newOtp.every(d => d !== '') && newOtp.length === length) {
       onComplete?.(otpString);
       handleVerifyOTP(otpString);
@@ -164,15 +160,13 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
 
   const handleFocus = (index: number) => {
     setFocusedIndex(index);
-    // Select all text when focusing
     inputRefs.current[index]?.select();
   };
 
-  const handleVerifyOTP = async (otpCode: string) => {
+  const handleVerifyOTP = async (code: string) => {
     if (loading) return;
 
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       toast({
@@ -182,7 +176,6 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
       
       onSuccess?.();
       
-      // Navigate to home or next step
       setTimeout(() => {
         navigate('/home');
       }, 1000);
@@ -193,7 +186,6 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
         variant: "destructive",
       });
       
-      // Clear OTP on error
       setOtp(Array(length).fill(''));
       focusInput(0);
     }
@@ -264,16 +256,28 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
           )}
         </Button>
 
-        {onCancel && (
-          <Button
-            variant="ghost"
-            className="w-full"
-            onClick={onCancel}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {onBack && (
+            <Button
+              variant="ghost"
+              className="flex-1"
+              onClick={onBack}
+              disabled={loading}
+            >
+              Back
+            </Button>
+          )}
+          {onCancel && (
+            <Button
+              variant="ghost"
+              className="flex-1"
+              onClick={onCancel}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="text-center text-sm text-muted-foreground">

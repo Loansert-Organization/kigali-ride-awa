@@ -38,12 +38,15 @@ export const UnifiedWhatsAppOTP: React.FC<UnifiedWhatsAppOTPProps> = ({
           />
         ) : (
           <OTPEntry6Box
-            phone={phoneNumber}
+            phoneNumber={phoneNumber}
             onBack={handleBackToPhone}
             onSuccess={onSuccess}
+            onCancel={onCancel}
           />
         )}
       </CardContent>
     </Card>
   );
 };
+
+export default UnifiedWhatsAppOTP;

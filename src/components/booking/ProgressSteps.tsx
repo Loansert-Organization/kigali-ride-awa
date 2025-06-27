@@ -1,32 +1,53 @@
 
 import React from 'react';
+import { Badge } from "@/components/ui/badge";
+import { Check } from 'lucide-react';
+
+interface Step {
+  label: string;
+  completed: boolean;
+}
 
 interface ProgressStepsProps {
-  steps: string[];
+  steps: Step[];
   currentStep: number;
 }
 
 const ProgressSteps: React.FC<ProgressStepsProps> = ({ steps, currentStep }) => {
   return (
-    <div className="bg-white p-4 border-b border-gray-200">
-      <div className="flex items-center justify-between max-w-md mx-auto">
-        {steps.map((step, index) => (
-          <div key={index} className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              currentStep >= index 
-                ? 'bg-purple-600 text-white' 
-                : 'bg-gray-200 text-gray-600'
-            }`}>
-              {index + 1}
+    <div className="flex items-center justify-between w-full max-w-md mx-auto">
+      {steps.map((stepItem, index) => (
+        <div key={index} className="flex items-center">
+          <div className="flex flex-col items-center">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                stepItem.completed
+                  ? 'bg-green-500 border-green-500 text-white'
+                  : index === currentStep
+                  ? 'bg-blue-500 border-blue-500 text-white'
+                  : 'bg-gray-100 border-gray-300 text-gray-500'
+              }`}
+            >
+              {stepItem.completed ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <span className="text-sm font-medium">{index + 1}</span>
+              )}
             </div>
-            {index < steps.length - 1 && (
-              <div className={`w-16 h-1 ml-2 ${
-                currentStep > index ? 'bg-purple-600' : 'bg-gray-200'
-              }`} />
-            )}
+            <span className="text-xs mt-1 text-center max-w-16">
+              {stepItem.label}
+            </span>
           </div>
-        ))}
-      </div>
+          
+          {index < steps.length - 1 && (
+            <div
+              className={`h-0.5 w-8 mx-2 ${
+                stepItem.completed ? 'bg-green-500' : 'bg-gray-300'
+              }`}
+            />
+          )}
+        </div>
+      ))}
     </div>
   );
 };

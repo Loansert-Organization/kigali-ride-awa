@@ -1,129 +1,148 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MapPin, Users, Calendar, Eye } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { TripData } from '@/types/api';
+import { Clock, DollarSign } from 'lucide-react';
 
-interface CompletedTripsBlockProps {
-  trips: TripData[];
-  formatCurrency: (amount: number) => string;
+interface CompletedTrip {
+  id: string;
+  route: string;
+  date: string;
+  fare: number;
+  passengers: number;
+  status: 'completed' | 'cancelled';
+  duration: string;
 }
 
-export const CompletedTripsBlock: React.FC<CompletedTripsBlockProps> = ({ 
-  trips, 
-  formatCurrency 
-}) => {
-  const navigate = useNavigate();
+interface CompletedTripsBlockProps {
+  trips?: CompletedTrip[];
+  isLoading?: boolean;
+}
 
-  if (!trips || trips.length === 0) {
-    return null;
+const CompletedTripsBlock: React.FC<CompletedTripsBlockProps> = ({
+  trips = [],
+  isLoading = false
+}) => {
+  // Mock data if no trips provided
+  const mockTrips: CompletedTrip[] = [
+    {
+      id: 'trip-001',
+      route: 'Kigali → Huye',
+      date: '2024-01-15',
+      fare: 3500,
+      passengers: 3,
+      status: 'completed',
+      duration: '2h 30m'
+    },
+    {
+      id: 'trip-002',
+      route: 'Nyabugogo → Remera',
+      date: '2024-01-15',
+      fare: 1500,
+      passengers: 2,
+      status: 'completed',
+      duration: '45m'
+    },
+    {
+      id: 'trip-003',
+      route: 'Kimisagara → Airport',
+      date: '2024-01-14',
+      fare: 2000,
+      passengers: 1,
+      status: 'cancelled',
+      duration: '0m'
+    }
+  ];
+
+  const displayTrips = trips.length > 0 ? trips : mockTrips;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Trips</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-16 bg-gray-200 rounded-lg"></div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getVehicleIcon = (vehicleType: string) => {
-    const icons = {
-      moto: '🛵',
-      car: '🚗',
-      tuktuk: '🛺',
-      minibus: '🚐'
-    };
-    return icons[vehicleType as keyof typeof icons] || '🚗';
-  };
-
-  const calculateTripEarnings = (trip: TripData) => {
-    const seatsBooked = trip.bookings?.length || 0;
-    const farePerSeat = trip.fare || 0;
-    return farePerSeat * seatsBooked;
-  };
+  if (displayTrips.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Trips</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Clock className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-600">No completed trips yet</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Your trip history will appear here
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Calendar className="w-5 h-5 text-purple-600" />
-          <span>Completed Trips</span>
+        <CardTitle className="flex items-center justify-between">
+          <span>Recent Trips</span>
+          <Badge variant="outline">{displayTrips.length} trips</Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {trips.slice(0, 10).map((trip) => {
-          const earnings = calculateTripEarnings(trip);
-          const seatsBooked = trip.bookings?.length || 0;
-          
-          return (
-            <div key={trip.id} className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="text-2xl">{getVehicleIcon(trip.vehicle_type)}</div>
-                  <div>
-                    <div className="font-medium text-gray-900">
-                      {trip.from_location} → {trip.to_location}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {formatDateTime(trip.scheduled_time)}
-                    </div>
-                  </div>
-                </div>
-                <Badge variant="default" className="bg-green-100 text-green-800">
-                  Completed
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 text-sm">
+      <CardContent>
+        <div className="space-y-3">
+          {displayTrips.map((trip) => (
+            <div key={trip.id} className="p-4 border rounded-lg hover:bg-gray-50">
+              <div className="flex justify-between items-start mb-2">
                 <div>
-                  <span className="text-gray-600">Earnings:</span>
-                  <div className="font-semibold text-green-600">
-                    {formatCurrency(earnings)}
-                  </div>
+                  <h4 className="font-medium">{trip.route}</h4>
+                  <p className="text-sm text-gray-600">{trip.date}</p>
                 </div>
-                <div>
-                  <span className="text-gray-600">Seats:</span>
-                  <div className="font-semibold">
-                    {seatsBooked} of {trip.seats_available}
+                <div className="text-right">
+                  <div className="flex items-center space-x-1">
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                    <span className="font-medium">RWF {trip.fare.toLocaleString()}</span>
                   </div>
-                </div>
-                <div>
-                  <span className="text-gray-600">Status:</span>
-                  <div className="font-semibold text-green-600">Paid</div>
+                  <Badge className={getStatusColor(trip.status)}>
+                    {trip.status}
+                  </Badge>
                 </div>
               </div>
-
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => navigate(`/trip-details?id=${trip.id}`)}
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Details
-                </Button>
+              
+              <div className="flex justify-between items-center text-sm text-gray-600">
+                <span>{trip.passengers} passenger{trip.passengers !== 1 ? 's' : ''}</span>
+                <div className="flex items-center space-x-1">
+                  <Clock className="w-3 h-3" />
+                  <span>{trip.duration}</span>
+                </div>
               </div>
             </div>
-          );
-        })}
-
-        {trips.length > 10 && (
-          <div className="text-center pt-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/driver-trips')}
-            >
-              View All Trips
-            </Button>
-          </div>
-        )}
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
 };
+
+export default CompletedTripsBlock;

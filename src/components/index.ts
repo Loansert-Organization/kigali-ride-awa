@@ -1,3 +1,4 @@
+
 /**
  * Barrel exports for commonly used components
  * This improves import organization and makes refactoring easier
@@ -77,4 +78,4 @@ export { default as KPIStatsCards } from './admin/KPIStatsCards';
 export { default as ProductionDashboard } from './admin/ProductionDashboard';
 export { default as SchemaAuditReport } from './admin/SchemaAuditReport';
 export { default as TripsTableBlock } from './admin/TripsTableBlock';
-export { default as UsersTableBlock } from './admin/UsersTableBlock'; 
+export { default as UsersTableBlock } from './admin/UsersTableBlock';

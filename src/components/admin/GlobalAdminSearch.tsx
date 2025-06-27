@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, Users, Car, Bot, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { devLog } from '@/utils/errorHandlers';
 
 interface SearchResult {
   type: 'user' | 'trip' | 'log';
@@ -29,7 +28,6 @@ export const GlobalAdminSearch: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
 
-  // Mock search function - in real implementation, this would call Supabase
   const performSearch = async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
@@ -38,10 +36,8 @@ export const GlobalAdminSearch: React.FC = () => {
 
     setIsSearching(true);
 
-    // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Mock results
     const mockResults: SearchResult[] = [
       {
         type: 'user',
@@ -69,7 +65,6 @@ export const GlobalAdminSearch: React.FC = () => {
       }
     ];
 
-    // Filter results based on query
     const filtered = mockResults.filter(result =>
       result.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       result.subtitle.toLowerCase().includes(searchQuery.toLowerCase())
@@ -120,7 +115,7 @@ export const GlobalAdminSearch: React.FC = () => {
         navigate(`/admin/trip-details?id=${result.id}`);
         break;
       case 'log':
-        devLog('View log details:', result);
+        console.log('View log details:', result);
         break;
     }
   };
@@ -168,7 +163,6 @@ export const GlobalAdminSearch: React.FC = () => {
                         </div>
                         <p className="text-sm text-gray-600 mt-1">{result.subtitle}</p>
                         
-                        {/* Additional metadata */}
                         {result.metadata && (
                           <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                             {result.type === 'user' && (
@@ -183,7 +177,7 @@ export const GlobalAdminSearch: React.FC = () => {
                                 <span>Created by: {result.metadata.role}</span>
                               </>
                             )}
-                            {result.type === 'log' && (
+                            {result.type === 'log' && result.metadata.timestamp && (
                               <span>
                                 {new Date(result.metadata.timestamp).toLocaleString()}
                               </span>

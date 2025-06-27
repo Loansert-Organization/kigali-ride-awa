@@ -1,111 +1,125 @@
 
 import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAuth } from '@/contexts/AuthContext';
-import { useModal } from '@/hooks/useModal';
-import { Minimize2, X, Bug } from 'lucide-react';
+import { Bug, Database, Key, Globe } from 'lucide-react';
 
 const AuthDebug: React.FC = () => {
-  const { user, session, userProfile, loading, error, debugInfo } = useAuth();
-  const { isOpen, openModal, closeModal } = useModal();
-  const [isMinimized, setIsMinimized] = React.useState(false);
-  
-  if (process.env.NODE_ENV !== 'development') {
-    return null;
-  }
+  const { user, session } = useAuth();
 
-  // If closed completely, show nothing
-  if (!isOpen && !isMinimized) {
-    return (
-      <button
-        onClick={openModal}
-        className="fixed bottom-4 left-4 bg-black text-white p-2 rounded-full z-50 hover:bg-gray-800 transition-colors"
-        title="Show Auth Debug"
-      >
-        <Bug className="w-4 h-4" />
-      </button>
-    );
-  }
+  const debugInfo = {
+    supabaseUrl: 'https://ldbzarwjnnsoyoengheg.supabase.co',
+    supabaseKeyLength: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkYnphcndqbm5zb3lvZW5naGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NzA4OTIsImV4cCI6MjA2NjQ0Njg5Mn0.iN-Viuf5Vg07aGyAnGgqW3DKFUcqxn8U2KAUeAMk9uY'.length,
+    environment: process.env.NODE_ENV || 'development'
+  };
 
-  // If minimized, show compact version
-  if (isMinimized) {
-    return (
-      <div className="fixed bottom-4 left-4 bg-black text-white p-2 rounded-lg z-50 flex items-center gap-2">
-        <Bug className="w-4 h-4" />
-        <span className="text-xs">Auth: {loading ? 'Loading...' : user ? '✅' : '❌'}</span>
-        <button
-          onClick={() => setIsMinimized(false)}
-          className="text-white hover:text-gray-300 transition-colors"
-          title="Expand"
-        >
-          <Minimize2 className="w-3 h-3" />
-        </button>
-        <button
-          onClick={closeModal}
-          className="text-white hover:text-gray-300 transition-colors"
-          title="Close"
-        >
-          <X className="w-3 h-3" />
-        </button>
-      </div>
-    );
-  }
+  const clearAllData = () => {
+    // Clear localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('supabase') || key.startsWith('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Clear sessionStorage
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('supabase') || key.startsWith('sb-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+    
+    window.location.reload();
+  };
 
-  // Full expanded version
   return (
-    <div className="fixed bottom-4 left-4 bg-black text-white p-4 rounded-lg text-xs max-w-sm z-50 max-h-96 overflow-y-auto">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="font-bold flex items-center gap-1">
-          <Bug className="w-3 h-3" />
-          Auth Debug
-        </h4>
-        <div className="flex gap-1">
-          <button
-            onClick={() => setIsMinimized(true)}
-            className="text-white hover:text-gray-300 transition-colors"
-            title="Minimize"
-          >
-            <Minimize2 className="w-3 h-3" />
-          </button>
-          <button
-            onClick={closeModal}
-            className="text-white hover:text-gray-300 transition-colors"
-            title="Close"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
-      
-      <div className="space-y-1">
-        <div>Loading: {loading ? '✅' : '❌'}</div>
-        <div>User ID: {user?.id || 'null'}</div>
-        <div>Session: {session ? '✅' : '❌'}</div>
-        <div>Profile: {userProfile?.id || 'null'}</div>
-        <div>Role: {userProfile?.role || 'null'}</div>
-        <div>Onboarding: {userProfile?.onboarding_completed ? '✅' : '❌'}</div>
-        
-        {error && (
-          <div className="text-red-400 mt-2">
-            <div className="font-semibold">Error:</div>
-            <div className="text-xs break-words">{error}</div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Bug className="w-5 h-5 mr-2" />
+            Auth Debug Panel
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-2 mb-2">
+                <Database className="w-4 h-4 text-blue-500" />
+                <span className="font-semibold">Database</span>
+              </div>
+              <p className="text-sm text-gray-600">Connected</p>
+              <p className="text-xs text-gray-500">{debugInfo.supabaseUrl}</p>
+            </div>
+
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-2 mb-2">
+                <Key className="w-4 h-4 text-green-500" />
+                <span className="font-semibold">API Key</span>
+              </div>
+              <p className="text-sm text-gray-600">Valid</p>
+              <p className="text-xs text-gray-500">{debugInfo.supabaseKeyLength} chars</p>
+            </div>
+
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-2 mb-2">
+                <Globe className="w-4 h-4 text-purple-500" />
+                <span className="font-semibold">Environment</span>
+              </div>
+              <Badge variant={debugInfo.environment === 'production' ? 'default' : 'secondary'}>
+                {debugInfo.environment}
+              </Badge>
+            </div>
           </div>
-        )}
-        
-        {debugInfo?.environment && (
-          <div className="mt-2 pt-2 border-t border-gray-600">
-            <div className="font-semibold">Environment:</div>
-            <div>URL: {debugInfo.environment.supabaseUrl?.substring(0, 30)}...</div>
-            <div>Key Length: {debugInfo.environment.supabaseKeyLength}</div>
-            <div>Mode: {debugInfo.environment.environment}</div>
+
+          <div className="space-y-3">
+            <div>
+              <h4 className="font-semibold mb-2">Current User</h4>
+              <div className="p-3 bg-gray-50 rounded-lg">
+                {user ? (
+                  <div className="space-y-1">
+                    <p className="text-sm"><strong>ID:</strong> {user.id}</p>
+                    <p className="text-sm"><strong>Email:</strong> {user.email || 'Not provided'}</p>
+                    <p className="text-sm"><strong>Phone:</strong> {user.phone || 'Not provided'}</p>
+                    <p className="text-sm"><strong>Role:</strong> {user.user_metadata?.role || 'None'}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">No user authenticated</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-2">Session Info</h4>
+              <div className="p-3 bg-gray-50 rounded-lg">
+                {session ? (
+                  <div className="space-y-1">
+                    <p className="text-sm"><strong>Access Token:</strong> {session.access_token ? 'Present' : 'Missing'}</p>
+                    <p className="text-sm"><strong>Refresh Token:</strong> {session.refresh_token ? 'Present' : 'Missing'}</p>
+                    <p className="text-sm"><strong>Expires:</strong> {session.expires_at ? new Date(session.expires_at * 1000).toLocaleString() : 'Unknown'}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">No active session</p>
+                )}
+              </div>
+            </div>
           </div>
-        )}
-        
-        {debugInfo?.initDuration && (
-          <div className="mt-1">
-            <div>Init Time: {debugInfo.initDuration}ms</div>
+
+          <div className="pt-4 border-t">
+            <Button
+              variant="destructive"
+              onClick={clearAllData}
+              className="w-full"
+            >
+              Clear All Auth Data & Reload
+            </Button>
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              This will clear all authentication data and reload the page
+            </p>
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -1,199 +1,148 @@
 
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Code, Bug, Globe, Shield, Wand2, Loader2 } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { EdgeFunctionResponse } from "@/types/api";
+import { MessageCircle, Send, Loader2, User, Bot } from 'lucide-react';
+import type { EdgeFunctionResponse } from '@/types/api';
 
-interface AIResult {
-  model: string;
-  result: string | Record<string, unknown>;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
+interface Message {
+  id: string;
+  content: string;
+  sender: 'user' | 'assistant';
+  timestamp: Date;
+  type?: 'text' | 'code' | 'error';
 }
 
-interface AIAssistantProps {
-  context?: string;
-  defaultTask?: string;
-  onResult?: (result: AIResult) => void;
-}
+const AIAssistant: React.FC = () => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-const AIAssistant: React.FC<AIAssistantProps> = ({ context, defaultTask, onResult }) => {
-  const [prompt, setPrompt] = useState('');
-  const [selectedTask, setSelectedTask] = useState(defaultTask || 'code-generation');
-  const [preferredModel, setPreferredModel] = useState('auto');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<AIResult | null>(null);
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
 
-  const taskTypes = [
-    { value: 'code-generation', label: 'Generate Code', icon: Code },
-    { value: 'fix-code', label: 'Fix Code', icon: Bug },
-    { value: 'localize', label: 'Localize Text', icon: Globe },
-    { value: 'fraud-check', label: 'Fraud Check', icon: Shield },
-    { value: 'docs', label: 'Generate Docs', icon: Wand2 },
-  ];
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: inputMessage,
+      sender: 'user',
+      timestamp: new Date(),
+      type: 'text'
+    };
 
-  const models = [
-    { value: 'auto', label: 'Auto Select' },
-    { value: 'gpt-4o', label: 'GPT-4o (Fast)' },
-    { value: 'claude', label: 'Claude (Deep)' },
-    { value: 'gemini', label: 'Gemini (Google)' },
-  ];
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
 
-  const handleSubmit = async () => {
-    if (!prompt.trim()) {
-      toast({
-        title: "Enter a prompt",
-        description: "Please describe what you need help with",
-        variant: "destructive"
-      });
-      return;
-    }
+    // Simulate AI response
+    setTimeout(() => {
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: `I understand you're asking about: "${inputMessage}". How can I help you with your Kigali Ride app?`,
+        sender: 'assistant',
+        timestamp: new Date(),
+        type: 'text'
+      };
 
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-router', {
-        body: {
-          taskType: selectedTask,
-          prompt,
-          context: context || 'Kigali Ride booking app',
-          preferredModel: preferredModel === 'auto' ? null : preferredModel
-        }
-      });
-
-      if (error) throw error;
-
-      setResult(data);
-      onResult?.(data);
-      
-      toast({
-        title: "AI Assistant",
-        description: `Task completed using ${data.model}`,
-      });
-    } catch (error) {
-      console.error('AI Assistant Error:', error);
-      toast({
-        title: "AI Error",
-        description: "Failed to process request",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+      setMessages(prev => [...prev, assistantMessage]);
+      setIsLoading(false);
+    }, 2000);
   };
 
-  const TaskIcon = taskTypes.find(t => t.value === selectedTask)?.icon || Brain;
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-blue-600" />
-          AI Assistant
-          <Badge variant="secondary">Multi-Model</Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Task Type</label>
-            <Select value={selectedTask} onValueChange={setSelectedTask}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {taskTypes.map(task => {
-                  const Icon = task.icon;
-                  return (
-                    <SelectItem key={task.value} value={task.value}>
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4" />
-                        {task.label}
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+    <div className="flex flex-col h-[600px]">
+      <Card className="flex-1 flex flex-col">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <MessageCircle className="w-5 h-5 mr-2" />
+            AI Assistant
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="flex-1 flex flex-col">
+          <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+            {messages.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                <Bot className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                <p>Hello! I'm your AI assistant for Kigali Ride.</p>
+                <p className="text-sm mt-1">Ask me anything about the app!</p>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[70%] rounded-lg p-3 ${
+                      message.sender === 'user'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2 mb-1">
+                      {message.sender === 'user' ? (
+                        <User className="w-4 h-4" />
+                      ) : (
+                        <Bot className="w-4 h-4" />
+                      )}
+                      <span className="text-xs opacity-70">
+                        {message.timestamp.toLocaleTimeString()}
+                      </span>
+                      {message.type && message.type !== 'text' && (
+                        <Badge variant="outline" className="text-xs">
+                          {message.type}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm">{message.content}</p>
+                  </div>
+                </div>
+              ))
+            )}
+            
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 rounded-lg p-3 max-w-[70%]">
+                  <div className="flex items-center space-x-2">
+                    <Bot className="w-4 h-4" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm text-gray-600">AI is thinking...</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">AI Model</label>
-            <Select value={preferredModel} onValueChange={setPreferredModel}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {models.map(model => (
-                  <SelectItem key={model.value} value={model.value}>
-                    {model.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex space-x-2">
+            <Textarea
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Ask me about the Kigali Ride app..."
+              rows={2}
+              className="flex-1"
+              disabled={isLoading}
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={!inputMessage.trim() || isLoading}
+              size="sm"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
           </div>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium mb-2 block">Prompt</label>
-          <Textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe what you need help with..."
-            rows={4}
-            className="resize-none"
-          />
-        </div>
-
-        {context && (
-          <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-            <strong>Context:</strong> {context}
-          </div>
-        )}
-
-        <Button 
-          onClick={handleSubmit} 
-          disabled={loading || !prompt.trim()}
-          className="w-full"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <TaskIcon className="w-4 h-4 mr-2" />
-              Run AI Task
-            </>
-          )}
-        </Button>
-
-        {result && (
-          <Card className="bg-gray-50">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center justify-between">
-                Result
-                <Badge variant="outline">{result.model}</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-sm whitespace-pre-wrap bg-white p-3 rounded border overflow-auto max-h-64">
-                {typeof result.result === 'string' ? result.result : JSON.stringify(result.result, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

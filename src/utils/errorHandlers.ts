@@ -1,20 +1,16 @@
-// Error handling utilities
 
-export const logError = (error: unknown, context?: string) => {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  const fullMessage = context ? `[${context}] ${errorMessage}` : errorMessage;
-  
-  console.error(fullMessage, error);
-  
-  // In production, this would send to error tracking service
-  if (import.meta.env.PROD) {
-    // TODO: Send to error tracking service like Sentry
+export const devLog = (message: string, ...args: any[]) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[DEV LOG] ${message}`, ...args);
   }
 };
 
-export const handleApiError = (error: unknown): string => {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return 'An unexpected error occurred';
+export const logError = (message: string, error?: any) => {
+  console.error(`[ERROR] ${message}`, error);
+};
+
+export const handleApiError = (error: any, fallbackMessage = 'An error occurred') => {
+  const message = error?.message || error?.error_description || fallbackMessage;
+  console.error(message, error);
+  return message;
 };

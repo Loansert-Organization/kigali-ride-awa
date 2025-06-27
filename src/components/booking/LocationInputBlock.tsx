@@ -1,206 +1,146 @@
 
 import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { MapPin, Navigation, Map, Plus } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
-import LocationPicker from '@/components/maps/LocationPicker';
-import { googleMapsService } from '@/services/GoogleMapsService';
-
-interface Favorite {
-  id: string;
-  label: string;
-  address: string;
-  lat?: number;
-  lng?: number;
-}
+import { Label } from "@/components/ui/label";
+import { MapPin, Navigation, Search } from 'lucide-react';
+import { createLocationHelpers } from '@/utils/locationHelpers';
 
 interface LocationInputBlockProps {
-  label: string;
+  title: string;
   value: string;
-  onChange: (value: string, coordinates?: { lat: number; lng: number }) => void;
-  favorites?: Favorite[];
-  showGPS?: boolean;
-  showMapPicker?: boolean;
+  onChange: (value: string) => void;
+  onLocationSelect?: (location: { lat: number; lng: number; address: string }) => void;
   placeholder?: string;
+  apiKey?: string;
 }
 
 const LocationInputBlock: React.FC<LocationInputBlockProps> = ({
-  label,
+  title,
   value,
   onChange,
-  favorites = [],
-  showGPS = true,
-  showMapPicker = true,
-  placeholder = "Enter location"
+  onLocationSelect,
+  placeholder = "Enter location",
+  apiKey = ""
 }) => {
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [manualInput, setManualInput] = useState(false);
-  const [showMapPickerDialog, setShowMapPickerDialog] = useState(false);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
-  const handleUseMyLocation = async () => {
-    setIsGettingLocation(true);
+  const locationHelpers = createLocationHelpers(apiKey);
+
+  const handleGetCurrentLocation = async () => {
+    setIsLoadingLocation(true);
     try {
-      const location = await googleMapsService.getCurrentLocation();
-      const address = await googleMapsService.geocodeLocation(
-        new window.google.maps.LatLng(location.lat, location.lng)
-      );
-      
-      onChange(address, location);
-      
-      toast({
-        title: "Location detected",
-        description: "Using your current location",
+      const location = await locationHelpers.getCurrentLocation();
+      const address = `Current Location (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)})`;
+      onChange(address);
+      onLocationSelect?.({
+        lat: location.lat,
+        lng: location.lng,
+        address
       });
     } catch (error) {
-      toast({
-        title: "Location not available",
-        description: "Please enter your location manually",
-        variant: "destructive"
-      });
-      setManualInput(true);
+      console.error('Error getting current location:', error);
     } finally {
-      setIsGettingLocation(false);
+      setIsLoadingLocation(false);
     }
   };
 
-  const handleFavoriteSelect = (favorite: Favorite) => {
-    onChange(favorite.address, favorite.lat && favorite.lng ? {
-      lat: favorite.lat,
-      lng: favorite.lng
-    } : undefined);
+  const handleGeocodeLocation = async (address: string) => {
+    if (!address.trim()) return;
+    
+    try {
+      const location = await locationHelpers.geocodeLocation(address);
+      onLocationSelect?.({
+        lat: location.lat,
+        lng: location.lng,
+        address
+      });
+    } catch (error) {
+      console.error('Error geocoding location:', error);
+    }
   };
 
-  const handleMapSelection = (location: { lat: number; lng: number; address: string }) => {
-    onChange(location.address, { lat: location.lat, lng: location.lng });
-    setShowMapPickerDialog(false);
+  const handleInputChange = (newValue: string) => {
+    onChange(newValue);
+    
+    // Simulate location suggestions
+    if (newValue.length > 2) {
+      const mockSuggestions = [
+        `${newValue} - Kigali City`,
+        `${newValue} - Nyabugogo`,
+        `${newValue} - Remera`,
+        `${newValue} - Kimisagara`
+      ];
+      setSuggestions(mockSuggestions);
+    } else {
+      setSuggestions([]);
+    }
   };
 
-  const getEmojiForLabel = (label: string) => {
-    const lowercaseLabel = label.toLowerCase();
-    if (lowercaseLabel.includes('home') || lowercaseLabel.includes('house')) return '🏠';
-    if (lowercaseLabel.includes('work') || lowercaseLabel.includes('office')) return '🏢';
-    if (lowercaseLabel.includes('church') || lowercaseLabel.includes('cathedral')) return '⛪';
-    if (lowercaseLabel.includes('market') || lowercaseLabel.includes('shop')) return '🛒';
-    if (lowercaseLabel.includes('school') || lowercaseLabel.includes('university')) return '🎓';
-    if (lowercaseLabel.includes('hospital') || lowercaseLabel.includes('clinic')) return '🏥';
-    if (lowercaseLabel.includes('gym') || lowercaseLabel.includes('fitness')) return '💪';
-    if (lowercaseLabel.includes('restaurant') || lowercaseLabel.includes('cafe')) return '🍽️';
-    return '⭐';
+  const handleSuggestionClick = (suggestion: string) => {
+    onChange(suggestion);
+    setSuggestions([]);
+    handleGeocodeLocation(suggestion);
   };
 
   return (
     <Card>
-      <CardContent className="p-6">
-        <h3 className="text-lg font-semibold mb-4">{label}</h3>
-        
-        {!manualInput ? (
-          <div className="space-y-3">
-            {showGPS && (
-              <Button
-                onClick={handleUseMyLocation}
-                disabled={isGettingLocation}
-                className="w-full justify-start h-12"
-                variant="outline"
-              >
-                <Navigation className="w-5 h-5 mr-3" />
-                {isGettingLocation ? "Getting location..." : "📍 Use my location"}
-              </Button>
-            )}
-            
-            {showMapPicker && (
-              <Dialog open={showMapPickerDialog} onOpenChange={setShowMapPickerDialog}>
-                <DialogTrigger asChild>
-                  <Button
-                    className="w-full justify-start h-12"
-                    variant="outline"
-                  >
-                    <Map className="w-5 h-5 mr-3" />
-                    🗺️ Pick on map
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl h-[80vh]">
-                  <DialogHeader>
-                    <DialogTitle>Select Location on Map</DialogTitle>
-                  </DialogHeader>
-                  <LocationPicker
-                    onLocationSelect={handleMapSelection}
-                    placeholder="Search for a location..."
-                    height="60vh"
-                  />
-                </DialogContent>
-              </Dialog>
-            )}
-            
-            <Button
-              onClick={() => setManualInput(true)}
-              className="w-full justify-start h-12"
-              variant="outline"
-            >
-              <Plus className="w-5 h-5 mr-3" />
-              ⌨️ Type manually
-            </Button>
-            
-            {favorites.length > 0 && (
-              <div className="mt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-gray-600">⭐ Your Favorites</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => window.open('/favorites', '_blank')}
-                    className="text-xs text-purple-600 hover:text-purple-700"
-                  >
-                    Manage →
-                  </Button>
-                </div>
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {favorites.slice(0, 4).map((favorite) => (
-                    <Button
-                      key={favorite.id}
-                      onClick={() => handleFavoriteSelect(favorite)}
-                      className="w-full justify-start h-auto p-3 text-left"
-                      variant="ghost"
-                    >
-                      <span className="text-lg mr-2">{getEmojiForLabel(favorite.label)}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{favorite.label}</p>
-                        <p className="text-xs text-gray-500 truncate">{favorite.address}</p>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
+      <CardHeader>
+        <CardTitle className="flex items-center text-lg">
+          <MapPin className="w-5 h-5 mr-2" />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor={`location-${title}`}>Location</Label>
+          <div className="relative">
             <Input
-              placeholder={placeholder}
+              id={`location-${title}`}
+              type="text"
               value={value}
-              onChange={(e) => onChange(e.target.value)}
-              className="h-12"
+              onChange={(e) => handleInputChange(e.target.value)}
+              placeholder={placeholder}
+              className="pr-10"
             />
-            <Button
-              onClick={() => setManualInput(false)}
-              variant="ghost"
-              size="sm"
-            >
-              ← Back to options
-            </Button>
+            <Search className="absolute right-3 top-3 w-4 h-4 text-gray-400" />
           </div>
-        )}
-        
-        {value && (
-          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center">
-              <MapPin className="w-4 h-4 mr-2 text-green-600" />
-              <span className="text-sm font-medium text-green-800">{value}</span>
+          
+          {suggestions.length > 0 && (
+            <div className="bg-white border rounded-md shadow-lg z-10">
+              {suggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-50 first:rounded-t-md last:rounded-b-md"
+                >
+                  {suggestion}
+                </button>
+              ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        <Button
+          variant="outline"
+          onClick={handleGetCurrentLocation}
+          disabled={isLoadingLocation}
+          className="w-full"
+        >
+          {isLoadingLocation ? (
+            <>
+              <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600" />
+              Getting location...
+            </>
+          ) : (
+            <>
+              <Navigation className="w-4 h-4 mr-2" />
+              Use Current Location
+            </>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );

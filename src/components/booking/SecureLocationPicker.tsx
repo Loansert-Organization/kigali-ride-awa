@@ -1,124 +1,126 @@
 
-import React, { useState, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SmartMap } from '@/components/maps/SmartMap';
-import { supabase } from "@/integrations/supabase/client";
+import { MapPin, Search, Navigation } from 'lucide-react';
+import SmartMap from '@/components/maps/SmartMap';
 
 interface SecureLocationPickerProps {
-  isOpen: boolean;
-  onClose: () => void;
   onLocationSelect: (location: { lat: number; lng: number; address: string }) => void;
-  placeholder?: string;
-  initialCenter?: google.maps.LatLngLiteral;
+  onClose: () => void;
+  title?: string;
 }
 
-export const SecureLocationPicker: React.FC<SecureLocationPickerProps> = ({
-  isOpen,
-  onClose,
+const SecureLocationPicker: React.FC<SecureLocationPickerProps> = ({
   onLocationSelect,
-  placeholder = "Search for a location...",
-  initialCenter = { lat: -1.9441, lng: 30.0619 } // Kigali
+  onClose,
+  title = "Select Location"
 }) => {
-  const [selectedLocation, setSelectedLocation] = useState<google.maps.LatLngLiteral | null>(null);
-  const [address, setAddress] = useState<string>('');
-  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
-  const handleMapClick = useCallback(async (event: google.maps.MapMouseEvent) => {
-    if (!event.latLng) return;
+  const handleMapLocationSelect = (location: { lat: number; lng: number }) => {
+    setSelectedLocation(location);
+  };
 
-    const lat = event.latLng.lat();
-    const lng = event.latLng.lng();
-    
-    setSelectedLocation({ lat, lng });
-    setIsGeocodingLoading(true);
-
-    try {
-      // Use Supabase edge function for reverse geocoding
-      const { data, error } = await supabase.functions.invoke('reverse-geocode', {
-        body: { lat, lng }
-      });
-
-      if (error) {
-        console.error('Geocoding error:', error);
-        setAddress(`Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-      } else if (data?.result?.formatted_address) {
-        setAddress(data.result.formatted_address);
-      } else {
-        setAddress(`Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-      }
-    } catch (error) {
-      console.error('Geocoding failed:', error);
-      setAddress(`Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-    } finally {
-      setIsGeocodingLoading(false);
-    }
-  }, []);
-
-  const handleConfirm = () => {
-    if (selectedLocation && address) {
+  const handleConfirmLocation = () => {
+    if (selectedLocation) {
+      const address = searchQuery || `Location (${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)})`;
       onLocationSelect({
-        lat: selectedLocation.lat,
-        lng: selectedLocation.lng,
+        ...selectedLocation,
         address
       });
       onClose();
     }
   };
 
-  const handleClose = () => {
-    setSelectedLocation(null);
-    setAddress('');
-    onClose();
+  const handleGetCurrentLocation = async () => {
+    setIsLoadingLocation(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000
+        });
+      });
+
+      const location = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+
+      setSelectedLocation(location);
+      setSearchQuery('Current Location');
+    } catch (error) {
+      console.error('Error getting current location:', error);
+    } finally {
+      setIsLoadingLocation(false);
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>📍 Select Location on Map</DialogTitle>
-        </DialogHeader>
-        
-        <div className="flex-1 flex flex-col space-y-4">
-          <Input
-            placeholder={placeholder}
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="w-full"
-          />
-          
-          <div className="flex-1 rounded-lg overflow-hidden border">
-            <SmartMap
-              center={selectedLocation || initialCenter}
-              zoom={15}
-              height="100%"
-              width="100%"
-              markers={selectedLocation ? [selectedLocation] : []}
-              onMapClick={handleMapClick}
+    <Card className="w-full max-w-2xl">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span className="flex items-center">
+            <MapPin className="w-5 h-5 mr-2" />
+            {title}
+          </span>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            ×
+          </Button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex space-x-2">
+          <div className="flex-1 relative">
+            <Input
+              type="text"
+              placeholder="Search for a location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-10"
             />
+            <Search className="absolute right-3 top-3 w-4 h-4 text-gray-400" />
           </div>
-          
-          {isGeocodingLoading && (
-            <p className="text-sm text-gray-600 text-center">
-              🔄 Getting address...
-            </p>
-          )}
-          
-          <div className="flex justify-end space-x-3">
-            <Button variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleConfirm}
-              disabled={!selectedLocation || !address}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              📍 Confirm Location
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            onClick={handleGetCurrentLocation}
+            disabled={isLoadingLocation}
+          >
+            {isLoadingLocation ? (
+              <div className="w-4 h-4 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600" />
+            ) : (
+              <Navigation className="w-4 h-4" />
+            )}
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <SmartMap
+          className="h-64"
+          onLocationSelect={handleMapLocationSelect}
+          markers={selectedLocation ? [{ ...selectedLocation, title: 'Selected Location' }] : []}
+        />
+
+        {selectedLocation && (
+          <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+            <div>
+              <p className="text-sm font-medium">Selected Location</p>
+              <p className="text-xs text-gray-600">
+                {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}
+              </p>
+            </div>
+            <Button onClick={handleConfirmLocation}>
+              Confirm Location
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
+
+export default SecureLocationPicker;

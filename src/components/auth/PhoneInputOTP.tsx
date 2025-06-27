@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,6 @@ interface Country {
   format: string;
 }
 
-// Popular countries for Rwanda region
 const countries: Country[] = [
   { code: 'RW', name: 'Rwanda', dialCode: '+250', flag: '🇷🇼', format: '### ### ###' },
   { code: 'KE', name: 'Kenya', dialCode: '+254', flag: '🇰🇪', format: '### ### ###' },
@@ -40,14 +40,11 @@ interface PhoneInputOTPProps {
   onChange?: (value: string) => void;
   onOTPSent?: (phone: string) => void;
   onOTPVerified?: (phone: string, otp: string) => void;
-  placeholder?: string;
   disabled?: boolean;
   error?: string;
   countries?: string[];
   defaultCountry?: string;
   showOTPInput?: boolean;
-  otpLength?: number;
-  autoSendOTP?: boolean;
   className?: string;
   onSuccess?: (phoneNumber: string) => void;
   onCancel?: () => void;
@@ -58,13 +55,10 @@ const PhoneInputOTP: React.FC<PhoneInputOTPProps> = ({
   onChange,
   onOTPSent,
   onOTPVerified,
-  placeholder = 'Enter phone number',
   disabled = false,
   error,
   defaultCountry = 'RW',
   showOTPInput = false,
-  otpLength = 6,
-  autoSendOTP = false,
   className,
   onSuccess,
   onCancel,
@@ -121,7 +115,7 @@ const PhoneInputOTP: React.FC<PhoneInputOTPProps> = ({
     onChange?.(fullNumber);
   };
 
-  const handleSendOTP = async () => {
+  const handleSendOTP = async (): Promise<void> => {
     const unformatted = unformatPhoneNumber(phoneNumber);
     if (!validatePhoneNumber(phoneNumber)) {
       toast({
@@ -136,7 +130,6 @@ const PhoneInputOTP: React.FC<PhoneInputOTPProps> = ({
     const fullNumber = selectedCountry.dialCode + unformatted;
 
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       setOtpSent(true);
@@ -165,7 +158,6 @@ const PhoneInputOTP: React.FC<PhoneInputOTPProps> = ({
   };
 
   if (otpSent) {
-    // Render the OTPEntry6Box component when OTP is sent
     return (
       <div className={cn("space-y-4", className)}>
         <div className="text-center mb-6">
@@ -184,6 +176,10 @@ const PhoneInputOTP: React.FC<PhoneInputOTPProps> = ({
           onSuccess={() => {
             const fullNumber = selectedCountry.dialCode + unformatPhoneNumber(phoneNumber);
             onSuccess?.(fullNumber);
+          }}
+          onBack={() => {
+            setOtpSent(false);
+            setPhoneNumber('');
           }}
           onCancel={onCancel}
         />
