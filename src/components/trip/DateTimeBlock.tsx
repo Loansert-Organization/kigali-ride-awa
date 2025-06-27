@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,6 @@ import { Clock, Calendar } from 'lucide-react';
 import { TripData } from '@/types/api';
 
 interface DateTimeBlockProps {
-  scheduledDate: string;
   scheduledTime: string;
   onUpdate: (updates: Partial<TripData>) => void;
 }
@@ -60,7 +60,7 @@ const DateTimeBlock: React.FC<DateTimeBlockProps> = ({
             {quickTimes.map((time) => (
               <Button
                 key={time.id}
-                onClick={() => onUpdate({ scheduledTime: time.getValue() })}
+                onClick={() => onUpdate({ scheduled_time: time.getValue() })}
                 variant={scheduledTime === time.getValue() ? "default" : "outline"}
                 className="h-12"
               >
@@ -79,7 +79,7 @@ const DateTimeBlock: React.FC<DateTimeBlockProps> = ({
               <Input
                 type="datetime-local"
                 value={scheduledTime}
-                onChange={(e) => onUpdate({ scheduledTime: e.target.value })}
+                onChange={(e) => onUpdate({ scheduled_time: e.target.value })}
                 min={new Date().toISOString().slice(0, 16)}
                 className="pl-10"
               />

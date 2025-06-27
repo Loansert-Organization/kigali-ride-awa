@@ -48,6 +48,17 @@ export interface PassengerRequest extends TripData {
   max_fare: number;
 }
 
+export interface ReferralData {
+  id: string;
+  referrer_id: string;
+  referee_id: string;
+  referee_role: string;
+  points_awarded: number;
+  validation_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DriverProfile {
   user_id: string;
   vehicle_type: string;

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,16 +7,14 @@ import { DollarSign } from 'lucide-react';
 import { TripData } from '@/types/api';
 
 interface FareInputBlockProps {
-  fareAmount: number;
-  paymentMethod: string;
-  currency?: string;
+  fare: number | null;
+  isNegotiable: boolean;
   onUpdate: (updates: Partial<TripData>) => void;
 }
 
 const FareInputBlock: React.FC<FareInputBlockProps> = ({
-  fareAmount,
-  paymentMethod,
-  currency,
+  fare,
+  isNegotiable,
   onUpdate
 }) => {
   return (
@@ -36,8 +35,8 @@ const FareInputBlock: React.FC<FareInputBlockProps> = ({
               <Input
                 type="number"
                 placeholder="Enter fare (e.g., 2500) or leave empty"
-                value={fareAmount || ''}
-                onChange={(e) => onUpdate({ fareAmount: e.target.value ? parseFloat(e.target.value) : undefined })}
+                value={fare || ''}
+                onChange={(e) => onUpdate({ fare: e.target.value ? parseFloat(e.target.value) : undefined })}
                 className="pl-10"
               />
             </div>
@@ -52,8 +51,8 @@ const FareInputBlock: React.FC<FareInputBlockProps> = ({
               <div className="text-sm text-blue-700">Allow passengers to discuss the fare</div>
             </div>
             <Switch
-              checked={paymentMethod === 'negotiable'}
-              onCheckedChange={(checked) => onUpdate({ paymentMethod: checked ? 'negotiable' : 'fixed' })}
+              checked={isNegotiable}
+              onCheckedChange={(checked) => onUpdate({ is_negotiable: checked })}
             />
           </div>
         </div>

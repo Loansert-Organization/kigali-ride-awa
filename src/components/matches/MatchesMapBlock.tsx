@@ -1,6 +1,7 @@
 
 import React from 'react';
-import TripMapView from '@/components/maps/TripMapView';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MapPin } from 'lucide-react';
 
 interface Trip {
   id: string;
@@ -10,43 +11,47 @@ interface Trip {
   from_lng?: number;
   to_lat?: number;
   to_lng?: number;
-  vehicle_type: string;
-  scheduled_time: string;
 }
 
 interface MatchesMapBlockProps {
-  passengerTrip: Trip;
-  driverTrips: Trip[];
+  passengerTrip?: Trip;
+  center?: { lat: number; lng: number };
+  onTripSelect?: (tripId: string) => void;
 }
 
 const MatchesMapBlock: React.FC<MatchesMapBlockProps> = ({
   passengerTrip,
-  driverTrips
+  center,
+  onTripSelect: _onTripSelect
 }) => {
-  // Use coordinates if available, otherwise fallback to Kigali area with some offset
-  const fromLocation = {
-    lat: passengerTrip.from_lat || -1.9441,
-    lng: passengerTrip.from_lng || 30.0619,
-    address: passengerTrip.from_location
-  };
-
-  const toLocation = {
-    lat: passengerTrip.to_lat || -1.9341,
-    lng: passengerTrip.to_lng || 30.0719,
-    address: passengerTrip.to_location
-  };
-
   return (
-    <div className="mx-4 mt-4">
-      <TripMapView
-        fromLocation={fromLocation}
-        toLocation={toLocation}
-        showRoute={true}
-        showNavigationButton={false}
-        height="250px"
-        interactive={true}
-      />
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center">
+          <MapPin className="w-5 h-5 mr-2" />
+          Trip Map
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-80 bg-gray-100 rounded-lg flex items-center justify-center">
+          <div className="text-center">
+            <MapPin className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+            <p className="text-gray-600">Map view will be implemented here</p>
+            {passengerTrip && (
+              <div className="mt-4 text-sm text-gray-500">
+                <p>From: {passengerTrip.from_location}</p>
+                <p>To: {passengerTrip.to_location}</p>
+                {center && (
+                  <p className="mt-2">
+                    Center: {center.lat.toFixed(4)}, {center.lng.toFixed(4)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,84 +1,77 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { MapPin, Search, Navigation, CheckCircle } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
-import LocationPicker from './LocationPicker';
+import { MapPin } from 'lucide-react';
 
 interface MapPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLocationSelect: (location: { lat: number; lng: number; address: string }) => void;
-  title?: string;
   initialLocation?: { lat: number; lng: number };
 }
 
-export const MapPickerModal: React.FC<MapPickerModalProps> = ({
+const MapPickerModal: React.FC<MapPickerModalProps> = ({
   isOpen,
   onClose,
   onLocationSelect,
-  title = "Select Location",
   initialLocation
 }) => {
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
 
-  const handleLocationSelect = (location: { lat: number; lng: number; address: string }) => {
-    setSelectedLocation(location);
-  };
+  useEffect(() => {
+    if (initialLocation) {
+      setSelectedLocation({
+        ...initialLocation,
+        address: 'Selected location'
+      });
+    }
+  }, [initialLocation]);
 
   const handleConfirm = () => {
     if (selectedLocation) {
       onLocationSelect(selectedLocation);
       onClose();
-      toast({
-        title: "Location Selected",
-        description: selectedLocation.address
-      });
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[80vh] p-0">
-        <DialogHeader className="p-6 pb-0">
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
           <DialogTitle className="flex items-center">
             <MapPin className="w-5 h-5 mr-2" />
-            {title}
+            Select Location
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 p-6 pt-0">
-          <LocationPicker
-            onLocationSelect={handleLocationSelect}
-            initialLocation={initialLocation}
-            height="60vh"
-          />
-        </div>
-
-        {selectedLocation && (
-          <div className="p-6 pt-0 border-t">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center mb-2">
-                  <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                  <span className="font-medium">Location Selected</span>
-                </div>
-                <p className="text-sm text-gray-600 truncate">{selectedLocation.address}</p>
-              </div>
-              <div className="flex space-x-3 ml-4">
-                <Button variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
-                <Button onClick={handleConfirm} className="bg-purple-600 hover:bg-purple-700">
-                  Confirm Location
-                </Button>
-              </div>
-            </div>
+        <div className="space-y-4">
+          <div className="h-80 bg-gray-100 rounded-lg flex items-center justify-center">
+            <p className="text-gray-500">Map will be implemented here</p>
           </div>
-        )}
+          
+          {selectedLocation && (
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm font-medium">Selected Location:</p>
+              <p className="text-sm text-gray-600">{selectedLocation.address}</p>
+              <p className="text-xs text-gray-500">
+                {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+              </p>
+            </div>
+          )}
+          
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirm} disabled={!selectedLocation}>
+              Confirm Location
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default MapPickerModal;

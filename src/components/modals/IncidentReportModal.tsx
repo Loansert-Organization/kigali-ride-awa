@@ -2,73 +2,82 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Flag, MessageCircle, Star } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertTriangle } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 
 interface IncidentReportModalProps {
   isOpen: boolean;
   onClose: () => void;
   tripId?: string;
-  reportType?: 'incident' | 'feedback' | 'complaint';
+  onSubmit: (report: {
+    type: string;
+    description: string;
+    tripId?: string;
+    contactInfo?: string;
+  }) => void;
 }
 
-const incidentTypes = [
-  { id: 'safety', label: 'Safety Concern', icon: AlertTriangle, color: 'text-red-600' },
-  { id: 'service', label: 'Service Issue', icon: Flag, color: 'text-orange-600' },
-  { id: 'feedback', label: 'General Feedback', icon: MessageCircle, color: 'text-blue-600' },
-  { id: 'compliment', label: 'Compliment Driver', icon: Star, color: 'text-green-600' }
-];
-
-export const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
+const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
   isOpen,
   onClose,
   tripId,
-  reportType = 'incident'
+  onSubmit
 }) => {
   const [selectedType, setSelectedType] = useState('');
-  const [message, setMessage] = useState('');
+  const [description, setDescription] = useState('');
+  const [contactInfo, setContactInfo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!selectedType || !message.trim()) {
+  const incidentTypes = [
+    'safety_concern',
+    'payment_issue',
+    'driver_behavior',
+    'passenger_behavior',
+    'vehicle_condition',
+    'route_problem',
+    'other'
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedType || !description.trim()) {
       toast({
-        title: "Please complete all fields",
-        description: "Select a type and provide details",
+        title: "Missing Information",
+        description: "Please select an incident type and provide a description",
         variant: "destructive"
       });
       return;
     }
 
     setIsSubmitting(true);
+    
     try {
-      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-      
-      const { error } = await supabase
-        .from('incidents')
-        .insert({
-          user_id: currentUser.id,
-          trip_id: tripId,
-          type: selectedType,
-          message: message.trim()
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Report submitted",
-        description: "Thank you for your feedback. We'll review it promptly.",
+      await onSubmit({
+        type: selectedType,
+        description: description.trim(),
+        tripId,
+        contactInfo: contactInfo.trim() || undefined
       });
-
-      onClose();
+      
+      toast({
+        title: "Report Submitted",
+        description: "Your incident report has been submitted successfully"
+      });
+      
+      // Reset form
       setSelectedType('');
-      setMessage('');
+      setDescription('');
+      setContactInfo('');
+      onClose();
     } catch (error) {
       console.error('Error submitting report:', error);
       toast({
-        title: "Error",
-        description: "Failed to submit report. Please try again.",
+        title: "Submission Failed",
+        description: "Failed to submit incident report. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -81,69 +90,76 @@ export const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <Flag className="w-5 h-5 mr-2 text-orange-600" />
-            Report Issue or Feedback
+            <AlertTriangle className="w-5 h-5 mr-2 text-orange-600" />
+            Report Incident
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-3 block">
-              What type of report is this?
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Incident Type
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              {incidentTypes.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <Button
-                    key={type.id}
-                    variant={selectedType === type.id ? "default" : "outline"}
-                    className="h-auto p-3 flex flex-col items-center space-y-1"
-                    onClick={() => setSelectedType(type.id)}
-                  >
-                    <Icon className={`w-5 h-5 ${type.color}`} />
-                    <span className="text-xs">{type.label}</span>
-                  </Button>
-                );
-              })}
-            </div>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select incident type" />
+              </SelectTrigger>
+              <SelectContent>
+                {incidentTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">
-              Please provide details
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
             </label>
             <Textarea
-              placeholder="Describe the issue or provide your feedback..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Please describe what happened..."
               rows={4}
-              className="resize-none"
+              required
             />
           </div>
 
-          {tripId && (
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Trip ID:</strong> {tripId.slice(0, 8)}...
-              </p>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Contact Information (Optional)
+            </label>
+            <Input
+              value={contactInfo}
+              onChange={(e) => setContactInfo(e.target.value)}
+              placeholder="Phone number or email for follow-up"
+            />
+          </div>
 
-          <div className="flex space-x-3">
-            <Button variant="outline" onClick={onClose} className="flex-1">
+          <div className="flex space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
-            <Button 
-              onClick={handleSubmit}
-              disabled={!selectedType || !message.trim() || isSubmitting}
+            <Button
+              type="submit"
               className="flex-1"
+              disabled={isSubmitting}
             >
               {isSubmitting ? 'Submitting...' : 'Submit Report'}
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default IncidentReportModal;

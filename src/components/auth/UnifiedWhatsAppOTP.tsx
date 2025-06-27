@@ -28,20 +28,32 @@ export const UnifiedWhatsAppOTP: React.FC<UnifiedWhatsAppOTPProps> = ({
     setPhoneNumber('');
   };
 
+  const handleSuccess = () => {
+    if (onSuccess) {
+      onSuccess();
+    }
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
   return (
     <Card className={className}>
       <CardContent className="p-6">
         {step === 'phone' ? (
           <PhoneInputOTP
             onSuccess={handlePhoneSuccess}
-            onCancel={onCancel}
+            onCancel={handleCancel}
           />
         ) : (
           <OTPEntry6Box
             phoneNumber={phoneNumber}
             onBack={handleBackToPhone}
-            onSuccess={onSuccess}
-            onCancel={onCancel}
+            onSuccess={handleSuccess}
+            onCancel={handleCancel}
           />
         )}
       </CardContent>

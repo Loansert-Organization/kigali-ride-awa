@@ -9,11 +9,15 @@ import { useNavigate } from 'react-router-dom';
 interface OTPEntry6BoxProps {
   phoneNumber: string;
   onSuccess: () => void;
+  onBack?: () => void;
+  onCancel?: () => void;
 }
 
 const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
   phoneNumber,
-  onSuccess
+  onSuccess,
+  onBack,
+  onCancel
 }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -126,6 +130,14 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleBackAction = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      navigate(-1);
+    }
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
@@ -182,11 +194,21 @@ const OTPEntry6Box: React.FC<OTPEntry6BoxProps> = ({
 
           <Button
             variant="ghost"
-            onClick={() => navigate(-1)}
+            onClick={handleBackAction}
             className="w-full"
           >
             Change Phone Number
           </Button>
+
+          {onCancel && (
+            <Button
+              variant="ghost"
+              onClick={onCancel}
+              className="w-full"
+            >
+              Cancel
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

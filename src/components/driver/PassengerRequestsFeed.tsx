@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Clock, Users, MessageSquare } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { PassengerRequestModal } from '@/components/driver/PassengerRequestModal';
+import PassengerRequestModal from '@/components/driver/PassengerRequestModal';
 
 interface PassengerRequest {
   id: string;
@@ -23,7 +22,7 @@ interface PassengerRequestsFeedProps {
 }
 
 const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
-  driverLocation
+  driverLocation: _driverLocation
 }) => {
   const [requests, setRequests] = useState<PassengerRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +67,7 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
         to_location: trip.to_location || '',
         scheduled_time: trip.scheduled_time,
         vehicle_type: trip.vehicle_type,
-        status: trip.status,
+        status: trip.status || 'pending',
         created_at: trip.created_at
       }));
 
@@ -116,6 +115,11 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
   const handleViewDetails = (request: PassengerRequest) => {
     setSelectedRequest(request);
     setShowModal(true);
+  };
+
+  const handleWhatsAppContact = (trip: any) => {
+    // Implementation for WhatsApp contact
+    console.log('Contacting via WhatsApp:', trip);
   };
 
   if (loading) {
@@ -212,6 +216,7 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
           onClose={() => setShowModal(false)}
           trip={selectedRequest}
           onAccept={() => handleAccept(selectedRequest)}
+          onWhatsAppContact={handleWhatsAppContact}
         />
       )}
     </>

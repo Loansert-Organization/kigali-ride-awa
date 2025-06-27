@@ -11,7 +11,7 @@ interface GoogleSignInButtonProps {
 }
 
 const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
-  onSuccess,
+  onSuccess: _onSuccess,
   onError,
   disabled = false
 }) => {
