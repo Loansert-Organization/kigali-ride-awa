@@ -8,11 +8,22 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, Code, Bug, Globe, Shield, Wand2, Loader2 } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { EdgeFunctionResponse } from "@/types/api";
+
+interface AIResult {
+  model: string;
+  result: string | Record<string, unknown>;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
 
 interface AIAssistantProps {
   context?: string;
   defaultTask?: string;
-  onResult?: (result: any) => void;
+  onResult?: (result: AIResult) => void;
 }
 
 const AIAssistant: React.FC<AIAssistantProps> = ({ context, defaultTask, onResult }) => {
@@ -20,7 +31,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, defaultTask, onResul
   const [selectedTask, setSelectedTask] = useState(defaultTask || 'code-generation');
   const [preferredModel, setPreferredModel] = useState('auto');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<AIResult | null>(null);
 
   const taskTypes = [
     { value: 'code-generation', label: 'Generate Code', icon: Code },

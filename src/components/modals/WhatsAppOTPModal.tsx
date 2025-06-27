@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,21 +6,25 @@ import { Label } from "@/components/ui/label";
 import { MessageCircle, Phone, Loader2, X, CheckCircle } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { UserProfile } from '@/types/user';
 
 interface WhatsAppOTPModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (phoneNumber: string) => void;
-  userProfile: any;
+  phoneNumber: string;
+  mode: 'login' | 'register';
+  onSuccess: (session: Session) => void;
+  userProfile: UserProfile | null;
 }
 
 export const WhatsAppOTPModal: React.FC<WhatsAppOTPModalProps> = ({
   isOpen,
   onClose,
+  phoneNumber,
+  mode,
   onSuccess,
   userProfile
 }) => {
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'phone' | 'otp' | 'success'>('phone');
@@ -50,7 +53,7 @@ export const WhatsAppOTPModal: React.FC<WhatsAppOTPModalProps> = ({
       const { data, error } = await supabase.functions.invoke('send-wa-code', {
         body: {
           phone: formattedPhone,
-          userId: userProfile.id
+          userId: userProfile?.id
         }
       });
 
@@ -94,7 +97,7 @@ export const WhatsAppOTPModal: React.FC<WhatsAppOTPModalProps> = ({
       // Call edge function to verify code
       const { data, error } = await supabase.functions.invoke('verify-wa-code', {
         body: {
-          userId: userProfile.id,
+          userId: userProfile?.id,
           inputCode: otpCode
         }
       });
@@ -110,7 +113,7 @@ export const WhatsAppOTPModal: React.FC<WhatsAppOTPModalProps> = ({
         
         // Call success callback with phone number
         setTimeout(() => {
-          onSuccess(data.phoneNumber);
+          onSuccess(data.session);
         }, 1500);
       } else {
         throw new Error(data.message || 'Verification failed');

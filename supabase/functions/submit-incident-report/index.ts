@@ -97,8 +97,8 @@ serve(async (req) => {
     const incidentData = {
       user_id: userProfile.id,
       trip_id: tripId || null,
-      type: type,
-      message: message,
+      type,
+      message,
       metadata: {
         ...metadata,
         ai_analysis: aiAnalysis,

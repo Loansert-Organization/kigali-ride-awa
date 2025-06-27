@@ -5,16 +5,40 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Gift, Trophy, Users, TrendingUp, Search, Award, Star } from 'lucide-react';
+import { Gift, Trophy, Users, Search, Award, Star } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminHeader } from '@/components/admin/AdminHeader';
+import { logError } from '@/utils/errorHandlers';
+
+interface LeaderboardUser {
+  referrer_id: string;
+  users?: {
+    promo_code: string;
+  };
+  points_awarded: number;
+}
+
+interface Referral {
+  id: string;
+  referee_role: string;
+  created_at: string;
+  validation_status: 'pending' | 'validated' | 'rejected';
+}
+
+interface Reward {
+  id: string;
+  reward_type: string;
+  points: number;
+  created_at: string;
+  reward_issued: boolean;
+}
 
 const RewardsManagement = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [leaderboardData, setLeaderboardData] = useState([]);
-  const [rewardsData, setRewardsData] = useState([]);
-  const [referralData, setReferralData] = useState([]);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
+  const [rewardsData, setRewardsData] = useState<Reward[]>([]);
+  const [referralData, setReferralData] = useState<Referral[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -53,7 +77,7 @@ const RewardsManagement = () => {
       setRewardsData(rewards || []);
       setReferralData(referrals || []);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logError('Error loading data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +102,7 @@ const RewardsManagement = () => {
       });
 
       handleRefresh();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to validate referral",
@@ -102,7 +126,7 @@ const RewardsManagement = () => {
       });
 
       handleRefresh();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to reject referral",
@@ -166,7 +190,7 @@ const RewardsManagement = () => {
                   <div className="text-center py-8">Loading leaderboard...</div>
                 ) : (
                   <div className="space-y-4">
-                    {leaderboardData.slice(0, 10).map((user: any, index) => (
+                    {leaderboardData.slice(0, 10).map((user, index) => (
                       <div key={user.referrer_id} className="flex items-center justify-between p-4 bg-white rounded-lg border">
                         <div className="flex items-center space-x-4">
                           <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
@@ -203,7 +227,7 @@ const RewardsManagement = () => {
                   <div className="text-center py-8">Loading referrals...</div>
                 ) : (
                   <div className="space-y-4">
-                    {referralData.map((referral: any) => (
+                    {referralData.map((referral) => (
                       <div key={referral.id} className="flex items-center justify-between p-4 bg-white rounded-lg border">
                         <div className="flex-1">
                           <div className="flex items-center space-x-4">
@@ -254,7 +278,7 @@ const RewardsManagement = () => {
                   <div className="text-center py-8">Loading rewards...</div>
                 ) : (
                   <div className="space-y-4">
-                    {rewardsData.map((reward: any) => (
+                    {rewardsData.map((reward) => (
                       <div key={reward.id} className="flex items-center justify-between p-4 bg-white rounded-lg border">
                         <div className="flex-1">
                           <div className="font-medium">Reward #{reward.id.slice(0, 8)}</div>

@@ -6,6 +6,33 @@ import {
   useWeeklyRewardsLeaderboard, 
   useDailyActivitySnapshot 
 } from './useAnalyticsViews';
+import { UserProfile } from '@/types/user';
+import { TripData } from '@/types/api';
+import { logError } from '@/utils/errorHandlers';
+
+interface AILog {
+  id: string;
+  created_at: string;
+  type: string;
+  status: string;
+  request_data?: unknown;
+  response_data?: unknown;
+  error?: string;
+}
+
+interface LeaderboardEntry {
+  user_id: string;
+  username?: string;
+  total_points: number;
+  rank?: number;
+}
+
+interface DailyActivity {
+  date: string;
+  users_count: number;
+  trips_count: number;
+  bookings_count: number;
+}
 
 export interface AdminDashboardData {
   kpis: {
@@ -19,11 +46,11 @@ export interface AdminDashboardData {
     weeklyBookings: number;
     onlineDrivers: number;
   };
-  users: any[];
-  trips: any[];
-  aiLogs: any[];
-  leaderboard: any[];
-  dailyActivity: any[];
+  users: UserProfile[];
+  trips: TripData[];
+  aiLogs: AILog[];
+  leaderboard: LeaderboardEntry[];
+  dailyActivity: DailyActivity[];
 }
 
 export const useAdminDashboard = (refreshTrigger: number) => {
@@ -101,7 +128,7 @@ export const useAdminDashboard = (refreshTrigger: number) => {
       });
 
     } catch (err) {
-      console.error('Error loading admin dashboard:', err);
+      logError('Error loading admin dashboard:', err);
       setError(err as Error);
     } finally {
       setIsLoading(false);

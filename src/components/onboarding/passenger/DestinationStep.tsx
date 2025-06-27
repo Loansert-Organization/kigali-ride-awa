@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,11 +6,15 @@ import { Home, Church, ShoppingBag, Edit3 } from 'lucide-react';
 
 interface DestinationStepProps {
   onNext: () => void;
-  t: any;
+  onBack: () => void;
+  onDestinationSaved: (destination: string) => void;
+  t: (key: string) => string;
 }
 
 const DestinationStep: React.FC<DestinationStepProps> = ({
   onNext,
+  onBack,
+  onDestinationSaved,
   t
 }) => {
   const [selectedDestination, setSelectedDestination] = useState('');
@@ -36,7 +39,7 @@ const DestinationStep: React.FC<DestinationStepProps> = ({
     <Card className="bg-white/95 backdrop-blur-sm animate-fade-in">
       <CardContent className="p-6">
         <div className="text-center mb-6">
-          <h2 className="text-xl font-semibold">{t.whereHeaded}</h2>
+          <h2 className="text-xl font-semibold">{t('whereHeaded')}</h2>
           <p className="text-gray-600 mt-2">Help us suggest better routes</p>
         </div>
         
@@ -47,7 +50,7 @@ const DestinationStep: React.FC<DestinationStepProps> = ({
             className="w-full justify-start py-3"
           >
             <Home className="w-5 h-5 mr-3" />
-            {t.home}
+            {t('home')}
           </Button>
           
           <Button 
@@ -56,7 +59,7 @@ const DestinationStep: React.FC<DestinationStepProps> = ({
             className="w-full justify-start py-3"
           >
             <Church className="w-5 h-5 mr-3" />
-            {t.church}
+            {t('church')}
           </Button>
           
           <Button 
@@ -65,7 +68,7 @@ const DestinationStep: React.FC<DestinationStepProps> = ({
             className="w-full justify-start py-3"
           >
             <ShoppingBag className="w-5 h-5 mr-3" />
-            {t.market}
+            {t('market')}
           </Button>
           
           <Button 
@@ -74,14 +77,14 @@ const DestinationStep: React.FC<DestinationStepProps> = ({
             className="w-full justify-start py-3"
           >
             <Edit3 className="w-5 h-5 mr-3" />
-            {t.other}
+            {t('other')}
           </Button>
 
           {selectedDestination === 'other' && (
             <div className="space-y-2 animate-fade-in">
               <Input
                 type="text"
-                placeholder={t.enterAddress}
+                placeholder={t('enterAddress')}
                 value={customAddress}
                 onChange={(e) => setCustomAddress(e.target.value)}
                 className="w-full"

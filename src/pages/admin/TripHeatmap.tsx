@@ -1,21 +1,41 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, TrendingUp, Calendar, Users, Car } from 'lucide-react';
+import { MapPin, TrendingUp, Users, Car } from 'lucide-react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { supabase } from "@/integrations/supabase/client";
-import TripMapView from '@/components/maps/TripMapView';
+import { logError } from '@/utils/errorHandlers';
+
+interface HeatmapLog {
+  id: string;
+  created_at: string;
+  role: 'passenger' | 'driver';
+  lat: number;
+  lng: number;
+}
+
+interface Hotspot {
+  lat: number;
+  lng: number;
+  count: number;
+}
+
+interface HeatmapStats {
+  totalTrips: number;
+  passengerTrips: number;
+  driverTrips: number;
+  hotspots: Hotspot[];
+}
 
 const TripHeatmap = () => {
-  const [heatmapData, setHeatmapData] = useState([]);
+  const [heatmapData, setHeatmapData] = useState<HeatmapLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState('today');
   const [roleFilter, setRoleFilter] = useState('all');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<HeatmapStats>({
     totalTrips: 0,
     passengerTrips: 0,
     driverTrips: 0,
@@ -60,7 +80,7 @@ const TripHeatmap = () => {
       const driverTrips = data?.filter(d => d.role === 'driver').length || 0;
 
       // Calculate hotspots (simplified)
-      const hotspots = data?.reduce((acc: any[], curr) => {
+      const hotspots = data?.reduce((acc: Hotspot[], curr) => {
         const existingHotspot = acc.find(h => 
           Math.abs(h.lat - curr.lat) < 0.01 && Math.abs(h.lng - curr.lng) < 0.01
         );
@@ -76,7 +96,7 @@ const TripHeatmap = () => {
 
       setStats({ totalTrips, passengerTrips, driverTrips, hotspots });
     } catch (error) {
-      console.error('Error loading heatmap data:', error);
+      logError('Error loading heatmap data:', error);
     } finally {
       setIsLoading(false);
     }

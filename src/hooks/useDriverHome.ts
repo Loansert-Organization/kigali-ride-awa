@@ -5,10 +5,12 @@ import { useDriverLocation } from './driver/useDriverLocation';
 import { useDriverStatus } from './driver/useDriverStatus';
 import { useDriverActions } from './driver/useDriverActions';
 import { useUserData } from './driver/useUserData';
+import { UserProfile } from '@/types/user';
+import { DriverProfile } from '@/types/api';
 
 export interface DriverHomeData {
-  user: any;
-  driverProfile: any;
+  user: UserProfile | null;
+  driverProfile: DriverProfile | null;
   isOnline: boolean;
   driverLocation: {lat: number; lng: number} | null;
   statusData: {
@@ -29,7 +31,7 @@ export const useDriverHome = () => {
   const { statusData } = useDriverStatus();
   const { navigate, handleQuickStart } = useDriverActions();
 
-  const handleToggleOnlineStatus = async (newStatus: boolean) => {
+  const handleToggleOnlineStatus = async (_newStatus: boolean) => {
     setIsToggleLoading(true);
     try {
       await originalToggleOnlineStatus();

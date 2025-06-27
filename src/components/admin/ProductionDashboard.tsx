@@ -12,7 +12,13 @@ import { PerformanceMonitor } from '@/services/PerformanceMonitor';
 const ProductionDashboard: React.FC = () => {
   const { testResults, isRunning, runFullIntegrationTest } = useIntegrationTesting();
   const { functionStatuses, isMonitoring, checkAllFunctions, getHealthSummary } = useEdgeFunctionMonitor();
-  const [performanceReport, setPerformanceReport] = useState<any>({});
+  interface PerformanceMetrics {
+    avg: number;
+    latest: number;
+    count: number;
+  }
+  
+  const [performanceReport, setPerformanceReport] = useState<Record<string, PerformanceMetrics>>({});
 
   const healthSummary = getHealthSummary();
   const monitor = PerformanceMonitor.getInstance();
@@ -27,7 +33,7 @@ const ProductionDashboard: React.FC = () => {
     setPerformanceReport(monitor.getPerformanceReport());
 
     return () => clearInterval(interval);
-  }, []);
+  }, [monitor]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -227,7 +233,7 @@ const ProductionDashboard: React.FC = () => {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {Object.entries(performanceReport).map(([key, metrics]: [string, any]) => (
+                  {Object.entries(performanceReport).map(([key, metrics]) => (
                     <div key={key} className="flex items-center justify-between p-3 border rounded">
                       <span className="font-medium">{key.replace(/_/g, ' ')}</span>
                       <div className="flex items-center space-x-2">

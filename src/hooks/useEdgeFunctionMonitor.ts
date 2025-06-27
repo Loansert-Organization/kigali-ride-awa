@@ -1,4 +1,3 @@
-
 // Edge function deployment and health monitoring
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +16,7 @@ export const useEdgeFunctionMonitor = () => {
 
   const checkFunction = useCallback(async (
     functionName: string,
-    testPayload: any = {}
+    testPayload: Record<string, unknown> = {}
   ): Promise<EdgeFunctionStatus> => {
     const startTime = performance.now();
     

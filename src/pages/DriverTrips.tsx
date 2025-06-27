@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { EdgeFunctionService } from "@/services/EdgeFunctionService";
 import { useToast } from "@/hooks/use-toast";
 
+interface TripBooking {
+  id: string;
+  confirmed: boolean;
+  passenger_trip_id: string;
+}
+
 interface Trip {
   id: string;
   from_location: string;
@@ -21,7 +27,7 @@ interface Trip {
   seats_available: number;
   status: string;
   description?: string;
-  bookings?: any[];
+  bookings?: TripBooking[];
 }
 
 const DriverTrips = () => {

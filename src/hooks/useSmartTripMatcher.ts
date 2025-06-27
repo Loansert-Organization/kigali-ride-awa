@@ -1,7 +1,7 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useErrorHandler } from './useErrorHandler';
+import { TripData } from '@/types/api';
 
 interface MatchedTrip {
   id: string;
@@ -25,7 +25,7 @@ interface MatchedTrip {
 interface SmartMatchResult {
   matches: MatchedTrip[];
   matchCount: number;
-  passengerTrip: any;
+  passengerTrip: TripData;
 }
 
 export const useSmartTripMatcher = () => {

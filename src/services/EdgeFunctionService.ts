@@ -1,6 +1,9 @@
 
 // Services for Edge Function calls with proper error handling and type safety
 import { supabase } from "@/integrations/supabase/client";
+import { TripData, BookingData } from "@/types/api";
+import { UserProfile } from "@/types/user";
+import { logError } from "@/utils/errorHandlers";
 
 export interface CreateTripRequest {
   user_id: string;
@@ -21,20 +24,20 @@ export interface CreateTripRequest {
 
 export interface CreateTripResponse {
   success: boolean;
-  trip?: any;
+  trip?: TripData;
   error?: string;
 }
 
 export interface NearbyTripsResponse {
   success: boolean;
-  trips?: any[];
+  trips?: TripData[];
   error?: string;
 }
 
 export interface MatchResponse {
   success: boolean;
-  matches?: any[];
-  booking?: any;
+  matches?: TripData[];
+  booking?: BookingData;
   error?: string;
 }
 
@@ -55,7 +58,7 @@ export class EdgeFunctionService {
 
       return { success: true, trip: data };
     } catch (error) {
-      console.error('Error creating trip:', error);
+      logError('Error creating trip:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Failed to create trip' 
@@ -79,7 +82,7 @@ export class EdgeFunctionService {
 
       return { success: true, trips: data?.trips || [] };
     } catch (error) {
-      console.error('Error fetching nearby trips:', error);
+      logError('Error fetching nearby trips:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Failed to fetch nearby trips' 
@@ -105,7 +108,7 @@ export class EdgeFunctionService {
 
       return { success: true, ...data };
     } catch (error) {
-      console.error('Error in match-passenger-driver:', error);
+      logError('Error in match-passenger-driver:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Failed to process match' 
@@ -116,8 +119,8 @@ export class EdgeFunctionService {
   static async sendWhatsAppInvite(
     phoneNumber: string,
     messageType: string,
-    tripData: any,
-    userData?: any,
+    tripData: Partial<TripData>,
+    userData?: Partial<UserProfile>,
     language: string = 'en'
   ): Promise<WhatsAppResponse> {
     try {
@@ -131,7 +134,7 @@ export class EdgeFunctionService {
 
       return { success: true, whatsapp_url: data?.whatsapp_url };
     } catch (error) {
-      console.error('Error sending WhatsApp invite:', error);
+      logError('Error sending WhatsApp invite:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Failed to send WhatsApp invite' 
@@ -141,9 +144,9 @@ export class EdgeFunctionService {
 
   private static generateWhatsAppMessage(
     type: string, 
-    tripData: any, 
-    userData?: any, 
-    language: string = 'en'
+    tripData: Partial<TripData>, 
+    userData?: Partial<UserProfile>, 
+    _language: string = 'en'
   ): string {
     switch (type) {
       case 'booking_request':

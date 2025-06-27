@@ -8,12 +8,37 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, Clock, Car, Users, DollarSign } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 
+interface TripBooking {
+  id: string;
+  confirmed: boolean;
+  passenger_trip_id: string;
+  trips?: {
+    user_id: string;
+    from_location: string;
+    to_location: string;
+  };
+}
+
+interface TripWithBookings {
+  id: string;
+  from_location: string;
+  to_location: string;
+  scheduled_time: string;
+  vehicle_type: string;
+  fare?: number;
+  seats_available: number;
+  status: string;
+  description?: string;
+  is_negotiable?: boolean;
+  bookings?: TripBooking[];
+}
+
 const TripDetails = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tripId = searchParams.get('id');
 
-  const { data: trip, isLoading } = useQuery({
+  const { data: trip, isLoading } = useQuery<TripWithBookings>({
     queryKey: ['trip-details', tripId],
     queryFn: async () => {
       if (!tripId) throw new Error('Trip ID is required');
@@ -215,7 +240,7 @@ const TripDetails = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {trip.bookings.map((booking: any, index: number) => (
+                {trip.bookings.map((booking, index) => (
                   <div key={booking.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <div className="font-medium">Passenger {index + 1}</div>

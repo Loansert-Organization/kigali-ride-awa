@@ -6,6 +6,15 @@ import { RefreshCw, Users, MapPin } from 'lucide-react';
 import PassengerRequestCard from './PassengerRequestCard';
 import PassengerRequestModal from './PassengerRequestModal';
 import { usePassengerRequests } from '@/hooks/driver/usePassengerRequests';
+import { TripData } from '@/types/api';
+import { logError } from '@/utils/errorHandlers';
+
+interface PassengerRequest extends TripData {
+  suggested_fare?: number;
+  pickup_location?: string;
+  dropoff_location?: string;
+  [key: string]: unknown;
+}
 
 interface PassengerRequestsFeedProps {
   driverLocation?: { lat: number; lng: number };
@@ -18,7 +27,7 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
   vehicleType,
   isOnline
 }) => {
-  const [selectedTrip, setSelectedTrip] = useState<any>(null);
+  const [selectedTrip, setSelectedTrip] = useState<PassengerRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
@@ -43,7 +52,7 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
     try {
       await handleAcceptRequest(tripId);
     } catch (error) {
-      console.error('Error accepting request:', error);
+      logError('Error accepting request:', error);
     }
   };
 
@@ -54,17 +63,17 @@ const PassengerRequestsFeed: React.FC<PassengerRequestsFeedProps> = ({
       setIsModalOpen(false);
       setSelectedTrip(null);
     } catch (error) {
-      console.error('Error accepting request:', error);
+      logError('Error accepting request:', error);
     }
   };
 
-  const handleModalWhatsAppContact = (trip: any) => {
+  const handleModalWhatsAppContact = (trip: PassengerRequest) => {
     try {
       handleWhatsAppContact(trip);
       setIsModalOpen(false);
       setSelectedTrip(null);
     } catch (error) {
-      console.error('Error launching WhatsApp:', error);
+      logError('Error launching WhatsApp:', error);
     }
   };
 

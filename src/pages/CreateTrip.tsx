@@ -7,7 +7,7 @@ import VehicleDetailsBlock from "@/components/trip/VehicleDetailsBlock";
 import FareInputBlock from "@/components/trip/FareInputBlock";
 import TripConfirmationBlock from "@/components/trip/TripConfirmationBlock";
 import CreateTripProgressIndicator from "@/components/trip/CreateTripProgressIndicator";
-import { useCreateTrip } from "@/hooks/useCreateTrip";
+import { useCreateTripForm } from "@/hooks/driver/useCreateTripForm";
 
 const CreateTrip = () => {
   const {
@@ -20,7 +20,7 @@ const CreateTrip = () => {
     handleNext,
     handleBack,
     handleSubmit
-  } = useCreateTrip();
+  } = useCreateTripForm();
 
   const renderStepContent = () => {
     switch (currentStep) {

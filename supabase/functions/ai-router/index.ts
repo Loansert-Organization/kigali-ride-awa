@@ -1,6 +1,6 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { AIContext } from "../_shared/types.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,7 +29,7 @@ function selectModel(taskType: string, complexity: 'simple' | 'medium' | 'comple
   return modelMap[taskType as keyof typeof modelMap] || 'gpt-4o';
 }
 
-async function callOpenAI(prompt: string, context: any) {
+async function callOpenAI(prompt: string, context: AIContext) {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -51,7 +51,7 @@ async function callOpenAI(prompt: string, context: any) {
   return data.choices[0].message.content;
 }
 
-async function callClaude(prompt: string, context: any) {
+async function callClaude(prompt: string, context: AIContext) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -72,7 +72,7 @@ async function callClaude(prompt: string, context: any) {
   return data.content[0].text;
 }
 
-async function callGemini(prompt: string, context: any) {
+async function callGemini(prompt: string, context: AIContext) {
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${Deno.env.get('GOOGLE_API_KEY')}`, {
     method: 'POST',
     headers: {

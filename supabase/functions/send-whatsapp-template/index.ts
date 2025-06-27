@@ -37,9 +37,9 @@ serve(async (req) => {
     const { error: otpError } = await supabase
       .from('otp_codes')
       .insert({
-        phone_number: phone_number,
+        phone_number,
         otp_code: otpCode,
-        user_id: user_id,
+        user_id,
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
         sent: false,
         used: false
@@ -69,7 +69,7 @@ serve(async (req) => {
     
     // Ensure Rwanda numbers start with 250
     if (formattedPhone.startsWith('788') || formattedPhone.startsWith('789') || formattedPhone.startsWith('780')) {
-      formattedPhone = '250' + formattedPhone;
+      formattedPhone = `250${  formattedPhone}`;
     }
     
     console.log('Phone number formatting:', {

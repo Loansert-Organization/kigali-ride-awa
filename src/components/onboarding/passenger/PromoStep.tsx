@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,14 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Gift, Rocket, Check } from 'lucide-react';
 
 interface PromoStepProps {
-  onFinish: (promoCode?: string) => void;
-  existingPromo: string;
-  t: any;
+  onComplete: () => void;
+  onPromoCodeSaved?: (code: string) => void;
+  t: (key: string) => string;
 }
 
 const PromoStep: React.FC<PromoStepProps> = ({
-  onFinish,
-  existingPromo,
+  onComplete,
+  onPromoCodeSaved,
   t
 }) => {
   const [promoCode, setPromoCode] = useState('');
@@ -21,9 +20,9 @@ const PromoStep: React.FC<PromoStepProps> = ({
   const handlePromoSubmit = () => {
     if (promoCode.trim() && promoCode.startsWith('RIDE-') && promoCode.length >= 6) {
       localStorage.setItem('promo_code', promoCode);
-      onFinish(promoCode);
+      onPromoCodeSaved?.(promoCode);
     } else {
-      onFinish();
+      onComplete();
     }
   };
 
@@ -35,12 +34,12 @@ const PromoStep: React.FC<PromoStepProps> = ({
             <Gift className="w-8 h-8 text-purple-600" />
           </div>
           
-          {existingPromo ? (
+          {onPromoCodeSaved ? (
             <div>
-              <h2 className="text-xl font-semibold text-green-700">{t.promoJoining}</h2>
+              <h2 className="text-xl font-semibold text-green-700">{t('promoJoining')}</h2>
               <div className="text-2xl font-bold text-green-600 mt-2 flex items-center justify-center">
                 <Check className="w-6 h-6 mr-2" />
-                {existingPromo}
+                {promoCode}
               </div>
             </div>
           ) : (
@@ -51,11 +50,11 @@ const PromoStep: React.FC<PromoStepProps> = ({
           )}
         </div>
         
-        {!existingPromo && (
+        {!onPromoCodeSaved && (
           <div className="space-y-3 mb-4">
             <Input
               type="text"
-              placeholder={t.promoPlaceholder}
+              placeholder={t('promoPlaceholder')}
               value={promoCode}
               onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
               className="w-full text-center font-mono"
@@ -69,7 +68,7 @@ const PromoStep: React.FC<PromoStepProps> = ({
           className="w-full bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 py-3"
         >
           <Rocket className="w-5 h-5 mr-2" />
-          {t.continueApp}
+          {t('continueApp')}
         </Button>
       </CardContent>
     </Card>

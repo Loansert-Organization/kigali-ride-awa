@@ -1,19 +1,16 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { ErrorReport, TypedSupabaseClient } from "../_shared/types.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface ErrorReport {
+// Extend the base ErrorReport interface with additional fields
+interface ExtendedErrorReport extends ErrorReport {
   component: string;
-  error_type: string;
   message: string;
-  stack_trace?: string;
-  user_id?: string;
-  session_data?: Record<string, any>;
   url?: string;
   user_agent?: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
@@ -30,7 +27,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const errorReport = await req.json() as ErrorReport
+    const errorReport = await req.json() as ExtendedErrorReport
 
     console.log('Processing error report:', errorReport.component, errorReport.error_type)
 
@@ -90,7 +87,7 @@ serve(async (req) => {
   }
 })
 
-async function handleCriticalError(supabase: any, errorReport: ErrorReport) {
+async function handleCriticalError(supabase: TypedSupabaseClient, errorReport: ExtendedErrorReport) {
   try {
     // Send immediate notification for critical errors
     if (errorReport.user_id) {
@@ -110,7 +107,7 @@ async function handleCriticalError(supabase: any, errorReport: ErrorReport) {
   }
 }
 
-async function attemptAutoRecovery(supabase: any, errorReport: ErrorReport): Promise<string | null> {
+async function attemptAutoRecovery(supabase: TypedSupabaseClient, errorReport: ExtendedErrorReport): Promise<string | null> {
   try {
     switch (errorReport.error_type) {
       case 'auth_session_expired':

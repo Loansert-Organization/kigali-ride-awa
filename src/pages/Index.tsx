@@ -43,7 +43,7 @@ const Index = () => {
 
   // PWA Install Prompt Logic
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: any) => {
+    const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setTimeout(() => setShowPWAPrompt(true), 5000);
     };

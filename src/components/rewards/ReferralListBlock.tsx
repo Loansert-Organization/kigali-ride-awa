@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { ReferralData } from '@/types/api';
 
 const ReferralListBlock = () => {
   const { user } = useAuth();
@@ -34,7 +34,7 @@ const ReferralListBlock = () => {
     staleTime: 30000 // Cache for 30 seconds
   });
 
-  const getStatusInfo = (referral: any) => {
+  const getStatusInfo = (referral: ReferralData) => {
     switch (referral.validation_status) {
       case 'valid':
         return { icon: '✅', text: 'Completed', color: 'text-green-600' };

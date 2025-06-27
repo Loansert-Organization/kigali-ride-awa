@@ -1,51 +1,51 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Navigation, Map } from 'lucide-react';
 import DateTimeBlock from './DateTimeBlock';
+import { TripData } from '@/types/api';
 
 interface RouteInputBlockProps {
-  fromLocation: string;
-  toLocation: string;
-  fromLat?: number;
-  fromLng?: number;
-  toLat?: number;
-  toLng?: number;
+  origin: string;
+  destination: string;
+  originLatitude?: number;
+  originLongitude?: number;
+  destinationLatitude?: number;
+  destinationLongitude?: number;
   scheduledTime: string;
-  onUpdate: (updates: any) => void;
+  onUpdate: (updates: Partial<TripData>) => void;
   onPickupMapOpen?: () => void;
   onDestinationMapOpen?: () => void;
   quickStartLocation?: { lat: number; lng: number };
 }
 
 const RouteInputBlock: React.FC<RouteInputBlockProps> = ({
-  fromLocation,
-  toLocation,
+  origin,
+  destination,
   scheduledTime,
   onUpdate,
   onPickupMapOpen,
   onDestinationMapOpen,
   quickStartLocation
 }) => {
-  const [useCurrentLocation, setUseCurrentLocation] = useState(!!fromLocation.includes('Current'));
+  const [useCurrentLocation, setUseCurrentLocation] = useState(!!origin.includes('Current'));
 
   const handleUseCurrentLocation = async () => {
     if (quickStartLocation) {
       onUpdate({
-        fromLocation: 'Current Location',
-        fromLat: quickStartLocation.lat,
-        fromLng: quickStartLocation.lng
+        origin: 'Current Location',
+        originLatitude: quickStartLocation.lat,
+        originLongitude: quickStartLocation.lng
       });
       setUseCurrentLocation(true);
     } else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           onUpdate({
-            fromLocation: 'Current Location',
-            fromLat: position.coords.latitude,
-            fromLng: position.coords.longitude
+            origin: 'Current Location',
+            originLatitude: position.coords.latitude,
+            originLongitude: position.coords.longitude
           });
           setUseCurrentLocation(true);
         },
@@ -78,7 +78,7 @@ const RouteInputBlock: React.FC<RouteInputBlockProps> = ({
                     size="sm"
                     onClick={() => {
                       setUseCurrentLocation(false);
-                      onUpdate({ fromLocation: '', fromLat: undefined, fromLng: undefined });
+                      onUpdate({ origin: '', originLatitude: undefined, originLongitude: undefined });
                     }}
                   >
                     Change
@@ -91,8 +91,8 @@ const RouteInputBlock: React.FC<RouteInputBlockProps> = ({
                       <MapPin className="absolute left-3 top-3 w-5 h-5 text-green-600" />
                       <Input
                         placeholder="Enter pickup location"
-                        value={fromLocation}
-                        onChange={(e) => onUpdate({ fromLocation: e.target.value })}
+                        value={origin}
+                        onChange={(e) => onUpdate({ origin: e.target.value })}
                         className="pl-10"
                       />
                     </div>
@@ -129,8 +129,8 @@ const RouteInputBlock: React.FC<RouteInputBlockProps> = ({
                   <MapPin className="absolute left-3 top-3 w-5 h-5 text-red-600" />
                   <Input
                     placeholder="Enter destination"
-                    value={toLocation}
-                    onChange={(e) => onUpdate({ toLocation: e.target.value })}
+                    value={destination}
+                    onChange={(e) => onUpdate({ destination: e.target.value })}
                     className="pl-10"
                   />
                 </div>

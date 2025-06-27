@@ -38,7 +38,7 @@ serve(async (req) => {
       .eq('is_active', true)
 
     if (tokenError) {
-      throw new Error('Error fetching push tokens: ' + tokenError.message)
+      throw new Error(`Error fetching push tokens: ${  tokenError.message}`)
     }
 
     if (!tokens || tokens.length === 0) {

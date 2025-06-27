@@ -19,12 +19,18 @@ export interface TripData {
   seatsAvailable?: number;
 }
 
+interface TripDetails {
+  from_location: string;
+  to_location: string;
+  [key: string]: unknown;
+}
+
 interface BookingFlowService {
   createBooking: (passengerTripId: string, driverTripId: string) => Promise<boolean>;
   createPassengerTrip: (tripData: TripData) => Promise<boolean>;
   confirmBooking: (bookingId: string) => Promise<boolean>;
   cancelBooking: (bookingId: string) => Promise<boolean>;
-  launchWhatsApp: (phoneNumber?: string, tripDetails?: any) => void;
+  launchWhatsApp: (phoneNumber?: string, tripDetails?: TripDetails) => void;
   isLoading: boolean;
 }
 
@@ -194,7 +200,7 @@ export const useBookingFlow = (): BookingFlowService => {
     }
   }, [handleError, handleSuccess]);
 
-  const launchWhatsApp = useCallback((phoneNumber?: string, tripDetails?: any) => {
+  const launchWhatsApp = useCallback((phoneNumber?: string, tripDetails?: TripDetails) => {
     try {
       const defaultMessage = tripDetails 
         ? `Hi! I'm contacting you about the ride from ${tripDetails.from_location} to ${tripDetails.to_location}. Let's coordinate the details!`

@@ -121,7 +121,7 @@ serve(async (req) => {
       .upsert({
         user_id: referrer.id,
         week: weekString,
-        points: points,
+        points,
         reward_issued: false
       }, {
         onConflict: 'user_id,week',

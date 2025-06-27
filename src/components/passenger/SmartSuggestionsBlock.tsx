@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,8 +5,9 @@ import { Home, ShoppingBag, MapPin, Clock, Plus } from 'lucide-react';
 
 interface Favorite {
   id: string;
-  label: string;
-  address: string;
+  name: string;
+  destination: string;
+  icon: string;
 }
 
 interface SuggestionItem {
@@ -20,11 +20,13 @@ interface SuggestionItem {
 
 interface SmartSuggestionsBlockProps {
   favorites: Favorite[];
-  onSuggestionClick: (suggestion: { type: string; data?: any }) => void;
+  userLocation: {lat: number, lng: number} | null;
+  onSuggestionClick: (suggestion: { type: string; data?: Record<string, unknown> }) => void;
 }
 
 const SmartSuggestionsBlock: React.FC<SmartSuggestionsBlockProps> = ({
   favorites,
+  userLocation,
   onSuggestionClick
 }) => {
   const defaultSuggestions: SuggestionItem[] = [
@@ -40,7 +42,7 @@ const SmartSuggestionsBlock: React.FC<SmartSuggestionsBlockProps> = ({
     ? [
         ...favorites.slice(0, 4).map(fav => ({
           icon: MapPin,
-          label: fav.label,
+          label: fav.name,
           type: 'favorite',
           data: fav,
           color: 'text-purple-600'

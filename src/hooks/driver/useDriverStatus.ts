@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { DriverProfile } from '@/types/api';
 
 interface DriverStatusData {
   todayTrips: number;
@@ -64,7 +64,7 @@ export const useDriverStatus = () => {
     }
   };
 
-  const toggleOnlineStatus = async (newStatus: boolean, driverProfile: any): Promise<boolean> => {
+  const toggleOnlineStatus = async (newStatus: boolean, driverProfile: DriverProfile): Promise<boolean> => {
     if (!driverProfile) return false;
 
     try {

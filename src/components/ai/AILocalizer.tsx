@@ -7,16 +7,24 @@ import { Badge } from "@/components/ui/badge";
 import { Globe, Copy, Check } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { logError } from "@/utils/errorHandlers";
+
+interface Translations {
+  en: string;
+  kn: string;
+  fr: string;
+  [key: string]: string;
+}
 
 interface AILocalizerProps {
   text?: string;
-  onTranslated?: (translations: any) => void;
+  onTranslated?: (translations: Translations) => void;
 }
 
 const AILocalizer: React.FC<AILocalizerProps> = ({ text: initialText, onTranslated }) => {
   const [text, setText] = useState(initialText || '');
   const [loading, setLoading] = useState(false);
-  const [translations, setTranslations] = useState<any>(null);
+  const [translations, setTranslations] = useState<Translations | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
   const handleTranslate = async () => {
@@ -49,8 +57,8 @@ const AILocalizer: React.FC<AILocalizerProps> = ({ text: initialText, onTranslat
         title: "Translation Complete",
         description: "Text translated to all languages",
       });
-    } catch (error) {
-      console.error('Translation Error:', error);
+    } catch (err) {
+      logError('Translation Error:', err);
       toast({
         title: "Translation Failed",
         description: "Unable to translate text",
@@ -70,7 +78,7 @@ const AILocalizer: React.FC<AILocalizerProps> = ({ text: initialText, onTranslat
         title: "Copied",
         description: `${lang.toUpperCase()} translation copied`,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Copy failed",
         description: "Unable to copy translation",

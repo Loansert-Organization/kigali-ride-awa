@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -9,6 +8,16 @@ interface EarningsChartBlockProps {
     trips: number;
   }>;
   formatCurrency: (amount: number) => string;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    name: string;
+    color: string;
+  }>;
+  label?: string;
 }
 
 export const EarningsChartBlock: React.FC<EarningsChartBlockProps> = ({ 
@@ -23,7 +32,7 @@ export const EarningsChartBlock: React.FC<EarningsChartBlockProps> = ({
     );
   }
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (

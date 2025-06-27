@@ -1,14 +1,25 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
+import { TripData, BookingData } from '@/types/api';
+
+interface TripWithBookings extends TripData {
+  bookings?: Pick<BookingData, 'id' | 'confirmed' | 'passenger_trip_id'>[];
+}
+
+interface ChartDataPoint {
+  date: string;
+  earnings: number;
+  trips: number;
+}
 
 interface EarningsData {
   today: number;
   thisWeek: number;
   thisMonth: number;
   allTime: number;
-  completedTrips: any[];
-  chartData: any[];
+  completedTrips: TripWithBookings[];
+  chartData: ChartDataPoint[];
 }
 
 export const useDriverEarnings = (selectedPeriod: string) => {
@@ -42,7 +53,7 @@ export const useDriverEarnings = (selectedPeriod: string) => {
       if (error) throw error;
 
       // Calculate earnings
-      const calculateEarnings = (trips: any[], fromDate?: Date) => {
+      const calculateEarnings = (trips: TripWithBookings[], fromDate?: Date) => {
         return trips
           .filter(trip => !fromDate || new Date(trip.scheduled_time) >= fromDate)
           .reduce((total, trip) => {

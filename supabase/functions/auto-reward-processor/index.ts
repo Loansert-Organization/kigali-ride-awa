@@ -37,7 +37,7 @@ serve(async (req) => {
       .eq('validation_status', 'pending')
 
     if (referralError) {
-      throw new Error('Error fetching referrals: ' + referralError.message)
+      throw new Error(`Error fetching referrals: ${  referralError.message}`)
     }
 
     let processedRewards = 0

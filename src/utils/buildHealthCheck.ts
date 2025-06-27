@@ -1,12 +1,18 @@
-
 // Comprehensive build health monitoring
 import { supabase } from "@/integrations/supabase/client";
+
+export interface BuildHealthCheckResult {
+  success: boolean;
+  errors: string[];
+  warnings: string[];
+  details?: Record<string, unknown>;
+}
 
 interface HealthCheckResult {
   component: string;
   status: 'healthy' | 'warning' | 'error';
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export const runBuildHealthCheck = async (): Promise<HealthCheckResult[]> => {

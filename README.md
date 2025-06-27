@@ -1,73 +1,225 @@
-# Welcome to your Lovable project
+# Kigali Ride AWA
 
-## Project info
+A comprehensive ride-sharing platform for Kigali, Rwanda, connecting drivers and passengers through a modern web application built with React, TypeScript, and Supabase.
 
-**URL**: https://lovable.dev/projects/9cf3ea73-627c-45ad-a8f6-b4bcfa95c6c6
+## 🚀 Features
 
-## How can I edit this code?
+### For Passengers
+- **Quick Booking**: Book rides with just a few taps
+- **Real-time Driver Tracking**: See available drivers on the map
+- **Smart Matching**: AI-powered trip matching for optimal routes
+- **Favorite Locations**: Save frequently visited places
+- **Multiple Payment Options**: Cash and mobile money support
+- **Trip History**: View past rides and receipts
 
-There are several ways of editing your application.
+### For Drivers
+- **Trip Creation**: Post upcoming trips with customizable details
+- **Passenger Requests**: Accept or decline ride requests
+- **Earnings Dashboard**: Track daily, weekly, and monthly earnings
+- **Route Optimization**: Smart suggestions for efficient routes
+- **Online/Offline Toggle**: Control availability status
 
-**Use Lovable**
+### Admin Features
+- **Production Dashboard**: Real-time system monitoring
+- **User Management**: Manage drivers and passengers
+- **Trip Analytics**: Comprehensive trip and revenue analytics
+- **AI-Powered Insights**: Smart analytics and predictions
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/9cf3ea73-627c-45ad-a8f6-b4bcfa95c6c6) and start prompting.
+## 🛠️ Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+### Frontend
+- **React 18** with TypeScript
+- **Vite** for fast development and builds
+- **Tailwind CSS** for styling
+- **shadcn/ui** component library
+- **React Query** for data fetching
+- **React Router** for navigation
 
-**Use your preferred IDE**
+### Backend
+- **Supabase** for authentication and database
+- **Edge Functions** for serverless API endpoints
+- **PostgreSQL** with Row Level Security
+- **Real-time subscriptions** for live updates
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Services
+- **Google Maps API** for location services
+- **WhatsApp Business API** for OTP authentication
+- **Push Notifications** via service workers
+- **AI Integration** for smart features
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 📋 Prerequisites
 
-Follow these steps:
+- Node.js 18+ and npm 9+
+- Supabase account
+- Google Maps API key
+- WhatsApp Business API access (for OTP)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🚀 Getting Started
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 1. Clone the repository
+```bash
+git clone https://github.com/yourusername/kigali-ride-awa.git
+cd kigali-ride-awa
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 2. Install dependencies
+```bash
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 3. Set up environment variables
+Create a `.env` file based on `.env.example`:
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_key
+```
+
+### 4. Run the development server
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Visit `http://localhost:5173` to see the application.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📁 Project Structure
 
-**Use GitHub Codespaces**
+```
+kigali-ride-awa/
+├── src/
+│   ├── components/     # Reusable UI components
+│   ├── contexts/       # React contexts (Auth, Booking)
+│   ├── hooks/          # Custom React hooks
+│   ├── pages/          # Route pages
+│   ├── services/       # API and external services
+│   ├── types/          # TypeScript type definitions
+│   └── utils/          # Utility functions
+├── supabase/
+│   ├── functions/      # Edge Functions
+│   └── migrations/     # Database migrations
+├── docs/               # Documentation
+└── public/             # Static assets
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🧪 Testing
 
-## What technologies are used for this project?
+We use Vitest and React Testing Library for testing.
 
-This project is built with:
+### Run tests
+```bash
+npm test                 # Run all tests
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Generate coverage report
+npm run test:ui         # Open Vitest UI
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Test Coverage Goals
+- Overall: 80%+
+- Critical paths: 95%+
+- Utilities: 100%
 
-## How can I deploy this project?
+## 📦 Building for Production
 
-Simply open [Lovable](https://lovable.dev/projects/9cf3ea73-627c-45ad-a8f6-b4bcfa95c6c6) and click on Share -> Publish.
+```bash
+# Type check and build
+npm run build
 
-## Can I connect a custom domain to my Lovable project?
+# Preview production build
+npm run preview
+```
 
-Yes, you can!
+## 🔧 Available Scripts
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint errors
+- `npm run type-check` - Run TypeScript compiler
+- `npm test` - Run tests
+- `npm run test:coverage` - Generate test coverage
+- `npm run analyze` - Analyze bundle size
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 📚 Documentation
+
+- [API Documentation](docs/api-documentation.md) - Complete API reference
+- [Component Guide](docs/component-guide.md) - Component usage and examples
+- [Testing Guide](docs/testing-guide.md) - Testing strategies and patterns
+- [Architecture Overview](docs/architecture-improvements-phase2.md) - System architecture
+
+## 🔐 Security
+
+- Row Level Security (RLS) enabled on all database tables
+- JWT-based authentication
+- Secure API endpoints with proper authorization
+- Input validation and sanitization
+- Rate limiting on sensitive endpoints
+
+## 🎯 Code Quality
+
+- **TypeScript**: 100% type coverage (0 `any` types)
+- **ESLint**: Configured for React and TypeScript
+- **Prettier**: Code formatting
+- **Husky**: Pre-commit hooks (if configured)
+
+## 🚀 Deployment
+
+The application can be deployed to various platforms:
+
+### Vercel (Recommended)
+```bash
+npm i -g vercel
+vercel
+```
+
+### Netlify
+```bash
+npm run build
+# Deploy the 'dist' folder
+```
+
+### Docker
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+FROM nginx:alpine
+COPY --from=0 /app/dist /usr/share/nginx/html
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Coding Standards
+- Follow TypeScript best practices
+- Write tests for new features
+- Update documentation
+- Ensure all tests pass
+- No `any` types without justification
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [Lovable](https://lovable.dev)
+- UI components from [shadcn/ui](https://ui.shadcn.com)
+- Maps powered by [Google Maps Platform](https://developers.google.com/maps)
+- Backend by [Supabase](https://supabase.com)
+
+## 📞 Support
+
+For support, email support@kigaliride.rw or join our Slack channel.
+
+---
+
+**Made with ❤️ in Kigali, Rwanda**

@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin } from 'lucide-react';
+import { TripData } from '@/types/api';
 
 interface NearbyTripsMapProps {
-  trips: any[];
+  trips: TripData[];
   currentLocation: {lat: number, lng: number} | null;
 }
 

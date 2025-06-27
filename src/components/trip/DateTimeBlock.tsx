@@ -1,13 +1,14 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Clock, Calendar } from 'lucide-react';
+import { TripData } from '@/types/api';
 
 interface DateTimeBlockProps {
+  scheduledDate: string;
   scheduledTime: string;
-  onUpdate: (updates: any) => void;
+  onUpdate: (updates: Partial<TripData>) => void;
 }
 
 const DateTimeBlock: React.FC<DateTimeBlockProps> = ({

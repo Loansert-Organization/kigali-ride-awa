@@ -1,4 +1,4 @@
-
+import React, { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { ToastProvider } from "@/components/ui/toast";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
@@ -6,16 +6,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { GlobalWhatsAppAuthProvider } from "@/contexts/GlobalWhatsAppAuthContext";
 import Index from "./pages/Index";
+import Home from "./pages/Home";
+import PassengerHome from "./pages/home/Passenger";
+import DriverHome from "./pages/home/Driver";
+import Profile from "./pages/Profile";
+import Register from "./pages/Register";
+import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
 import BookRide from "./pages/BookRide";
 import RideMatches from "./pages/RideMatches";
-import Profile from "./pages/Profile";
 import Rewards from "./pages/Rewards";
 import Leaderboard from "./pages/Leaderboard";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Home from "./pages/Home";
 import CreateTrip from "./pages/CreateTrip";
-import NotFound from "./pages/NotFound";
 import TripDetails from "./pages/TripDetails";
 import Favorites from "./pages/Favorites";
 import FavoritesManager from "./pages/FavoritesManager";
@@ -26,21 +28,17 @@ import PassengerRequests from "./pages/PassengerRequests";
 import WelcomeLanding from "./pages/WelcomeLanding";
 import AIDevTools from "./pages/AIDevTools";
 
-// Admin routes
-import AdminOverview from "./pages/admin/Overview";
-import AdminUsers from "./pages/admin/Users";
-import AdminTrips from "./pages/admin/Trips";
-import AdminUserDetails from "./pages/admin/UserDetails";
-import AdminDriverDetails from "./pages/admin/DriverDetails";
-import AdminTripHeatmap from "./pages/admin/TripHeatmap";
-import AdminRewardsManagement from "./pages/admin/RewardsManagement";
-import AdminProductionReadiness from "./pages/admin/ProductionReadiness";
+// Lazy load admin pages
+const AdminOverview = lazy(() => import('./pages/admin/Overview'));
+const AdminUsers = lazy(() => import('./pages/admin/Users'));
+const AdminTrips = lazy(() => import('./pages/admin/Trips'));
+const AdminUserDetail = lazy(() => import('./pages/admin/UserDetails'));
+const AdminDriverDetail = lazy(() => import('./pages/admin/DriverDetails'));
+const AdminTripHeatmap = lazy(() => import('./pages/admin/TripHeatmap'));
+const AdminRewards = lazy(() => import('./pages/admin/RewardsManagement'));
+const AdminProduction = lazy(() => import('./pages/admin/ProductionReadiness'));
 
 // Home sub-routes
-import PassengerHome from "./pages/home/Passenger";
-import DriverHome from "./pages/home/Driver";
-
-// Profile sub-routes
 import PassengerProfile from "./pages/profile/Passenger";
 import DriverProfile from "./pages/profile/Driver";
 
@@ -55,7 +53,24 @@ import DriverOnboarding from "./pages/onboarding/Driver";
 
 import "./App.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+    },
+  },
+});
+
+// Loading component for suspense
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      <p className="mt-4 text-gray-600">Loading...</p>
+    </div>
+  </div>
+);
 
 function App() {
   return (
@@ -95,16 +110,16 @@ function App() {
                   <Route path="/passenger-requests" element={<PassengerRequests />} />
                   <Route path="/ai-dev-tools" element={<AIDevTools />} />
                   
-                  {/* Admin Routes */}
-                  <Route path="/admin" element={<AdminOverview />} />
-                  <Route path="/admin/overview" element={<AdminOverview />} />
-                  <Route path="/admin/users" element={<AdminUsers />} />
-                  <Route path="/admin/trips" element={<AdminTrips />} />
-                  <Route path="/admin/user/:id" element={<AdminUserDetails />} />
-                  <Route path="/admin/driver/:id" element={<AdminDriverDetails />} />
-                  <Route path="/admin/trip-heatmap" element={<AdminTripHeatmap />} />
-                  <Route path="/admin/rewards" element={<AdminRewardsManagement />} />
-                  <Route path="/admin/production-readiness" element={<AdminProductionReadiness />} />
+                  {/* Admin Routes - Lazy loaded */}
+                  <Route path="/admin" element={<Suspense fallback={<PageLoader />}><AdminOverview /></Suspense>} />
+                  <Route path="/admin/overview" element={<Suspense fallback={<PageLoader />}><AdminOverview /></Suspense>} />
+                  <Route path="/admin/users" element={<Suspense fallback={<PageLoader />}><AdminUsers /></Suspense>} />
+                  <Route path="/admin/trips" element={<Suspense fallback={<PageLoader />}><AdminTrips /></Suspense>} />
+                  <Route path="/admin/user/:id" element={<Suspense fallback={<PageLoader />}><AdminUserDetail /></Suspense>} />
+                  <Route path="/admin/driver/:id" element={<Suspense fallback={<PageLoader />}><AdminDriverDetail /></Suspense>} />
+                  <Route path="/admin/trip-heatmap" element={<Suspense fallback={<PageLoader />}><AdminTripHeatmap /></Suspense>} />
+                  <Route path="/admin/rewards" element={<Suspense fallback={<PageLoader />}><AdminRewards /></Suspense>} />
+                  <Route path="/admin/production-readiness" element={<Suspense fallback={<PageLoader />}><AdminProduction /></Suspense>} />
                   
                   <Route path="*" element={<NotFound />} />
                 </Routes>

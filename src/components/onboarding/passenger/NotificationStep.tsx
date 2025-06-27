@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,41 +5,40 @@ import { Bell } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 
 interface NotificationStepProps {
-  onNext: () => void;
-  onNotificationsGranted: (granted: boolean) => void;
-  t: any;
+  onComplete: () => void;
+  onSkip: () => void;
+  t: (key: string) => string;
 }
 
 const NotificationStep: React.FC<NotificationStepProps> = ({
-  onNext,
-  onNotificationsGranted,
+  onComplete,
+  onSkip,
   t
 }) => {
   const requestNotifications = async () => {
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        onNotificationsGranted(true);
         localStorage.setItem('notifications_granted', 'true');
         toast({
-          title: t.notificationsEnabled,
-          description: t.notificationsSuccess,
+          title: t('notificationsEnabled'),
+          description: t('notificationsSuccess'),
         });
       } else {
         toast({
-          title: t.notificationsDenied,
-          description: t.notificationsDeniedDesc,
+          title: t('notificationsDenied'),
+          description: t('notificationsDeniedDesc'),
           variant: "destructive"
         });
       }
-      setTimeout(() => onNext(), 500);
+      setTimeout(() => onComplete(), 500);
     } catch (error) {
       toast({
-        title: t.notificationsDenied,
-        description: t.notificationsDeniedDesc,
+        title: t('notificationsDenied'),
+        description: t('notificationsDeniedDesc'),
         variant: "destructive"
       });
-      setTimeout(() => onNext(), 1000);
+      setTimeout(() => onComplete(), 1000);
     }
   };
 
@@ -51,9 +49,9 @@ const NotificationStep: React.FC<NotificationStepProps> = ({
           <div className="w-16 h-16 bg-blue-100 rounded-full mx-auto flex items-center justify-center mb-4">
             <Bell className="w-8 h-8 text-blue-600" />
           </div>
-          <h2 className="text-xl font-semibold">{t.enableNotifications}</h2>
-          <p className="text-gray-600 mt-2">{t.notificationDesc}</p>
-          <p className="text-sm text-gray-500 mt-1">{t.notificationFallback}</p>
+          <h2 className="text-xl font-semibold">{t('enableNotifications')}</h2>
+          <p className="text-gray-600 mt-2">{t('notificationDesc')}</p>
+          <p className="text-sm text-gray-500 mt-1">{t('notificationFallback')}</p>
         </div>
         
         <div className="space-y-3">
@@ -62,11 +60,11 @@ const NotificationStep: React.FC<NotificationStepProps> = ({
             className="w-full bg-blue-600 hover:bg-blue-700 py-3"
           >
             <Bell className="w-5 h-5 mr-2" />
-            {t.enableNotifications}
+            {t('enableNotifications')}
           </Button>
           <Button 
             variant="outline" 
-            onClick={onNext} 
+            onClick={onSkip} 
             className="w-full"
           >
             Skip for now

@@ -31,7 +31,7 @@ serve(async (req) => {
       success: true,
       whatsapp_url: whatsappUrl,
       phone_number: cleanPhone,
-      message: message
+      message
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,23 +6,28 @@ import { Label } from "@/components/ui/label";
 import { MessageCircle, Phone, Loader2, X, CheckCircle } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { UserProfile } from '@/types/user';
 
 interface WhatsAppAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (phoneNumber: string) => void;
+  onSuccess: (data: { user: UserProfile; session: Session }) => void;
+  mode?: 'login' | 'register';
+  phoneNumber?: string;
+  userProfile?: UserProfile | null;
   title?: string;
   description?: string;
-  userProfile?: any;
 }
 
 export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  mode,
+  phoneNumber,
+  userProfile,
   title = "Verify with WhatsApp",
-  description = "Connect your WhatsApp to secure your account and enable driver communication",
-  userProfile
+  description = "Connect your WhatsApp to secure your account and enable driver communication"
 }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
@@ -114,7 +118,7 @@ export const WhatsAppAuthModal: React.FC<WhatsAppAuthModalProps> = ({
         
         // Call success callback with phone number
         setTimeout(() => {
-          onSuccess(data.phoneNumber);
+          onSuccess(data);
         }, 1500);
       } else {
         throw new Error(data?.message || 'Verification failed');

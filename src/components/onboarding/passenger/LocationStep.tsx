@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,14 +6,14 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LocationStepProps {
-  onNext: () => void;
-  onLocationGranted: (granted: boolean) => void;
-  t: any;
+  onComplete: () => void;
+  onBack: () => void;
+  t: (key: string) => string;
 }
 
 const LocationStep: React.FC<LocationStepProps> = ({
-  onNext,
-  onLocationGranted,
+  onComplete,
+  onBack,
   t
 }) => {
   const requestLocation = async () => {
@@ -36,8 +35,8 @@ const LocationStep: React.FC<LocationStepProps> = ({
       }));
       
       toast({
-        title: t.locationEnabled,
-        description: t.locationSuccess,
+        title: t('locationEnabled'),
+        description: t('locationSuccess'),
       });
       
       // Update Supabase
@@ -53,14 +52,14 @@ const LocationStep: React.FC<LocationStepProps> = ({
         console.error('Error updating location in Supabase:', error);
       }
       
-      setTimeout(() => onNext(), 500);
+      setTimeout(() => onComplete(), 500);
     } catch (error) {
       toast({
-        title: t.locationDenied,
-        description: t.locationDeniedDesc,
+        title: t('locationDenied'),
+        description: t('locationDeniedDesc'),
         variant: "destructive"
       });
-      setTimeout(() => onNext(), 1000);
+      setTimeout(() => onBack(), 1000);
     }
   };
 
@@ -71,8 +70,8 @@ const LocationStep: React.FC<LocationStepProps> = ({
           <div className="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center mb-4">
             <MapPin className="w-8 h-8 text-green-600" />
           </div>
-          <h2 className="text-xl font-semibold">{t.useLocation}</h2>
-          <p className="text-gray-600 mt-2">{t.fallbackText}</p>
+          <h2 className="text-xl font-semibold">{t('useLocation')}</h2>
+          <p className="text-gray-600 mt-2">{t('fallbackText')}</p>
         </div>
         
         <div className="space-y-3">
@@ -81,11 +80,11 @@ const LocationStep: React.FC<LocationStepProps> = ({
             className="w-full bg-green-600 hover:bg-green-700 py-3"
           >
             <Navigation className="w-5 h-5 mr-2" />
-            {t.useLocation}
+            {t('useLocation')}
           </Button>
           <Button 
             variant="outline" 
-            onClick={onNext} 
+            onClick={onBack} 
             className="w-full"
           >
             Skip for now

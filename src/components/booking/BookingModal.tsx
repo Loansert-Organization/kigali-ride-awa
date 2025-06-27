@@ -5,12 +5,26 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, Users, DollarSign, MessageCircle, Phone } from 'lucide-react';
 import { useBookingFlow } from '@/hooks/useBookingFlow';
+import { TripData } from '@/types/api';
+
+interface TripWithBooking extends TripData {
+  booking_id?: string;
+  confirmed?: boolean;
+  contact_phone?: string;
+  from_location?: string;
+  to_location?: string;
+  scheduled_time?: string;
+  vehicle_type?: string;
+  seats_available?: number;
+  is_negotiable?: boolean;
+  description?: string;
+}
 
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  passengerTrip?: any;
-  driverTrip?: any;
+  passengerTrip?: TripWithBooking;
+  driverTrip?: TripWithBooking;
   userRole: 'passenger' | 'driver';
   onSuccess?: () => void;
 }

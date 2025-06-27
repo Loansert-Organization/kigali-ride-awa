@@ -33,7 +33,7 @@ const Register = () => {
       });
       
       navigate('/login');
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
         description: error.message,

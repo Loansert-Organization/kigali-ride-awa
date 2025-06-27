@@ -1,19 +1,21 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, Car, Users, DollarSign, MessageSquare } from 'lucide-react';
+import { TripData } from '@/types/api';
 
 interface TripConfirmationBlockProps {
-  tripData: any;
+  tripData: Partial<TripData>;
   broadcastToNearby: boolean;
-  onUpdate: (updates: any) => void;
+  onEdit: (field: string) => void;
+  onUpdate: (updates: Partial<TripData>) => void;
 }
 
 const TripConfirmationBlock: React.FC<TripConfirmationBlockProps> = ({
   tripData,
   broadcastToNearby,
+  onEdit,
   onUpdate
 }) => {
   const formatTime = (timeString: string) => {

@@ -37,7 +37,7 @@ serve(async (req) => {
 
     /* 1️⃣  Generate & store OTP */
     const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
-    const code_hash = await sha256(otp + "salt_kigali_ride");
+    const code_hash = await sha256(`${otp  }salt_kigali_ride`);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,

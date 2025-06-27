@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from 'lucide-react';
@@ -7,7 +6,24 @@ import VehicleDetailsBlock from "@/components/trip/VehicleDetailsBlock";
 import FareInputBlock from "@/components/trip/FareInputBlock";
 import TripConfirmationBlock from "@/components/trip/TripConfirmationBlock";
 import CreateTripProgressIndicator from "@/components/trip/CreateTripProgressIndicator";
-import { useCreateTrip } from "@/hooks/useCreateTrip";
+import { useCreateTripForm } from "@/hooks/driver/useCreateTripForm";
+import { TripData, DriverProfile } from '@/types/api';
+
+interface TripFormData {
+  fromLocation: string;
+  toLocation: string;
+  fromLat?: number;
+  fromLng?: number;
+  toLat?: number;
+  toLng?: number;
+  scheduledTime: string;
+  vehicleType: string;
+  seatsAvailable: number;
+  description: string;
+  fare: number | null;
+  isNegotiable: boolean;
+  broadcastToNearby: boolean;
+}
 
 const CreateTrip = () => {
   const {
@@ -22,28 +38,12 @@ const CreateTrip = () => {
     handleSubmit
   } = useCreateTrip();
 
-  const handleVehicleUpdate = (updates: any) => {
-    updateTripData({
-      ...updates,
-      // Ensure seatsAvailable is always a number
-      ...(updates.seatsAvailable !== undefined && {
-        seatsAvailable: typeof updates.seatsAvailable === 'string' 
-          ? parseInt(updates.seatsAvailable) 
-          : updates.seatsAvailable
-      })
-    });
+  const handleVehicleUpdate = (updates: Partial<TripFormData>) => {
+    updateTripData(updates);
   };
 
-  const handleFareUpdate = (updates: any) => {
-    updateTripData({
-      ...updates,
-      // Ensure isNegotiable is always a boolean
-      ...(updates.isNegotiable !== undefined && {
-        isNegotiable: typeof updates.isNegotiable === 'string'
-          ? updates.isNegotiable === 'true'
-          : updates.isNegotiable
-      })
-    });
+  const handleFareUpdate = (updates: Partial<TripFormData>) => {
+    updateTripData(updates);
   };
 
   const renderStepContent = () => {

@@ -2,9 +2,10 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { User } from 'lucide-react';
+import { DriverProfile } from '@/types/api';
 
 interface DriverHeaderProps {
-  driverProfile: any;
+  driverProfile: DriverProfile | null;
   onProfileClick: () => void;
 }
 
@@ -18,7 +19,7 @@ const DriverHeader: React.FC<DriverHeaderProps> = ({
         <div>
           <h1 className="text-xl font-bold">🚗 Driver Dashboard</h1>
           <p className="text-blue-100">
-            {driverProfile?.vehicle_type} • {driverProfile?.plate_number}
+            {driverProfile?.vehicle_type} • {driverProfile?.vehicle_number}
           </p>
         </div>
         <Button

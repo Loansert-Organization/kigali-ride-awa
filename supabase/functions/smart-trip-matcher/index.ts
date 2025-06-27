@@ -59,7 +59,7 @@ serve(async (req) => {
       .eq('vehicle_type', passengerTrip.vehicle_type)
 
     if (driverError) {
-      throw new Error('Error fetching driver trips: ' + driverError.message)
+      throw new Error(`Error fetching driver trips: ${  driverError.message}`)
     }
 
     // Calculate distances and score matches

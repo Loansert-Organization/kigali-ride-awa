@@ -38,7 +38,7 @@ serve(async (req) => {
       body: new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
-        code: code,
+        code,
         grant_type: 'authorization_code',
         redirect_uri: redirectUri || 'postmessage',
       }),

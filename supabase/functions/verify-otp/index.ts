@@ -60,7 +60,7 @@ serve(async (req) => {
     if (!row) return j({ error: "no otp" }, 400);
     if (new Date() > new Date(row.expires_at)) return j({ error: "expired" }, 400);
 
-    const hash = await sha256(code + "salt_kigali_ride");
+    const hash = await sha256(`${code  }salt_kigali_ride`);
     if (hash !== row.code_hash) return j({ error: "invalid" }, 400);
 
     /* 2️⃣  upsert auth user */

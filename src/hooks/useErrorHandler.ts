@@ -1,4 +1,3 @@
-
 import React, { useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/hooks/useAuth';
@@ -62,7 +61,7 @@ export const useErrorHandler = (options?: UseErrorHandlerOptions) => {
   }, []);
 
   const handleError = useCallback(async (
-    error: any,
+    error: Error | unknown,
     component: string,
     context?: Record<string, any>
   ) => {

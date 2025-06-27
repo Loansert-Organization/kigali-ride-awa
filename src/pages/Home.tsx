@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import DriverHome from '@/pages/home/Driver';
 import PassengerHome from '@/pages/home/Passenger';

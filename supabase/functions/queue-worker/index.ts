@@ -1,6 +1,6 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { QueuePayload, TypedSupabaseClient } from "../_shared/types.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +11,7 @@ const corsHeaders = {
 interface QueueTask {
   id?: string;
   task_type: string;
-  payload: Record<string, any>;
+  payload: QueuePayload;
   timestamp?: string;
   priority?: number;
   retry_count?: number;
@@ -232,32 +232,32 @@ class QueueWorker {
     }
   }
 
-  private async handleWhatsAppOTP(payload: any): Promise<WorkerResponse> {
+  private async handleWhatsAppOTP(payload: QueuePayload): Promise<WorkerResponse> {
     try {
-      const { phone_number, user_id, otp_code } = payload;
+      const { phoneNumber, userId, otp } = payload;
 
       console.log('Processing WhatsApp OTP:', {
-        phone_number,
-        user_id,
-        otp_code: otp_code ? 'provided' : 'will_generate',
+        phone_number: phoneNumber,
+        user_id: userId,
+        otp_code: otp ? 'provided' : 'will_generate',
         timestamp: new Date().toISOString()
       });
 
-      if (!phone_number) {
+      if (!phoneNumber) {
         throw new Error('Phone number is required');
       }
 
       // Generate OTP code if not provided
-      const otpCode = otp_code || Math.floor(100000 + Math.random() * 900000).toString();
+      const otpCode = otp || Math.floor(100000 + Math.random() * 900000).toString();
 
       // Store OTP code in database if not already stored
-      if (!otp_code) {
+      if (!otp) {
         const { error: otpError } = await this.supabase
           .from('otp_codes')
           .insert({
-            phone_number: phone_number,
+            phone_number: phoneNumber,
             otp_code: otpCode,
-            user_id: user_id,
+            user_id: userId,
             expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
             sent: false,
             used: false
@@ -275,8 +275,8 @@ class QueueWorker {
         
         const { data, error } = await this.supabase.functions.invoke('send-whatsapp-template', {
           body: {
-            phone_number: phone_number,
-            user_id: user_id
+            phone_number: phoneNumber,
+            user_id: userId
           }
         });
 
@@ -292,7 +292,7 @@ class QueueWorker {
           const { error: updateError } = await this.supabase
             .from('otp_codes')
             .update({ sent: true })
-            .eq('phone_number', phone_number)
+            .eq('phone_number', phoneNumber)
             .eq('otp_code', otpCode);
 
           if (updateError) {
@@ -302,7 +302,7 @@ class QueueWorker {
           console.log('WhatsApp OTP sent successfully:', {
             messageId: data.messageId,
             method: data.method,
-            phone_number
+            phone_number: phoneNumber
           });
 
           return {
@@ -335,18 +335,18 @@ class QueueWorker {
     }
   }
 
-  private async handleWhatsAppNotification(payload: any): Promise<WorkerResponse> {
+  private async handleWhatsAppNotification(payload: QueuePayload): Promise<WorkerResponse> {
     try {
-      const { phone_number, message, user_id } = payload;
+      const { phoneNumber, message, userId } = payload;
 
       console.log('Processing WhatsApp notification:', {
-        phone_number,
-        user_id,
+        phone_number: phoneNumber,
+        user_id: userId,
         messageLength: message?.length,
         timestamp: new Date().toISOString()
       });
 
-      if (!phone_number || !message) {
+      if (!phoneNumber || !message) {
         throw new Error('Phone number and message are required');
       }
 
@@ -363,12 +363,12 @@ class QueueWorker {
       }
 
       // Format phone number (remove + if present)
-      const formattedPhone = phone_number.replace('+', '');
+      const formattedPhone = phoneNumber.replace('+', '');
       
       console.log('Sending WhatsApp notification:', {
         to: formattedPhone,
         phoneNumberId: PHONE_NUMBER_ID,
-        messagePreview: message.substring(0, 50) + '...'
+        messagePreview: `${message.substring(0, 50)  }...`
       });
 
       const whatsappResponse = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
@@ -441,7 +441,7 @@ class QueueWorker {
 
   private async updateTaskStatus(taskId: string, status: string, error_message?: string): Promise<void> {
     try {
-      const updateData: any = { 
+      const updateData: Record<string, unknown> = { 
         status, 
         updated_at: new Date().toISOString() 
       };
@@ -464,12 +464,12 @@ class QueueWorker {
     }
   }
 
-  private handleError(error: any, executionTime: number): Response {
+  private handleError(error: unknown, executionTime: number): Response {
     console.error('Queue worker error:', {
-      name: error.name,
-      message: error.message,
-      code: error.code,
-      stack: error.stack,
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      code: error instanceof QueueWorkerError ? error.code : undefined,
+      stack: error instanceof Error ? error.stack : undefined,
       executionTime
     });
 
@@ -481,7 +481,7 @@ class QueueWorker {
       statusCode = error.statusCode;
       errorCode = error.code;
       message = error.message;
-    } else if (error.name === 'TypeError') {
+    } else if (error instanceof Error && error.name === 'TypeError') {
       statusCode = 400;
       errorCode = 'TYPE_ERROR';
       message = 'Invalid request format';
@@ -491,7 +491,7 @@ class QueueWorker {
       success: false,
       error: {
         code: errorCode,
-        message: message,
+        message,
         execution_time_ms: executionTime
       }
     };

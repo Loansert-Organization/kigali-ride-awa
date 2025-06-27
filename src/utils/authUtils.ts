@@ -1,20 +1,20 @@
+import { UserProfile } from '../types/user';
 
-export const isGuestMode = (userProfile: any): boolean => {
-  return userProfile && !userProfile.auth_user_id && userProfile.id?.startsWith('guest_');
+export const isGuestMode = (userProfile: UserProfile | null): boolean => {
+  return !userProfile || userProfile.auth_method === 'guest';
 };
 
-export const requiresAuth = (userProfile: any): boolean => {
-  return isGuestMode(userProfile);
+export const requiresAuth = (userProfile: UserProfile | null): boolean => {
+  return !userProfile || userProfile.auth_method === 'guest';
 };
 
-export const getDisplayName = (userProfile: any): string => {
-  if (isGuestMode(userProfile)) {
-    return 'Guest User';
-  }
-  return userProfile?.promo_code || 'User';
+export const getDisplayName = (userProfile: UserProfile | null): string => {
+  if (!userProfile) return 'Guest';
+  if (userProfile.auth_method === 'guest') return 'Guest';
+  return userProfile.phone_number || userProfile.id?.substring(0, 8) || 'User';
 };
 
-export const canAccessFeature = (userProfile: any, feature: 'booking' | 'history' | 'rewards'): boolean => {
+export const canAccessFeature = (userProfile: UserProfile | null, feature: 'booking' | 'history' | 'rewards'): boolean => {
   if (!userProfile) return false;
   
   // Guest users can browse but have limited booking capabilities
@@ -31,11 +31,11 @@ export const generatePromoCode = (): string => {
   return `${prefix}${suffix}`;
 };
 
-export const isWhatsAppVerified = (userProfile: any): boolean => {
-  return userProfile?.phone_verified === true && userProfile?.auth_method === 'whatsapp';
+export const isWhatsAppVerified = (userProfile: UserProfile | null): boolean => {
+  return !!userProfile && userProfile.phone_verified;
 };
 
-export const getAuthStatusText = (userProfile: any): string => {
+export const getAuthStatusText = (userProfile: UserProfile | null): string => {
   if (!userProfile) return 'Not authenticated';
   
   if (isWhatsAppVerified(userProfile)) {

@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { PhoneInputOTP } from "./PhoneInputOTP";
-import { OTPEntry6Box } from "./OTPEntry6Box";
+import PhoneInputOTP from "./PhoneInputOTP";
+import OTPEntry6Box from "./OTPEntry6Box";
 
 interface UnifiedWhatsAppOTPProps {
   onSuccess?: () => void;

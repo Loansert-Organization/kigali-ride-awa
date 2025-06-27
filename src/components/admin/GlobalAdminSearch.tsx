@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, Users, Car, Bot, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { devLog } from '@/utils/errorHandlers';
 
 interface SearchResult {
   type: 'user' | 'trip' | 'log';
@@ -13,7 +14,13 @@ interface SearchResult {
   title: string;
   subtitle: string;
   status?: string;
-  metadata?: any;
+  metadata?: {
+    role?: string;
+    trips?: number;
+    fare?: number;
+    timestamp?: string;
+    [key: string]: unknown;
+  };
 }
 
 export const GlobalAdminSearch: React.FC = () => {
@@ -113,7 +120,7 @@ export const GlobalAdminSearch: React.FC = () => {
         navigate(`/admin/trip-details?id=${result.id}`);
         break;
       case 'log':
-        console.log('View log details:', result);
+        devLog('View log details:', result);
         break;
     }
   };

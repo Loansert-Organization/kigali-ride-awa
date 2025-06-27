@@ -6,6 +6,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Code, Bug, FileText, Copy, Check } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { logError } from "@/utils/errorHandlers";
+
+interface AIResult {
+  result: string;
+  model?: string;
+}
 
 interface AICodeHelperProps {
   code?: string;
@@ -16,7 +22,7 @@ interface AICodeHelperProps {
 
 const AICodeHelper: React.FC<AICodeHelperProps> = ({ code, error, context, className }) => {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<AIResult | null>(null);
   const [copied, setCopied] = useState(false);
 
   const handleAction = async (action: 'fix' | 'explain' | 'improve') => {
@@ -55,8 +61,8 @@ const AICodeHelper: React.FC<AICodeHelperProps> = ({ code, error, context, class
         title: "AI Code Helper",
         description: `${action} completed successfully`,
       });
-    } catch (error) {
-      console.error('AI Code Helper Error:', error);
+    } catch (err) {
+      logError('AI Code Helper Error:', err);
       toast({
         title: "Error",
         description: `Failed to ${action} code`,
@@ -76,7 +82,7 @@ const AICodeHelper: React.FC<AICodeHelperProps> = ({ code, error, context, class
         title: "Copied",
         description: "Code copied to clipboard",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Copy failed",
         description: "Unable to copy to clipboard",

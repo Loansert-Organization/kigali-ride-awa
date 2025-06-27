@@ -1,23 +1,23 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Car, Users, Plus, Minus } from 'lucide-react';
+import { DriverProfile } from '@/types/api';
 
 interface VehicleDetailsBlockProps {
   vehicleType: string;
-  seatsAvailable: number;
-  description: string;
-  onUpdate: (updates: any) => void;
-  driverProfile: any;
+  plateNumber: string;
+  vehicleColor?: string;
+  onUpdate: (updates: Partial<DriverProfile>) => void;
+  driverProfile: DriverProfile | null;
 }
 
 const VehicleDetailsBlock: React.FC<VehicleDetailsBlockProps> = ({
   vehicleType,
-  seatsAvailable,
-  description,
+  plateNumber,
+  vehicleColor,
   onUpdate,
   driverProfile
 }) => {

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/user';
@@ -25,7 +24,7 @@ interface AuthContextType {
   refreshUserProfile: () => Promise<UserProfile | null>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<UserProfile | null>;
   error: string | null;
-  debugInfo: any;
+  debugInfo: Record<string, unknown>;
   retryInitialization: () => Promise<void>;
 }
 
@@ -52,7 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo] = useState<any>({});
+  const [debugInfo] = useState<Record<string, unknown>>({});
 
   const isGuest = !isAuthenticated;
 
@@ -153,8 +152,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         throw new Error(data?.error || 'Failed to send OTP');
       }
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
@@ -207,8 +207,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         throw new Error(data?.message || 'OTP verification failed');
       }
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
@@ -274,9 +275,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUserProfile(typedProfile);
       return typedProfile;
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('Profile update error:', error);
-      setError(error.message);
+      setError(errorMessage);
       return null;
     }
   };

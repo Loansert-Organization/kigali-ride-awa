@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { UnifiedWhatsAppOTP } from './UnifiedWhatsAppOTP';
+import { UserProfile } from '@/types/user';
 
 interface OTPAuthFlowProps {
-  onSuccess: (user: any) => void;
+  onSuccess: (user: UserProfile) => void;
   onCancel?: () => void;
 }
 

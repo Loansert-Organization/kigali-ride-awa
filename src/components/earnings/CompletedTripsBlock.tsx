@@ -1,13 +1,13 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Users, Calendar, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { TripData } from '@/types/api';
 
 interface CompletedTripsBlockProps {
-  trips: any[];
+  trips: TripData[];
   formatCurrency: (amount: number) => string;
 }
 
@@ -41,7 +41,7 @@ export const CompletedTripsBlock: React.FC<CompletedTripsBlockProps> = ({
     return icons[vehicleType as keyof typeof icons] || '🚗';
   };
 
-  const calculateTripEarnings = (trip: any) => {
+  const calculateTripEarnings = (trip: TripData) => {
     const seatsBooked = trip.bookings?.length || 0;
     const farePerSeat = trip.fare || 0;
     return farePerSeat * seatsBooked;
