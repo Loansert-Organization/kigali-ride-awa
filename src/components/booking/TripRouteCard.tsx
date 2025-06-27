@@ -1,89 +1,63 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, Users, Car } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
+import { MapPin, Clock, Users, DollarSign } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface TripRouteCardProps {
-  trip: {
-    id: string;
-    from_location: string;
-    to_location: string;
-    scheduled_time: string;
-    vehicle_type: string;
-    seats_available: number;
-    fare?: number;
-    is_negotiable?: boolean;
-    driver_name?: string;
-  };
-  onSelect?: (tripId: string) => void;
-  onContact?: (tripId: string) => void;
+  from: string;
+  to: string;
+  departureTime: string;
+  availableSeats: number;
+  fare: number;
+  vehicleType: string;
+  onBook: () => void;
 }
 
 const TripRouteCard: React.FC<TripRouteCardProps> = ({
-  trip,
-  onSelect,
-  onContact
+  from,
+  to,
+  departureTime,
+  availableSeats,
+  fare,
+  vehicleType,
+  onBook
 }) => {
-  const formatTime = (timeString: string) => {
-    try {
-      return new Date(timeString).toLocaleString();
-    } catch {
-      return timeString;
-    }
-  };
-
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onSelect?.(trip.id)}>
-      <CardHeader className="pb-3">
+    <Card className="w-full mb-4">
+      <CardContent className="p-4">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{trip.driver_name || 'Driver'}</CardTitle>
-          <div className="text-right">
-            {trip.fare && (
-              <div className="flex items-center space-x-1">
-                <span className="font-bold text-lg">RWF {trip.fare.toLocaleString()}</span>
-                {trip.is_negotiable && (
-                  <Badge variant="outline" className="text-xs">Negotiable</Badge>
-                )}
+          <div className="flex-1">
+            <div className="flex items-center mb-2">
+              <MapPin className="w-4 h-4 text-green-600 mr-2" />
+              <span className="text-sm font-medium">{from}</span>
+            </div>
+            <div className="flex items-center mb-2">
+              <MapPin className="w-4 h-4 text-red-600 mr-2" />
+              <span className="text-sm font-medium">{to}</span>
+            </div>
+            
+            <div className="flex items-center text-sm text-gray-600 space-x-4">
+              <div className="flex items-center">
+                <Clock className="w-4 h-4 mr-1" />
+                <span>{new Date(departureTime).toLocaleTimeString()}</span>
               </div>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-3">
-        <div className="space-y-2">
-          <div className="flex items-start space-x-2">
-            <MapPin className="w-4 h-4 mt-1 text-green-600" />
-            <div>
-              <p className="text-xs text-gray-500 uppercase">From</p>
-              <p className="font-medium">{trip.from_location}</p>
+              <div className="flex items-center">
+                <Users className="w-4 h-4 mr-1" />
+                <span>{availableSeats} seats</span>
+              </div>
+              <span className="capitalize">{vehicleType}</span>
             </div>
           </div>
-
-          <div className="flex items-start space-x-2">
-            <MapPin className="w-4 h-4 mt-1 text-red-600" />
-            <div>
-              <p className="text-xs text-gray-500 uppercase">To</p>
-              <p className="font-medium">{trip.to_location}</p>
+          
+          <div className="text-right">
+            <div className="flex items-center text-lg font-semibold text-green-600 mb-2">
+              <DollarSign className="w-4 h-4 mr-1" />
+              {fare} RWF
             </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between text-sm text-gray-600">
-          <div className="flex items-center space-x-1">
-            <Clock className="w-4 h-4" />
-            <span>{formatTime(trip.scheduled_time)}</span>
-          </div>
-          
-          <div className="flex items-center space-x-1">
-            <Car className="w-4 h-4" />
-            <span>{trip.vehicle_type}</span>
-          </div>
-          
-          <div className="flex items-center space-x-1">
-            <Users className="w-4 h-4" />
-            <span>{trip.seats_available} seats</span>
+            <Button onClick={onBook} size="sm">
+              Book Now
+            </Button>
           </div>
         </div>
       </CardContent>

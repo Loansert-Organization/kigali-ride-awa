@@ -21,14 +21,13 @@ export * from './ui/alert-dialog';
 
 // Auth Components
 export { default as GoogleSignInButton } from './auth/GoogleSignInButton';
-export { default as OTPAuthFlow } from './auth/OTPAuthFlow';
 export { default as PhoneInputOTP } from './auth/PhoneInputOTP';
+export { default as OTPEntry6Box } from './auth/OTPEntry6Box';
 export { default as UnifiedWhatsAppOTP } from './auth/UnifiedWhatsAppOTP';
-export { default as WhatsAppLoginModal } from './auth/WhatsAppLoginModal';
 
 // Common Components
-export { default as LanguageSelector } from './common/LanguageSelector';
-export { default as RoleSelector } from './common/RoleSelector';
+export { LanguageSelector } from './common/LanguageSelector';
+export { RoleSelector } from './common/RoleSelector';
 
 // Navigation
 export { default as BottomNavigation } from './navigation/BottomNavigation';
@@ -38,7 +37,7 @@ export { default as GlobalErrorBoundary } from './GlobalErrorBoundary';
 
 // Map Components
 export { default as LocationPicker } from './maps/LocationPicker';
-export { default as LiveDriversMap } from './maps/LiveDriversMap';
+export { SmartMap } from './maps/SmartMap';
 export { default as NearbyTripsMap } from './passenger/NearbyTripsMap';
 
 // Booking Components
@@ -67,15 +66,12 @@ export { default as VehicleDetailsBlock } from './trip/VehicleDetailsBlock';
 export { default as AppResetButtonBlock } from './profile/AppResetButtonBlock';
 export { default as DriverSettingsBlock } from './profile/DriverSettingsBlock';
 export { default as LanguageSelectorBlock } from './profile/LanguageSelectorBlock';
-export { default as NotificationSettingsBlock } from './profile/NotificationSettingsBlock';
-export { default as ProfileHeaderBlock } from './profile/ProfileHeaderBlock';
-export { default as ReferralCodeBlock } from './profile/ReferralCodeBlock';
 
 // Admin Components
-export { default as AdminHeader } from './admin/AdminHeader';
-export { default as GlobalAdminSearch } from './admin/GlobalAdminSearch';
-export { default as KPIStatsCards } from './admin/KPIStatsCards';
+export { AdminHeader } from './admin/AdminHeader';
+export { GlobalAdminSearch } from './admin/GlobalAdminSearch';
+export { KPIStatsCards } from './admin/KPIStatsCards';
 export { default as ProductionDashboard } from './admin/ProductionDashboard';
 export { default as SchemaAuditReport } from './admin/SchemaAuditReport';
-export { default as TripsTableBlock } from './admin/TripsTableBlock';
-export { default as UsersTableBlock } from './admin/UsersTableBlock';
+export { TripsTableBlock } from './admin/TripsTableBlock';
+export { UsersTableBlock } from './admin/UsersTableBlock';

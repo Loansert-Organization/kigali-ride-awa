@@ -1,305 +1,169 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2, Phone, ChevronDown, Check } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
-import OTPEntry6Box from './OTPEntry6Box';
-
-interface Country {
-  code: string;
-  name: string;
-  dialCode: string;
-  flag: string;
-  format: string;
-}
-
-const countries: Country[] = [
-  { code: 'RW', name: 'Rwanda', dialCode: '+250', flag: '🇷🇼', format: '### ### ###' },
-  { code: 'KE', name: 'Kenya', dialCode: '+254', flag: '🇰🇪', format: '### ### ###' },
-  { code: 'UG', name: 'Uganda', dialCode: '+256', flag: '🇺🇬', format: '### ### ###' },
-  { code: 'TZ', name: 'Tanzania', dialCode: '+255', flag: '🇹🇿', format: '### ### ###' },
-  { code: 'BI', name: 'Burundi', dialCode: '+257', flag: '🇧🇮', format: '## ### ###' },
-  { code: 'CD', name: 'DR Congo', dialCode: '+243', flag: '🇨🇩', format: '### ### ###' },
-  { code: 'US', name: 'United States', dialCode: '+1', flag: '🇺🇸', format: '(###) ###-####' },
-  { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '🇬🇧', format: '#### ### ####' },
-  { code: 'FR', name: 'France', dialCode: '+33', flag: '🇫🇷', format: '# ## ## ## ##' },
-  { code: 'DE', name: 'Germany', dialCode: '+49', flag: '🇩🇪', format: '### ### ####' },
-];
 
 interface PhoneInputOTPProps {
-  value?: string;
-  onChange?: (value: string) => void;
-  onOTPSent?: (phone: string) => void;
-  onOTPVerified?: (phone: string, otp: string) => void;
-  disabled?: boolean;
-  error?: string;
-  countries?: string[];
-  defaultCountry?: string;
-  showOTPInput?: boolean;
-  className?: string;
-  onSuccess?: (phoneNumber: string) => void;
-  onCancel?: () => void;
+  onSuccess: (phoneNumber: string) => void;
+  onCancel: () => void;
 }
 
 const PhoneInputOTP: React.FC<PhoneInputOTPProps> = ({
-  value = '',
-  onChange,
-  onOTPSent,
-  onOTPVerified,
-  disabled = false,
-  error,
-  defaultCountry = 'RW',
-  showOTPInput = false,
-  className,
   onSuccess,
-  onCancel,
+  onCancel
 }) => {
-  const [selectedCountry, setSelectedCountry] = useState<Country>(
-    countries.find(c => c.code === defaultCountry) || countries[0]
-  );
-  const [phoneNumber, setPhoneNumber] = useState(value);
+  const [countryCode, setCountryCode] = useState('+250');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(showOTPInput);
-  const [resendTimer, setResendTimer] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendTimer]);
-
-  const formatPhoneNumber = (input: string, format: string): string => {
-    const numbers = input.replace(/\D/g, '');
-    let formatted = '';
-    let numberIndex = 0;
-
-    for (let i = 0; i < format.length && numberIndex < numbers.length; i++) {
-      if (format[i] === '#') {
-        formatted += numbers[numberIndex];
-        numberIndex++;
-      } else {
-        formatted += format[i];
-      }
-    }
-
-    return formatted;
-  };
-
-  const unformatPhoneNumber = (formatted: string): string => {
-    return formatted.replace(/\D/g, '');
-  };
+  const countries = [
+    { code: '+250', name: 'Rwanda', flag: '🇷🇼' },
+    { code: '+256', name: 'Uganda', flag: '🇺🇬' },
+    { code: '+254', name: 'Kenya', flag: '🇰🇪' },
+    { code: '+255', name: 'Tanzania', flag: '🇹🇿' },
+    { code: '+257', name: 'Burundi', flag: '🇧🇮' },
+  ];
 
   const validatePhoneNumber = (phone: string): boolean => {
-    const unformatted = unformatPhoneNumber(phone);
-    const expectedLength = selectedCountry.format.split('#').length - 1;
-    return unformatted.length === expectedLength;
+    // Remove all non-digits
+    const digits = phone.replace(/\D/g, '');
+    
+    // Check if it's a valid length (typically 9-10 digits for mobile)
+    if (digits.length < 9 || digits.length > 10) {
+      return false;
+    }
+
+    // Additional validation can be added here based on country
+    return true;
+  };
+
+  const formatPhoneNumber = (phone: string): string => {
+    // Remove all non-digits
+    const digits = phone.replace(/\D/g, '');
+    
+    // Format based on length
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value;
-    const formatted = formatPhoneNumber(input, selectedCountry.format);
-    setPhoneNumber(formatted);
-    
-    const fullNumber = selectedCountry.dialCode + unformatPhoneNumber(formatted);
-    onChange?.(fullNumber);
+    const value = e.target.value;
+    // Only allow digits and spaces
+    const cleaned = value.replace(/[^\d\s]/g, '');
+    setPhoneNumber(formatPhoneNumber(cleaned));
   };
 
-  const handleSendOTP = async (): Promise<void> => {
-    const unformatted = unformatPhoneNumber(phoneNumber);
-    if (!validatePhoneNumber(phoneNumber)) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    
+    if (!validatePhoneNumber(cleanPhone)) {
       toast({
-        title: "Invalid phone number",
+        title: "Invalid Phone Number",
         description: "Please enter a valid phone number",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
 
+    const fullPhoneNumber = `${countryCode}${cleanPhone}`;
+    
     setIsLoading(true);
-    const fullNumber = selectedCountry.dialCode + unformatted;
-
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setOtpSent(true);
-      setResendTimer(60);
-      onOTPSent?.(fullNumber);
+      // Simulate sending OTP (replace with actual API call)
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
-        title: "OTP sent successfully",
-        description: `Code sent to ${fullNumber}`,
+        title: "Verification Code Sent",
+        description: `Code sent to ${fullPhoneNumber}`
       });
+      
+      onSuccess(fullPhoneNumber);
     } catch (error) {
+      console.error('Send OTP error:', error);
       toast({
-        title: "Failed to send OTP",
-        description: "Please try again later",
-        variant: "destructive",
+        title: "Failed to Send Code",
+        description: "Please check your phone number and try again",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCountrySelect = (country: Country) => {
-    setSelectedCountry(country);
-    setPhoneNumber('');
-    inputRef.current?.focus();
-  };
-
-  if (otpSent) {
-    return (
-      <div className={cn("space-y-4", className)}>
-        <div className="text-center mb-6">
-          <h3 className="text-lg font-semibold mb-2">Enter verification code</h3>
-          <p className="text-sm text-muted-foreground">
-            We sent a code to {selectedCountry.dialCode} {phoneNumber}
-          </p>
-        </div>
-        
-        <OTPEntry6Box
-          phoneNumber={`${selectedCountry.dialCode} ${phoneNumber}`}
-          onComplete={(otp) => {
-            const fullNumber = selectedCountry.dialCode + unformatPhoneNumber(phoneNumber);
-            onOTPVerified?.(fullNumber, otp);
-          }}
-          onSuccess={() => {
-            const fullNumber = selectedCountry.dialCode + unformatPhoneNumber(phoneNumber);
-            onSuccess?.(fullNumber);
-          }}
-          onBack={() => {
-            setOtpSent(false);
-            setPhoneNumber('');
-          }}
-          onCancel={onCancel}
-        />
-        
-        <div className="flex justify-center space-x-2 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setOtpSent(false);
-              setPhoneNumber('');
-            }}
-          >
-            Change number
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={resendTimer > 0}
-            onClick={handleSendOTP}
-          >
-            {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend code'}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={cn("space-y-4", className)}>
-      <div className="space-y-2">
-        <Label htmlFor="phone">Phone number</Label>
-        <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-[120px] justify-between"
-                disabled={disabled}
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-lg">{selectedCountry.flag}</span>
-                  <span className="text-sm">{selectedCountry.dialCode}</span>
-                </span>
-                <ChevronDown className="h-4 w-4 opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[250px] max-h-[300px] overflow-y-auto">
-              {countries.map((country) => (
-                <DropdownMenuItem
-                  key={country.code}
-                  onClick={() => handleCountrySelect(country)}
-                  className="flex items-center justify-between"
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="text-lg">{country.flag}</span>
-                    <span>{country.name}</span>
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    {country.dialCode}
-                  </span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div className="flex-1 relative">
-            <Input
-              ref={inputRef}
-              id="phone"
-              type="tel"
-              value={phoneNumber}
-              onChange={handlePhoneChange}
-              placeholder={selectedCountry.format.replace(/#/g, '•')}
-              disabled={disabled || isLoading}
-              className={cn(
-                "pr-10",
-                error && "border-destructive focus-visible:ring-destructive"
-              )}
-            />
-            {validatePhoneNumber(phoneNumber) && (
-              <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />
-            )}
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="text-center">
+        <CardTitle>Enter Your Phone Number</CardTitle>
+        <p className="text-sm text-gray-600">
+          We'll send you a verification code via SMS
+        </p>
+      </CardHeader>
+      
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="country">Country</Label>
+            <Select value={countryCode} onValueChange={setCountryCode}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((country) => (
+                  <SelectItem key={country.code} value={country.code}>
+                    {country.flag} {country.code} {country.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-        
-        {error && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
-      </div>
 
-      <Button
-        className="w-full"
-        onClick={handleSendOTP}
-        disabled={!validatePhoneNumber(phoneNumber) || disabled || isLoading}
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Sending...
-          </>
-        ) : (
-          <>
-            <Phone className="mr-2 h-4 w-4" />
-            Send verification code
-          </>
-        )}
-      </Button>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone number</Label>
+            <div className="flex">
+              <div className="flex items-center px-3 border border-r-0 border-gray-300 bg-gray-50 rounded-l-md">
+                <span className="text-sm font-medium">{countryCode}</span>
+              </div>
+              <Input
+                id="phone"
+                type="tel"
+                value={phoneNumber}
+                onChange={handlePhoneChange}
+                placeholder="788 123 456"
+                className="rounded-l-none"
+                required
+              />
+            </div>
+          </div>
 
-      {onCancel && (
-        <Button
-          variant="ghost"
-          className="w-full"
-          onClick={onCancel}
-        >
-          Cancel
-        </Button>
-      )}
-    </div>
+          <div className="space-y-3 pt-4">
+            <Button
+              type="submit"
+              disabled={isLoading || !phoneNumber.trim()}
+              className="w-full"
+            >
+              {isLoading ? 'Sending...' : 'Send verification code'}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className="w-full"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

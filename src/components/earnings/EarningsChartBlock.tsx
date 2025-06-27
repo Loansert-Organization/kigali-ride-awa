@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -15,7 +14,7 @@ interface EarningsChartBlockProps {
   isLoading?: boolean;
 }
 
-const EarningsChartBlock: React.FC<EarningsChartBlockProps> = ({
+export const EarningsChartBlock: React.FC<EarningsChartBlockProps> = ({
   data = [],
   isLoading = false
 }) => {

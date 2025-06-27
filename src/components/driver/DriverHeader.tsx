@@ -1,37 +1,68 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
-import { User } from 'lucide-react';
-import { DriverProfile } from '@/types/api';
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { User, Phone, Car } from 'lucide-react';
 
-interface DriverHeaderProps {
-  driverProfile: DriverProfile | null;
-  onProfileClick: () => void;
+interface DriverProfile {
+  vehicle_type?: string;
+  vehicle_make?: string;
+  vehicle_model?: string;
+  vehicle_year?: number;
+  license_plate?: string;
+  driver_license?: string;
 }
 
-const DriverHeader: React.FC<DriverHeaderProps> = ({
-  driverProfile,
-  onProfileClick
-}) => {
+interface User {
+  full_name?: string;
+  phone_number?: string;
+  driver_profile?: DriverProfile;
+}
+
+interface DriverHeaderProps {
+  user: User;
+  isOnline: boolean;
+}
+
+const DriverHeader: React.FC<DriverHeaderProps> = ({ user, isOnline }) => {
+  const driverProfile = user.driver_profile;
+  
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-green-500 p-4 text-white">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold">🚗 Driver Dashboard</h1>
-          <p className="text-blue-100">
-            {driverProfile?.vehicle_type} • {driverProfile?.vehicle_number}
-          </p>
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <User className="w-6 h-6 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-lg">
+                {user.full_name || 'Driver'}
+              </h2>
+              <div className="flex items-center text-sm text-gray-600">
+                <Phone className="w-4 h-4 mr-1" />
+                {user.phone_number || 'No phone'}
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-right">
+            <Badge variant={isOnline ? 'default' : 'secondary'}>
+              {isOnline ? '🟢 Online' : '🔴 Offline'}
+            </Badge>
+            {driverProfile && (
+              <div className="flex items-center text-sm text-gray-600 mt-1">
+                <Car className="w-4 h-4 mr-1" />
+                <span>
+                  {driverProfile.vehicle_make} {driverProfile.vehicle_model}
+                  {driverProfile.license_plate && ` • ${driverProfile.license_plate}`}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-white/20"
-          onClick={onProfileClick}
-        >
-          <User className="w-5 h-5" />
-        </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -5,7 +5,6 @@ import { MapPin } from 'lucide-react';
 
 interface SmartMapProps {
   center?: { lat: number; lng: number };
-  zoom?: number;
   markers?: Array<{
     lat: number;
     lng: number;
@@ -16,9 +15,8 @@ interface SmartMapProps {
   className?: string;
 }
 
-const SmartMap: React.FC<SmartMapProps> = ({
+export const SmartMap: React.FC<SmartMapProps> = ({
   center = { lat: -1.9441, lng: 30.0619 }, // Kigali coordinates
-  zoom = 13,
   markers = [],
   onLocationSelect,
   className
@@ -72,5 +70,4 @@ const SmartMap: React.FC<SmartMapProps> = ({
   );
 };
 
-export { SmartMap };
 export default SmartMap;
