@@ -1,5 +1,5 @@
 
-import React, { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { ToastProvider } from "@/components/ui/toast";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
@@ -20,6 +20,8 @@ import NotFound from "./pages/NotFound";
 // New navigation pages
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings";
+import Notifications from "./pages/Notifications";
 
 // Ride booking pages
 import BookRide from "./pages/BookRide";
@@ -48,8 +50,6 @@ const AdminRewards = lazy(() => import('./pages/admin/RewardsManagement'));
 const AdminProduction = lazy(() => import('./pages/admin/ProductionReadiness'));
 
 // Lazy load new pages
-const Settings = lazy(() => import('./pages/Settings'));
-const Notifications = lazy(() => import('./pages/Notifications'));
 const Help = lazy(() => import('./pages/Help'));
 const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
@@ -77,7 +77,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
     },
   },
 });
@@ -107,8 +107,8 @@ function App() {
                   {/* Main Navigation Pages */}
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/analytics" element={<Suspense fallback={<PageLoader />}><Analytics /></Suspense>} />
-                  <Route path="/settings" element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
-                  <Route path="/notifications" element={<Suspense fallback={<PageLoader />}><Notifications /></Suspense>} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/notifications" element={<Notifications />} />
                   <Route path="/help" element={<Suspense fallback={<PageLoader />}><Help /></Suspense>} />
                   
                   {/* Company Pages */}
