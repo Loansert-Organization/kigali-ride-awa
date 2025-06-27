@@ -1,3 +1,4 @@
+
 import React, { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { ToastProvider } from "@/components/ui/toast";
@@ -5,6 +6,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { GlobalWhatsAppAuthProvider } from "@/contexts/GlobalWhatsAppAuthContext";
+
+// Main pages
 import Index from "./pages/Index";
 import Home from "./pages/Home";
 import PassengerHome from "./pages/home/Passenger";
@@ -13,6 +16,12 @@ import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+
+// New navigation pages
+import Dashboard from "./pages/Dashboard";
+import Analytics from "./pages/Analytics";
+
+// Ride booking pages
 import BookRide from "./pages/BookRide";
 import RideMatches from "./pages/RideMatches";
 import Rewards from "./pages/Rewards";
@@ -37,6 +46,17 @@ const AdminDriverDetail = lazy(() => import('./pages/admin/DriverDetails'));
 const AdminTripHeatmap = lazy(() => import('./pages/admin/TripHeatmap'));
 const AdminRewards = lazy(() => import('./pages/admin/RewardsManagement'));
 const AdminProduction = lazy(() => import('./pages/admin/ProductionReadiness'));
+
+// Lazy load new pages
+const Settings = lazy(() => import('./pages/Settings'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Help = lazy(() => import('./pages/Help'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const VerifyAccount = lazy(() => import('./pages/VerifyAccount'));
 
 // Home sub-routes
 import PassengerProfile from "./pages/profile/Passenger";
@@ -83,31 +103,62 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/welcome" element={<WelcomeLanding />} />
+                  
+                  {/* Main Navigation Pages */}
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/analytics" element={<Suspense fallback={<PageLoader />}><Analytics /></Suspense>} />
+                  <Route path="/settings" element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
+                  <Route path="/notifications" element={<Suspense fallback={<PageLoader />}><Notifications /></Suspense>} />
+                  <Route path="/help" element={<Suspense fallback={<PageLoader />}><Help /></Suspense>} />
+                  
+                  {/* Company Pages */}
+                  <Route path="/about" element={<Suspense fallback={<PageLoader />}><About /></Suspense>} />
+                  <Route path="/contact" element={<Suspense fallback={<PageLoader />}><Contact /></Suspense>} />
+                  <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><Privacy /></Suspense>} />
+                  <Route path="/terms" element={<Suspense fallback={<PageLoader />}><Terms /></Suspense>} />
+                  
+                  {/* Authentication Pages */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>} />
+                  <Route path="/verify-account" element={<Suspense fallback={<PageLoader />}><VerifyAccount /></Suspense>} />
+                  
+                  {/* Onboarding */}
                   <Route path="/onboarding/passenger" element={<PassengerOnboarding />} />
                   <Route path="/onboarding/driver" element={<DriverOnboarding />} />
-                  <Route path="/book-ride" element={<BookRide />} />
-                  <Route path="/ride-matches" element={<RideMatches />} />
+                  
+                  {/* Profile Pages */}
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/profile/passenger" element={<PassengerProfile />} />
                   <Route path="/profile/driver" element={<DriverProfile />} />
-                  <Route path="/rewards" element={<Rewards />} />
-                  <Route path="/leaderboard" element={<Leaderboard />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
+                  
+                  {/* Home Pages */}
                   <Route path="/home" element={<Home />} />
                   <Route path="/home/passenger" element={<PassengerHome />} />
                   <Route path="/home/driver" element={<DriverHome />} />
+                  
+                  {/* Ride & Trip Pages */}
+                  <Route path="/book-ride" element={<BookRide />} />
+                  <Route path="/ride-matches" element={<RideMatches />} />
                   <Route path="/create-trip" element={<CreateTrip />} />
                   <Route path="/driver/create-trip" element={<DriverCreateTrip />} />
                   <Route path="/driver/passenger-requests" element={<DriverPassengerRequests />} />
                   <Route path="/vehicle-setup" element={<VehicleSetup />} />
                   <Route path="/trip/:id" element={<TripDetails />} />
+                  
+                  {/* User Features */}
                   <Route path="/favorites" element={<Favorites />} />
                   <Route path="/favorites-manager" element={<FavoritesManager />} />
                   <Route path="/past-trips" element={<PastTrips />} />
                   <Route path="/driver-trips" element={<DriverTrips />} />
                   <Route path="/driver-earnings" element={<DriverEarnings />} />
                   <Route path="/passenger-requests" element={<PassengerRequests />} />
+                  
+                  {/* Rewards & Leaderboard */}
+                  <Route path="/rewards" element={<Rewards />} />
+                  <Route path="/leaderboard" element={<Leaderboard />} />
+                  
+                  {/* Dev Tools */}
                   <Route path="/ai-dev-tools" element={<AIDevTools />} />
                   
                   {/* Admin Routes - Lazy loaded */}
