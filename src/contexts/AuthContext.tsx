@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fetchSessionAndProfile();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => handleAuthStateChange(session?.user ?? null)
+      (_event: string, session: any) => handleAuthStateChange(session?.user ?? null)
     );
 
     return () => authListener?.subscription.unsubscribe();

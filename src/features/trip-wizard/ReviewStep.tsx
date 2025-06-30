@@ -126,8 +126,8 @@ export const ReviewStep = ({
       // Save to trip history for AI learning
       await saveTripToHistory({
         role: draft.role,
-        origin: draft.origin!,
-        destination: draft.destination!,
+        origin: draft.origin as any,
+        destination: draft.destination as any,
         departureTime: draft.departureTime!,
         seats: draft.seats,
         vehicleType: draft.vehicleType,

@@ -2,27 +2,29 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useEntryPermissions } from '@/hooks/useEntryPermissions';
-import { Car, User, ArrowRight, Plus, Bot } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import { CountryStep } from '@/components/onboarding/CountryStep';
 import { RewardsCard } from '@/components/gamification/RewardsCard';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { countryDetectionService, CountryInfo } from '@/services/CountryDetectionService';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTripHistory } from '@/hooks/useTripHistory';
 import { useActiveRequest } from '@/hooks/useActiveRequest';
 import { ChatDrawer } from '@/features/ai-chat/ChatDrawer';
-import { RoleStep } from '@/components/welcome/RoleStep';
+import RoleStep from '@/components/welcome/RoleStep';
+import PermissionsStep from '@/components/welcome/PermissionsStep';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole } from '@/types';
 
 const WelcomePage = () => {
   const navigate = useNavigate();
-  const { user, refreshUser } = useCurrentUser();
+  const { user, role } = useCurrentUser();
+  const { setRole } = useAuth();
   const { toast } = useToast();
-  const { trips, loading: tripsLoading } = useTripHistory();
-  const { activeRequest, loading: requestLoading } = useActiveRequest();
+  // initialise hooks for side-effects; values are not needed here
+  useTripHistory();
+  useActiveRequest();
   const [showCountrySelection, setShowCountrySelection] = useState(false);
   const {
     locationGranted,
@@ -30,10 +32,11 @@ const WelcomePage = () => {
     requestLocation,
     requestNotification,
   } = useEntryPermissions();
-  const [activeTab, setActiveTab] = useState<'driver' | 'passenger'>('passenger');
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [showRoleSelection, setShowRoleSelection] = useState(() => !role);
   const [redirected, setRedirected] = useState(false);
+  const [showLocationPrompt, setShowLocationPrompt] = useState(() => !locationGranted);
+  const [isSavingRole, setIsSavingRole] = useState(false);
 
   // Check if user needs country selection
   useEffect(() => {
@@ -43,17 +46,20 @@ const WelcomePage = () => {
   }, [user]);
 
   useEffect(() => {
-    if (user && !user.role) {
-      setShowRoleSelection(true);
-    }
-  }, [user]);
+    setShowRoleSelection(!role);
+  }, [role]);
 
   useEffect(() => {
-    if (user && user.role && !showCountrySelection && !showRoleSelection && !redirected) {
-      navigate(user.role === 'driver' ? '/driver/home' : '/passenger/home', { replace: true });
+    if (role && role !== UserRole.ADMIN && !showCountrySelection && !showRoleSelection && !redirected) {
+      const targetPath = role === UserRole.DRIVER ? '/driver/home' : '/passenger/home';
+      navigate(targetPath, { replace: true });
       setRedirected(true);
     }
-  }, [user, showCountrySelection, showRoleSelection, redirected, navigate]);
+  }, [role, showCountrySelection, showRoleSelection, redirected, navigate]);
+
+  useEffect(() => {
+    setShowLocationPrompt(!locationGranted);
+  }, [locationGranted]);
 
   const handleCountrySelect = async (country: CountryInfo) => {
     if (!user) return;
@@ -66,9 +72,6 @@ const WelcomePage = () => {
         .eq('id', user.id);
 
       if (error) throw error;
-
-      // Refresh user data
-      await refreshUser();
       
       setShowCountrySelection(false);
       
@@ -86,16 +89,45 @@ const WelcomePage = () => {
     }
   };
 
-  const handleRoleSave = async (role: 'driver' | 'passenger') => {
-    if (!user) return;
-    await supabase.from('users').update({ role }).eq('id', user.id);
-    await refreshUser();
-    setShowRoleSelection(false);
-    navigate(role === 'driver' ? '/driver/home' : '/passenger/home');
+  const handleRoleSave = async (roleString: 'driver' | 'passenger') => {
+    if (!user) {
+      return;
+    }
+    
+    try {
+      setIsSavingRole(true);
+      
+      // Convert string to UserRole enum
+      const userRole = roleString === 'driver' ? UserRole.DRIVER : UserRole.PASSENGER;
+      
+      // Use AuthContext's setRole method for proper state management
+      await setRole(userRole);
+      
+      setShowRoleSelection(false);
+      
+    } catch (e) {
+      toast({ title: 'Error', description: 'Failed to save role', variant: 'destructive'});
+    } finally {
+      setIsSavingRole(false);
+    }
   };
 
-  // Show country selection if needed
-  if (showCountrySelection) {
+  const handleRequestLocation = () => {
+    requestLocation();
+  };
+
+  // Overlay chain: Location -> Country -> Role
+  if (showLocationPrompt) {
+    return (
+      <PermissionsStep
+        selectedRole={role === 'admin' ? null : role}
+        onRequestLocation={handleRequestLocation}
+        onSkipLocation={() => setShowLocationPrompt(false)}
+        showPWAPrompt={false}
+        setShowPWAPrompt={() => {}}
+      />
+    );
+  } else if (showCountrySelection) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 space-y-6 bg-gradient-to-br from-purple-50 to-blue-50">
         <CountryStep 
@@ -104,13 +136,19 @@ const WelcomePage = () => {
         />
       </div>
     );
-  }
-
-  if (showRoleSelection) {
+  } else if (showRoleSelection) {
     return (
-      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-        <RoleStep onRoleSelect={handleRoleSave} />
-      </div>
+      <RoleStep
+        onRoleSelect={handleRoleSave}
+        currentLang={{ greeting: 'Welcome!' }}
+        isProcessing={isSavingRole}
+        selectedRole={null}
+        urlPromo={null}
+        showPromoInput={false}
+        setShowPromoInput={() => {}}
+        promoCode=""
+        setPromoCode={() => {}}
+      />
     );
   }
 
@@ -166,61 +204,21 @@ const WelcomePage = () => {
         </div>
       )}
 
-      {/* Quick Start Actions */}
-      {!showRoleSelection && (
-        <div className="w-full max-w-md space-y-3 pt-4">
-          <h3 className="text-lg font-semibold text-center">Quick Start</h3>
-          
-          <Button 
-            onClick={() => navigate('/passenger/request')} 
-            className="w-full h-14 bg-blue-600 hover:bg-blue-700"
+      {/* Country Change link (only) */}
+      {!showRoleSelection && user && user.country && (
+        <div className="pt-4">
+          <Button
+            variant="ghost"
+            onClick={() => setShowCountrySelection(true)}
+            className="text-xs text-gray-400"
           >
-            <User className="w-6 h-6 mr-3" /> 
-            Book a Ride
-            <ArrowRight className="w-4 h-4 ml-auto" />
+            Change Country: {countryDetectionService.getCountryByCode(user.country)?.name}
           </Button>
-          
-          <Button 
-            onClick={() => navigate('/driver/create-trip')} 
-            className="w-full h-14 bg-green-600 hover:bg-green-700"
-          >
-            <Car className="w-6 h-6 mr-3" /> 
-            Offer a Ride
-            <ArrowRight className="w-4 h-4 ml-auto" />
-          </Button>
-
-          <div className="text-center pt-2">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/role-select')} 
-              className="text-sm text-gray-500"
-            >
-              Or choose your role first
-            </Button>
-          </div>
-
-          {/* Country Selection Option */}
-          {user && user.country && (
-            <div className="text-center pt-2">
-              <Button 
-                variant="ghost" 
-                onClick={() => setShowCountrySelection(true)} 
-                className="text-xs text-gray-400"
-              >
-                Change Country: {countryDetectionService.getCountryByCode(user.country)?.name}
-              </Button>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Quick Stats */}
-      <div className="container mx-auto px-4 py-8">
-        {/* ... existing code ... */}
-      </div>
-
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+      {/* Floating Chat Button */}
+      <div className="fixed bottom-6 right-6 z-40">
         <Button
           onClick={() => setIsChatOpen(true)}
           size="icon"
@@ -228,14 +226,6 @@ const WelcomePage = () => {
           aria-label="Open AI Assistant"
         >
           <Bot className="h-6 w-6" />
-        </Button>
-        <Button
-          onClick={() => navigate('/trip/new')}
-          size="icon"
-          className="h-16 w-16 rounded-full shadow-lg"
-          aria-label="Create new trip"
-        >
-          <Plus className="h-8 w-8" />
         </Button>
       </div>
 

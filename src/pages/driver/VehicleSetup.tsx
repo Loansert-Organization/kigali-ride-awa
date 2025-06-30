@@ -17,12 +17,20 @@ const vehicleOptions = [
 
 const VehicleSetupPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [vehicle, setVehicle] = useState({
     vehicle_type: VehicleType.CAR,
     license_plate: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   const handleInputChange = (field: keyof typeof vehicle, value: string | VehicleType) => {
     setVehicle(prev => ({ ...prev, [field]: value }));
@@ -54,7 +62,7 @@ const VehicleSetupPage = () => {
           variant: 'destructive' 
         });
       }
-    } catch (error) {
+    } catch {
       toast({ 
         title: "Error", 
         description: "Failed to save vehicle. Please try again.", 
@@ -77,7 +85,6 @@ const VehicleSetupPage = () => {
         <label className="text-sm font-medium">Vehicle Type *</label>
         <div className="grid grid-cols-2 gap-3">
           {vehicleOptions.map((option) => {
-            const Icon = option.icon;
             const isSelected = vehicle.vehicle_type === option.type;
             
             return (

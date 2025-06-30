@@ -10,13 +10,13 @@ import { SmartTimePicker } from '@/components/ui/smart-time-picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/services/APIClient';
 import { DriverTrip, MapLocation, DriverVehicle } from '@/types';
-import { Clock, Car, Users, DollarSign } from 'lucide-react';
+import { Clock, Car, Users, DollarSign, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 const CreateTrip = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   
   const [vehicles, setVehicles] = useState<DriverVehicle[]>([]);
@@ -158,6 +158,14 @@ const CreateTrip = () => {
     return `${typeIcon} ${vehicle.license_plate} - ${vehicle.color} ${vehicle.model}`;
   };
 
+  if (authLoading || !user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
   if (vehicles.length === 0) {
     return (
       <div className="max-w-md mx-auto p-4">
@@ -239,7 +247,7 @@ const CreateTrip = () => {
             <div className="space-y-2">
               <SmartTimePicker
                 value={departureTime}
-                onChange={setDepartureTime}
+                onChange={(v) => setDepartureTime(typeof v === 'string' ? v : v.toISOString())}
                 label="When do you plan to leave?"
               />
             </div>
@@ -322,7 +330,7 @@ const CreateTrip = () => {
             <Button 
               type="submit" 
               className="w-full h-12 text-lg" 
-              disabled={loading || !fromLocation || !toLocation || !farePerSeat}
+              disabled={loading || !fromLocation || !toLocation || !farePerSeat || !user}
             >
               {loading ? 'Posting Trip...' : 'Post Your Trip'}
             </Button>

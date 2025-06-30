@@ -98,7 +98,7 @@ export const useTripDraft = () => {
 
   const getCompletionPercentage = (): number => {
     let completed = 0;
-    let total = 6; // Total required fields
+    const total = 6; // Total required fields
 
     if (draft.origin) completed++;
     if (draft.destination) completed++;

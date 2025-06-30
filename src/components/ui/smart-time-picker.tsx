@@ -5,13 +5,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Clock, Calendar, ArrowRight } from 'lucide-react';
 
+type SmartTimeValue = string | Date;
+
 interface SmartTimePickerProps {
-  value: string;
-  onChange: (value: string) => void;
+  value: SmartTimeValue;
+  onChange: (value: SmartTimeValue) => void;
   label?: string;
+  minDate?: SmartTimeValue;
+  maxDate?: SmartTimeValue;
 }
 
-export const SmartTimePicker = ({ value, onChange, label = "Departure Time" }: SmartTimePickerProps) => {
+export const SmartTimePicker = ({ value, onChange, label = "Departure Time", minDate, maxDate }: SmartTimePickerProps) => {
   const [isSchedulingOpen, setIsSchedulingOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -130,7 +134,8 @@ export const SmartTimePicker = ({ value, onChange, label = "Departure Time" }: S
   const formatSelectedTime = () => {
     if (!value) return 'Select time';
     
-    const time = new Date(value);
+    const isoString = typeof value === 'string' ? value : value.toISOString();
+    const time = new Date(isoString);
     const now = new Date();
     
     if (isNow && Math.abs(time.getTime() - now.getTime()) < 60000) {
@@ -198,7 +203,7 @@ export const SmartTimePicker = ({ value, onChange, label = "Departure Time" }: S
           {quickTimes.slice(0, 6).map((time) => (
             <Button
               key={time.value}
-              variant={value === time.value ? "default" : "outline"}
+              variant={typeof value === 'string' ? (value === time.value ? "default" : "outline") : "outline"}
               size="sm"
               onClick={() => handleQuickTimeSelect(time.value)}
               className="justify-start"

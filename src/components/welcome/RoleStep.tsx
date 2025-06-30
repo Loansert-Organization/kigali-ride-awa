@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,13 +19,17 @@ const RoleStep: React.FC<RoleStepProps> = ({
   currentLang,
   onRoleSelect,
   isProcessing,
-  selectedRole,
   urlPromo,
   showPromoInput,
   setShowPromoInput,
   promoCode,
   setPromoCode
 }) => {
+  const handleRoleClick = (role: 'passenger' | 'driver') => {
+    if (isProcessing) return;
+    onRoleSelect(role);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md animate-fade-in">
@@ -36,16 +39,16 @@ const RoleStep: React.FC<RoleStepProps> = ({
               {currentLang.greeting}
             </h1>
             <p className="text-body text-gray-600 mb-6">A smarter way to get around</p>
-            <h2 className="text-heading-3 text-gray-800">👤 Are you a...</h2>
+            <h2 className="text-heading-3 text-gray-800">👤 Choose your role to continue</h2>
           </div>
 
           <div className="space-y-4 mb-6">
             <Button 
-              onClick={() => onRoleSelect('driver')}
+              onClick={() => handleRoleClick('driver')}
               disabled={isProcessing}
-              className="w-full h-16 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white hover-scale disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-16 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              {isProcessing && selectedRole === 'driver' ? (
+              {isProcessing ? (
                 <>
                   <Loader2 className="w-8 h-8 mr-3 animate-spin" />
                   <div className="text-left">
@@ -65,11 +68,11 @@ const RoleStep: React.FC<RoleStepProps> = ({
             </Button>
             
             <Button 
-              onClick={() => onRoleSelect('passenger')}
+              onClick={() => handleRoleClick('passenger')}
               disabled={isProcessing}
-              className="w-full h-16 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover-scale disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-16 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              {isProcessing && selectedRole === 'passenger' ? (
+              {isProcessing ? (
                 <>
                   <Loader2 className="w-8 h-8 mr-3 animate-spin" />
                   <div className="text-left">

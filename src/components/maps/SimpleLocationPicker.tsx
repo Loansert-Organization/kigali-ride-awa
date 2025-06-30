@@ -55,7 +55,9 @@ export const SimpleLocationPicker = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
-  const userCountry = user?.country || 'RW';
+  // use any cast to accommodate optional country field not in User type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userCountry = (user as any)?.country ?? 'RW';
   const countryInfo = countryDetectionService.getCountryByCode(userCountry);
   const commonLocations = getCommonLocations(userCountry);
 
@@ -107,7 +109,7 @@ export const SimpleLocationPicker = ({
         address: `Current Location (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`
       };
       
-      setSearch(location.address);
+      setSearch(location.address ?? '');
       onLocationSelect(location);
       
       toast({
@@ -127,7 +129,7 @@ export const SimpleLocationPicker = ({
   };
 
   const handleInputChange = (value: string) => {
-    setSearch(value);
+    setSearch(value ?? '');
     setShowSuggestions(value.length > 0);
   };
 

@@ -55,24 +55,33 @@ const AppRoutes = () => {
 
 const queryClient = new QueryClient();
 
-function App() {
+// Helper component so hooks run inside AuthProvider context
+const PushInit = () => {
   const { register } = usePushRegistration();
   useEffect(() => {
     register();
-  }, []);
+  }, [register]);
+  return null;
+};
 
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
+          <PushInit />
           <ToastProvider>
             <Router>
               <div className="font-sans">
-                <ThemeToggle className="fixed top-4 right-4 z-50" />
+                {/* Theme toggle floating button */}
+                <div className="fixed top-4 right-4 z-50">
+                  <ThemeToggle />
+                </div>
                 <AppRoutes />
                 <Toaster />
                 <DraftTripBanner />
-                <ChatDrawer />
+                {/* Global AI chat drawer (initially closed) */}
+                <ChatDrawer isOpen={false} onClose={() => {}} />
               </div>
             </Router>
           </ToastProvider>

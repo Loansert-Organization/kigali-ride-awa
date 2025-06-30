@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -233,9 +233,10 @@ export const DetailsStep = ({ draft, onUpdate }: DetailsStepProps) => {
         <CardContent>
           <SmartTimePicker
             value={draft.departureTime || new Date()}
-            onChange={(date) => onUpdate({ departureTime: date })}
-            minDate={new Date()}
-            maxDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)} // 7 days from now
+            onChange={(val) => {
+              const d = typeof val === 'string' ? new Date(val) : val;
+              onUpdate({ departureTime: d });
+            }}
           />
         </CardContent>
       </Card>

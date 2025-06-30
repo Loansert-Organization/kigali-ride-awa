@@ -6,6 +6,7 @@ import { TripDraft } from './TripWizard';
 import { ArrowUpDown, MapPin, Navigation, Clock } from 'lucide-react';
 import { googleMapsService } from '@/services/GoogleMapsService';
 import { useToast } from '@/hooks/use-toast';
+import { MapLocation } from '@/types';
 
 interface RouteStepProps {
   draft: TripDraft;
@@ -94,9 +95,13 @@ export const RouteStep = ({ draft, onUpdate }: RouteStepProps) => {
           const leg = route.legs[0];
           
           // Update route info
-          const routeData = {
+          const routeData: {
+            distance: string;
+            duration: string;
+            estimatedPrice?: number;
+          } = {
             distance: leg.distance?.text || 'Unknown',
-            duration: leg.duration?.text || 'Unknown'
+            duration: leg.duration?.text || 'Unknown',
           };
           
           // Calculate estimated price
@@ -143,13 +148,13 @@ export const RouteStep = ({ draft, onUpdate }: RouteStepProps) => {
     }
   };
 
-  const handleOriginSelect = (location: { lat: number; lng: number; address: string }) => {
+  const handleOriginSelect = (location: MapLocation) => {
     onUpdate({ 
       origin: location 
     });
   };
 
-  const handleDestinationSelect = (location: { lat: number; lng: number; address: string }) => {
+  const handleDestinationSelect = (location: MapLocation) => {
     onUpdate({ 
       destination: location 
     });

@@ -9,12 +9,12 @@ import { SmartTimePicker } from '@/components/ui/smart-time-picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/services/APIClient';
 import { VehicleType, PassengerTrip, MapLocation } from '@/types';
-import { Car, Clock } from 'lucide-react';
+import { Car, Clock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const CreateRequest = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   
   const [fromLocation, setFromLocation] = useState<MapLocation | null>(null);
@@ -130,6 +130,14 @@ const CreateRequest = () => {
     }
   };
 
+  if (authLoading || !user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-md mx-auto p-4 space-y-6">
       <Card>
@@ -175,7 +183,7 @@ const CreateRequest = () => {
             <div className="space-y-2">
               <SmartTimePicker
                 value={departureTime}
-                onChange={setDepartureTime}
+                onChange={(v) => setDepartureTime(typeof v === 'string' ? v : v.toISOString())}
                 label="When do you want to travel?"
               />
             </div>
@@ -263,7 +271,7 @@ const CreateRequest = () => {
             <Button 
               type="submit" 
               className="w-full h-12 text-lg" 
-              disabled={loading || !fromLocation || !toLocation}
+              disabled={loading || !fromLocation || !toLocation || !user}
             >
               {loading ? 'Creating Request...' : 'Find My Ride'}
             </Button>

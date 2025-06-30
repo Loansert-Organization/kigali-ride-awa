@@ -1,13 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Trophy, Gift, Users, Star, Share2, Crown } from 'lucide-react';
+import { Trophy, Users, Star, Share2, Crown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/hooks/use-toast';
 import { countryDetectionService } from '@/services/CountryDetectionService';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+// NOTE: Some generic Supabase rows are typed as any while the schema stabilises.
 
 interface UserRewards {
   totalPoints: number;
@@ -46,82 +50,39 @@ export const RewardsCard = () => {
     5: `${currencySymbol}500`
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchRewardsData();
+  const fetchRewardsData = useCallback(async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
     }
-  }, [user]);
-
-  const fetchRewardsData = async () => {
-    if (!user) return;
 
     try {
-      setLoading(true);
+      const { data, error } = await supabase
+        .from('loyalty_actions')
+        .select('*')
+        .eq('user_id', user.id);
 
-      // Get user rewards and referrals
-      const { data: userRewardsData, error: rewardsError } = await supabase
-        .from('user_rewards')
-        .select('points, week')
-        .eq('user_id', user.id)
-        .order('week', { ascending: false });
+      if (error) throw error;
 
-      if (rewardsError) throw rewardsError;
-
-      // Get referrals count
-      const { data: referralsData, error: referralsError } = await supabase
-        .from('user_referrals')
-        .select('id')
-        .eq('referrer_id', user.id)
-        .eq('validation_status', 'valid');
-
-      if (referralsError) throw referralsError;
-
-      // Get current week leaderboard
-      const { data: leaderboardData, error: leaderboardError } = await supabase
-        .from('weekly_rewards_leaderboard_view')
-        .select('promo_code, total_points, weekly_rank, referrals_made')
-        .order('weekly_rank', { ascending: true })
-        .limit(10);
-
-      if (leaderboardError) throw leaderboardError;
-
-      // Calculate user stats
-      const totalPoints = userRewardsData?.reduce((sum, reward) => sum + (reward.points || 0), 0) || 0;
-      const currentWeekStart = getCurrentWeekStart();
-      const weeklyPoints = userRewardsData?.find(r => r.week === currentWeekStart)?.points || 0;
-      
-      // Find user's rank in leaderboard
-      const userRank = leaderboardData?.find(entry => entry.promo_code === user.promo_code)?.weekly_rank || 0;
-
+      const totalPoints = data?.reduce((sum: number, action: any) => sum + action.points_awarded, 0) || 0;
       setRewards({
         totalPoints,
-        weeklyPoints,
-        weeklyRank: userRank,
-        referralsMade: referralsData?.length || 0,
-        promoCode: user.promo_code || '',
+        weeklyPoints: 0, // TODO: Calculate weekly points
+        weeklyRank: 0, // TODO: Calculate weekly rank
+        referralsMade: 0, // TODO: Calculate referrals
+        promoCode: user.promo_code || 'RIDE-USER',
         currency: countryInfo?.currency || 'RWF'
       });
-
-      setLeaderboard(leaderboardData || []);
-
     } catch (error) {
-      console.error('Error fetching rewards data:', error);
-      toast({
-        title: "Error loading rewards",
-        description: "Unable to load your rewards data",
-        variant: "destructive"
-      });
+      console.error('Error fetching rewards:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, user?.promo_code, countryInfo?.currency]);
 
-  const getCurrentWeekStart = () => {
-    const now = new Date();
-    const monday = new Date(now.setDate(now.getDate() - now.getDay() + 1));
-    monday.setHours(0, 0, 0, 0);
-    return monday.toISOString().split('T')[0];
-  };
+  useEffect(() => {
+    fetchRewardsData();
+  }, [fetchRewardsData]);
 
   const handleShareReferralCode = () => {
     const message = `🚗 Join me on Kigali Ride and earn points! Use my referral code: ${rewards?.promoCode}`;

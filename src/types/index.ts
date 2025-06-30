@@ -172,7 +172,7 @@ export interface LoyaltyAction {
 export interface MapLocation {
   lat: number;
   lng: number;
-  address?: string;
+  address: string;
 }
 
 export type CombinedTrip = (PassengerTrip | DriverTrip) & {

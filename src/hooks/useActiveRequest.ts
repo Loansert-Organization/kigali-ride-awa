@@ -78,7 +78,7 @@ export const useActiveRequest = () => {
           table: 'passenger_trips',
           filter: `passenger_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Passenger trip update:', payload);
           
           if (payload.eventType === 'UPDATE' && payload.new) {
@@ -119,7 +119,7 @@ export const useActiveRequest = () => {
           table: 'trip_matches',
           filter: `passenger_trip_id=eq.${activeRequest.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Trip match update:', payload);
           
           if (payload.eventType === 'INSERT' && payload.new) {

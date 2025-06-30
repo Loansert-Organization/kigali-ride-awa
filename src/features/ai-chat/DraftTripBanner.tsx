@@ -43,7 +43,7 @@ export const DraftTripBanner = () => {
           schema: 'public',
           table: 'ai_draft_trips',
           filter: `user_id=eq.${user.id}`
-        }, (payload) => {
+        }, (_payload: any) => {
           loadDraftTrips();
         })
         .subscribe();

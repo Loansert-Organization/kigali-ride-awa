@@ -21,9 +21,10 @@ export const useGeo = (watch: boolean = false): UseGeoReturn => {
   const [error, setError] = useState<Error | null>(null);
 
   const handlePositionSuccess = (position: GeolocationPosition) => {
-    const newLocation = {
+    const newLocation: MapLocation = {
       lat: position.coords.latitude,
       lng: position.coords.longitude,
+      address: `Lat ${position.coords.latitude.toFixed(4)}, Lng ${position.coords.longitude.toFixed(4)}`,
     };
     setCurrentLocation(newLocation);
     setLoading(false);

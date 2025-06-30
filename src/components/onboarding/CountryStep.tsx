@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Loader2, MapPin, Search, CheckCircle, Globe } from 'lucide-react';
 import { countryDetectionService, CountryInfo } from '@/services/CountryDetectionService';
 import { useToast } from '@/hooks/use-toast';
@@ -28,12 +27,7 @@ export const CountryStep = ({ onCountrySelect, onSkip }: CountryStepProps) => {
       )
     : allCountries;
 
-  // Auto-detect country on mount
-  useEffect(() => {
-    handleAutoDetect();
-  }, []);
-
-  const handleAutoDetect = async () => {
+  const handleAutoDetect = useCallback(async () => {
     setIsDetecting(true);
     
     try {
@@ -77,7 +71,12 @@ export const CountryStep = ({ onCountrySelect, onSkip }: CountryStepProps) => {
     } finally {
       setIsDetecting(false);
     }
-  };
+  }, [toast]);
+
+  // Auto-detect country on mount
+  useEffect(() => {
+    handleAutoDetect();
+  }, [handleAutoDetect]);
 
   const handleCountrySelect = (country: CountryInfo) => {
     setSelectedCountry(country);

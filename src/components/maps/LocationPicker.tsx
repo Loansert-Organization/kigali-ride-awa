@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { googleMapsService } from '@/services/GoogleMapsService';
 import { countryDetectionService } from '@/services/CountryDetectionService';
 import { MapLocation } from '@/types';
-import { Search, MapPin, Crosshair, Map, Check, Loader2, AlertTriangle } from 'lucide-react';
+import { Search, MapPin, Crosshair, Map, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 

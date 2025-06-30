@@ -12,12 +12,24 @@ import { useAuth } from "@/contexts/AuthContext";
 export const useCurrentUser = () => {
   const { user, userProfile, driverProfile, role, loading } = useAuth();
   
+  // Augmented user object with app-specific fields to satisfy TS where Supabase types are lacking
+  type AppUser = typeof user extends null ? null : (NonNullable<typeof user> & {
+    id?: string;
+    phone?: string;
+    role?: string;
+    country?: string;
+    promo_code?: string;
+    is_anonymous?: boolean;
+  });
+
+  const safeUser = user as AppUser;
+
   return {
-    user,
+    user: safeUser,
     userProfile,
     driverProfile,
     role,
     loading,
-    isAuthenticated: !!user && !user.is_anonymous,
+    isAuthenticated: !!safeUser && !safeUser?.is_anonymous,
   };
 }; 

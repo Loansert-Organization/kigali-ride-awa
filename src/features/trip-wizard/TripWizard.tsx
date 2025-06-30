@@ -11,21 +11,14 @@ import { SuccessSheet } from './SuccessSheet';
 import { useTripDraft } from './hooks/useTripDraft';
 import { Car, UserCheck, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { MapLocation } from '@/types';
 
 export type TripRole = 'driver' | 'passenger';
 
 export interface TripDraft {
   role: TripRole;
-  origin?: {
-    lat: number;
-    lng: number;
-    address: string;
-  };
-  destination?: {
-    lat: number;
-    lng: number;
-    address: string;
-  };
+  origin?: MapLocation;
+  destination?: MapLocation;
   seats: number;
   vehicleType?: string;
   departureTime?: Date;

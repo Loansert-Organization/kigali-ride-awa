@@ -25,7 +25,7 @@ const Matches = () => {
         description: "Your ride has been confirmed. The driver will be notified.",
       });
       navigate('/passenger/home');
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to accept the match. Please try again.",
