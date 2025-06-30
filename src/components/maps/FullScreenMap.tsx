@@ -4,7 +4,6 @@
  * then calls props.onMapReady(map) so parent can add markers.
  */
 import React, { useEffect, useRef } from "react";
-import { googleMaps } from "@/config/environment";
 
 declare global {
   interface Window { _initKigaliRideMap?: () => void }
@@ -28,7 +27,7 @@ const FullScreenMap: React.FC<Props> = ({ onMapReady, children }) => {
       window._initKigaliRideMap = () => init();
       const s = document.createElement("script");
       s.src =
-        `https://maps.googleapis.com/maps/api/js?key=${googleMaps.apiKey}&callback=_initKigaliRideMap`;
+        `https://maps.googleapis.com/maps/api/js?key=AIzaSyCVbVWLFl5O2TdL7zDAjM08ws9D6IxPEFw&callback=_initKigaliRideMap`;
       s.async = true;
       document.body.appendChild(s);
     }

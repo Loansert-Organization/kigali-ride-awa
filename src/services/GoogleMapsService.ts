@@ -6,7 +6,7 @@ class GoogleMapsService {
   private apiKey: string;
 
   constructor() {
-    this.apiKey = 'AIzaSyBvOkuAiB2OLdLFHJ9E03oQJfROa_1_k3w'; // Public demo key
+    this.apiKey = 'AIzaSyCVbVWLFl5O2TdL7zDAjM08ws9D6IxPEFw';
     this.loader = new Loader({
       apiKey: this.apiKey,
       version: 'weekly',
