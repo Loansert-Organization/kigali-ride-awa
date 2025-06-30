@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -104,6 +105,10 @@ const WelcomePage = () => {
       await setRole(userRole);
       
       setShowRoleSelection(false);
+      
+      // Navigate immediately after setting role
+      const targetPath = userRole === UserRole.DRIVER ? '/driver/home' : '/passenger/home';
+      navigate(targetPath, { replace: true });
       
     } catch (e) {
       toast({ title: 'Error', description: 'Failed to save role', variant: 'destructive'});
@@ -235,4 +240,4 @@ const WelcomePage = () => {
   );
 };
 
-export default WelcomePage; 
+export default WelcomePage;
