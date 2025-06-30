@@ -26,7 +26,8 @@
     "clean": "rm -rf dist node_modules .turbo",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "rls:test": "ts-node scripts/rls-smoke.ts"
+    "rls:test": "ts-node scripts/rls-smoke.ts",
+    "lint:a11y": "eslint src --ext .tsx,.ts --max-warnings=0"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.16.8",
@@ -114,7 +115,9 @@
     "typescript-eslint": "^8.0.1",
     "vite": "5.4.19",
     "vite-bundle-visualizer": "^0.11.0",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "ts-node": "^10.9.2",
+    "eslint-plugin-jsx-a11y": "^6.7.1"
   },
   "overrides": {
     "esbuild": "0.21.5"
