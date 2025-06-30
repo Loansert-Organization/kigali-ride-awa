@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 export default {
-	darkMode: ["class"],
+	darkMode: 'class',
 	content: [
 		"./pages/**/*.{ts,tsx}",
 		"./components/**/*.{ts,tsx}",
@@ -25,11 +25,13 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: 'hsl(var(--primary))',
+					DEFAULT: '#3D7DFF',
+					dark: '#547CFF',
 					foreground: 'hsl(var(--primary-foreground))'
 				},
 				secondary: {
-					DEFAULT: 'hsl(var(--secondary))',
+					DEFAULT: '#8E42FF',
+					dark: '#A66BFF',
 					foreground: 'hsl(var(--secondary-foreground))'
 				},
 				destructive: {
@@ -61,6 +63,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				bg: {
+					DEFAULT: '#ffffff',
+					dark: '#0e0f11'
+				},
+				fg: {
+					DEFAULT: '#111827',
+					dark: '#f4f4f5'
 				}
 			},
 			borderRadius: {

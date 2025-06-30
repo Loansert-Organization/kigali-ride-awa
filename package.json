@@ -25,7 +25,8 @@
     "analyze": "vite build --mode production && vite-bundle-visualizer",
     "clean": "rm -rf dist node_modules .turbo",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\""
+    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "rls:test": "ts-node scripts/rls-smoke.ts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.16.8",
@@ -68,9 +69,11 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
+    "framer-motion": "12.19.2",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+    "openai": "5.8.2",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -106,6 +109,7 @@
     "prettier-plugin-tailwindcss": "^0.5.9",
     "tailwindcss": "^3.4.11",
     "terser": "5.43.1",
+    "ts-prune": "0.10.3",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "5.4.19",

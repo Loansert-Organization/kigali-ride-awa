@@ -1,8 +1,14 @@
+const CACHE_NAME='awa-cache-v1';
+const OFFLINE_URL='/offline.html';
 
 // Simple service worker for push notifications
 self.addEventListener('install', (event) => {
   console.log('Service Worker installing');
-  self.skipWaiting();
+  event.waitUntil((async()=>{
+    const cache=await caches.open(CACHE_NAME);
+    await cache.addAll(['/',OFFLINE_URL]);
+    self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {
@@ -45,4 +51,19 @@ self.addEventListener('notificationclick', (event) => {
       self.clients.openWindow('/')
     );
   }
+});
+
+self.addEventListener('fetch',e=>{
+ if(e.request.mode==='navigate'){
+   e.respondWith((async()=>{
+     try{
+       const preload=await e.preloadResponse;
+       if(preload) return preload;
+       return await fetch(e.request);
+     }catch(err){
+       const cache=await caches.open(CACHE_NAME);
+       return await cache.match(OFFLINE_URL);
+     }
+   })());
+ }
 });

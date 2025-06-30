@@ -70,10 +70,11 @@ npm install
 ### 3. Set up environment variables
 Create a `.env` file based on `.env.example`:
 ```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_GOOGLE_MAPS_API_KEY=your_google_maps_key
+# Google Maps API Key for location services
+VITE_GOOGLE_MAPS_KEY=your_google_maps_api_key_here
 ```
+
+The Supabase configuration is already set up in `src/config/environment.ts`.
 
 ### 4. Run the development server
 ```bash

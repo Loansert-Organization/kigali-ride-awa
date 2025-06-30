@@ -31,20 +31,23 @@ export interface WhatsAppOTPResponse {
 // Trip related types
 export interface TripData {
   id: string;
-  driver_id: string;
-  origin: string;
-  destination: string;
-  origin_latitude?: number;
-  origin_longitude?: number;
-  destination_latitude?: number;
-  destination_longitude?: number;
-  departure_time: string;
-  available_seats: number;
-  fare: number;
-  status: 'active' | 'completed' | 'cancelled';
+  user_id: string;
   created_at: string;
-  updated_at: string;
-  [key: string]: unknown;
+  from_location: string;
+  to_location: string;
+  from_lat: number;
+  from_lng: number;
+  to_lat: number;
+  to_lng: number;
+  scheduled_time: string;
+  seats_available: number;
+  status: 'pending' | 'matched' | 'completed' | 'cancelled';
+  fare?: number;
+  vehicle_type?: string;
+  description?: string;
+  is_negotiable?: boolean;
+  passenger_name?: string;
+  passenger_phone?: string;
 }
 
 // Driver profile types

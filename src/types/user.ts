@@ -1,4 +1,3 @@
-
 export interface UserProfile {
   id: string;
   phone_number?: string;
@@ -18,9 +17,12 @@ export interface DriverProfile {
   id: string;
   user_id: string;
   vehicle_type: string;
-  plate_number: string;
-  preferred_zone?: string | null;
-  is_online: boolean;
+  license_plate: string;
+  vehicle_model: string;
+  vehicle_color: string;
+  vehicle_number?: string;
+  is_available: boolean;
+  current_location?: { lat: number; lng: number };
   created_at: string;
   updated_at: string;
 }

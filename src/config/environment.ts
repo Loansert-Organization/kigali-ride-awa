@@ -1,8 +1,7 @@
-
 // Environment configuration for the application
 export const config = {
   googleMaps: {
-    apiKey: 'AIzaSyDGw_ZPNxHL7DFJ3dnxQ_LbtKz_jhHHFr8'
+    apiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyCVbVWLFl5O2TdL7zDAjM08ws9D6IxPEFw'
   },
   googleOAuth: {
     clientId: '378544894308-56vi69m88k8cc29b4fikf7g8a93fhoap.apps.googleusercontent.com'
@@ -20,3 +19,5 @@ export const config = {
 
 // Export individual configs for easier imports
 export const { googleMaps, googleOAuth, supabase, app } = config;
+
+export const OPENAI_PROXY = import.meta.env.VITE_OPENAI_PROXY || '/functions/v1/ai-trip-agent';

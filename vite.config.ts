@@ -7,6 +7,13 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      '/functions': {
+        target: 'http://localhost:54321',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   plugins: [
     react(),
@@ -30,6 +37,7 @@ export default defineConfig(({ mode }) => ({
           'maps': ['@googlemaps/js-api-loader', '@react-google-maps/api'],
           'charts': ['recharts'],
           'forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          'ai': ['framer-motion', 'openai'],
         },
       },
     },

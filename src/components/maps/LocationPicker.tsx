@@ -1,258 +1,468 @@
-
-import React, { useEffect, useRef, useState } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { MapPin, Search, Navigation } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
+import { useState, useEffect, useRef } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { googleMapsService } from '@/services/GoogleMapsService';
+import { countryDetectionService } from '@/services/CountryDetectionService';
+import { MapLocation } from '@/types';
+import { Search, MapPin, Crosshair, Map, Check, Loader2, AlertTriangle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface LocationPickerProps {
-  onLocationSelect: (location: { lat: number; lng: number; address: string }) => void;
-  initialLocation?: { lat: number; lng: number };
+  onLocationSelect: (location: MapLocation) => void;
+  title?: string;
   placeholder?: string;
-  height?: string;
+  selectedLocation?: MapLocation | null;
+  showCurrentLocation?: boolean;
+  type?: 'pickup' | 'destination';
 }
 
-const LocationPicker: React.FC<LocationPickerProps> = ({
-  onLocationSelect,
-  initialLocation,
-  placeholder = "Search for a location",
-  height = "400px"
-}) => {
+export const LocationPicker = ({ 
+  onLocationSelect, 
+  title, 
+  placeholder = "Search for a location...",
+  selectedLocation,
+  showCurrentLocation = false,
+  type = 'destination'
+}: LocationPickerProps) => {
+  const { toast } = useToast();
+  const { user } = useCurrentUser();
   const mapRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchValue, setSearchValue] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  // State management
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
+  const [search, setSearch] = useState(selectedLocation?.address || '');
+  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [currentLocationDetected, setCurrentLocationDetected] = useState(false);
+  const [isMapLoading, setIsMapLoading] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
+  // Get user's country for location biasing
+  const userCountry = user?.country || 'RW'; // Default to Rwanda
+  const countryInfo = countryDetectionService.getCountryByCode(userCountry);
+  const mapCenter = countryInfo?.center || { lat: -1.9441, lng: 30.0619 };
+
+  // Debug logging
   useEffect(() => {
-    initializeMap();
+    console.log('LocationPicker mounted:', { type, userCountry, mapCenter });
   }, []);
 
-  const initializeMap = async () => {
-    if (!mapRef.current || !searchInputRef.current) return;
-
-    try {
-      setIsLoading(true);
-
-      const center = initialLocation || { lat: -1.9441, lng: 30.0619 }; // Default to Kigali
+  // Initialize Map when dialog opens
+  useEffect(() => {
+    if (isMapOpen && mapRef.current && !map) {
+      console.log('Initializing map...');
+      setIsMapLoading(true);
       
-      const map = await googleMapsService.initializeMap(mapRef.current, {
-        center,
-        zoom: 15,
+      const mapOptions: google.maps.MapOptions = {
+        center: selectedLocation ? 
+          { lat: selectedLocation.lat, lng: selectedLocation.lng } : 
+          mapCenter,
+        zoom: selectedLocation ? 16 : 13,
+        disableDefaultUI: false,
+        zoomControl: true,
+        streetViewControl: false,
+        fullscreenControl: false,
+        mapTypeControl: false,
+        gestureHandling: 'greedy',
         styles: [
           {
-            featureType: 'poi',
+            featureType: 'poi.business',
             elementType: 'labels',
             stylers: [{ visibility: 'on' }]
           }
         ]
-      });
+      };
 
-      mapInstanceRef.current = map;
-
-      // Initialize autocomplete
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(searchInputRef.current, {
-        bounds: new window.google.maps.LatLngBounds(
-          new window.google.maps.LatLng(-2.5, 28.8), // SW bounds for Rwanda
-          new window.google.maps.LatLng(-1.0, 31.2)  // NE bounds for Rwanda
-        ),
-        strictBounds: false,
-        types: ['establishment', 'geocode']
-      });
-
-      // Listen for place selection
-      autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current!.getPlace();
-        if (place.geometry && place.geometry.location) {
-          const location = {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng(),
-            address: place.formatted_address || place.name || ''
-          };
+      googleMapsService.initializeMap(mapRef.current, mapOptions)
+        .then((mapInstance) => {
+          console.log('Map initialized successfully');
+          setMap(mapInstance);
+          setIsMapLoading(false);
           
-          updateSelectedLocation(location);
-          map.setCenter(location);
-          map.setZoom(16);
-        }
-      });
-
-      // Listen for map clicks
-      map.addListener('click', async (event: google.maps.MapMouseEvent) => {
-        if (event.latLng) {
-          try {
-            const address = await googleMapsService.geocodeLocation(event.latLng);
-            const location = {
-              lat: event.latLng.lat(),
-              lng: event.latLng.lng(),
-              address
-            };
-            
-            updateSelectedLocation(location);
-            setSearchValue(address);
-          } catch (error) {
-            toast({
-              title: "Geocoding Error",
-              description: "Could not get address for this location",
-              variant: "destructive"
-            });
+          // If there's a selected location, add marker immediately
+          if (selectedLocation) {
+            addMapMarker({ lat: selectedLocation.lat, lng: selectedLocation.lng });
           }
-        }
-      });
-
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error initializing location picker:', error);
-      setIsLoading(false);
-      toast({
-        title: "Map Error",
-        description: "Could not initialize location picker",
-        variant: "destructive"
-      });
+        })
+        .catch((error) => {
+          console.error('Failed to initialize map:', error);
+          setIsMapLoading(false);
+          toast({
+            title: "Map Error",
+            description: "Failed to load map. Please check your internet connection.",
+            variant: "destructive"
+          });
+        });
     }
-  };
+  }, [isMapOpen, selectedLocation, mapCenter]);
 
-  const updateSelectedLocation = (location: { lat: number; lng: number; address: string }) => {
-    setSelectedLocation(location);
-
-    // Update marker
-    if (markerRef.current) {
-      markerRef.current.setMap(null);
-    }
-
-    if (mapInstanceRef.current) {
-      markerRef.current = new window.google.maps.Marker({
-        position: { lat: location.lat, lng: location.lng },
-        map: mapInstanceRef.current,
-        icon: {
-          url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiM4QjVDRjYiLz4KPHN2ZyB4PSI4IiB5PSI4IiB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAyQzggNCA2IDcgNiAxMGMwIDUgNiAxMSA2IDExczYtNiA2LTExYzAtMy0yLTYtNi04WiIgZmlsbD0id2hpdGUiLz4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMCIgcj0iMyIgZmlsbD0iIzhCNUNGNiIvPgo8L3N2Zz4KPC9zdmc+',
-          scaledSize: new window.google.maps.Size(32, 32),
-          anchor: new window.google.maps.Point(16, 32)
-        },
-        animation: window.google.maps.Animation.DROP,
-        title: location.address
-      });
-    }
-  };
-
-  const useCurrentLocation = async () => {
-    try {
-      const location = await googleMapsService.getCurrentLocation();
-      const address = await googleMapsService.geocodeLocation(
-        new window.google.maps.LatLng(location.lat, location.lng)
-      );
-      
-      const locationData = { ...location, address };
-      updateSelectedLocation(locationData);
-      setSearchValue(address);
-      
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.setCenter(location);
-        mapInstanceRef.current.setZoom(16);
+  // Add map click listener
+  useEffect(() => {
+    if (!map) return;
+    
+    const clickListener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
+      if (e.latLng) {
+        console.log('Map clicked:', e.latLng.lat(), e.latLng.lng());
+        handleMapLocationSelect({ lat: e.latLng.lat(), lng: e.latLng.lng() });
       }
-      
-      toast({
-        title: "Location Found",
-        description: "Using your current location"
-      });
+    });
+    
+    return () => google.maps.event.removeListener(clickListener);
+  }, [map]);
+
+  const addMapMarker = (position: { lat: number, lng: number }) => {
+    if (!map) return;
+    
+    console.log('Adding marker at:', position);
+    
+    // Remove existing marker
+    if (marker) {
+      marker.setMap(null);
+    }
+    
+    // Create new marker
+    const newMarker = new google.maps.Marker({ 
+      position, 
+      map, 
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 12,
+        fillColor: type === 'pickup' ? '#22c55e' : '#ef4444',
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 3
+      },
+      title: type === 'pickup' ? 'Pickup Location' : 'Destination',
+      draggable: true,
+      animation: google.maps.Animation.DROP
+    });
+    
+    // Make marker draggable
+    newMarker.addListener('dragend', (e: google.maps.MapMouseEvent) => {
+      if (e.latLng) {
+        console.log('Marker dragged to:', e.latLng.lat(), e.latLng.lng());
+        handleMapLocationSelect({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+      }
+    });
+    
+    setMarker(newMarker);
+    map.panTo(position);
+  };
+
+  const handleMapLocationSelect = async (coords: { lat: number; lng: number }) => {
+    console.log('Handling map location select:', coords);
+    addMapMarker(coords);
+    
+    try {
+      const results = await googleMapsService.geocode({ location: coords });
+      if (results.length > 0) {
+        const location: MapLocation = { 
+          ...coords, 
+          address: results[0].formatted_address 
+        };
+        console.log('Geocoded location:', location);
+        setSearch(location.address || '');
+        onLocationSelect(location);
+      }
     } catch (error) {
+      console.error("Geocoding failed", error);
       toast({
         title: "Location Error",
-        description: "Could not get your current location",
+        description: "Unable to get address for this location",
         variant: "destructive"
       });
     }
   };
 
-  const confirmSelection = () => {
-    if (selectedLocation) {
-      onLocationSelect(selectedLocation);
+  const handleCurrentLocation = async () => {
+    console.log('Getting current location...');
+    setIsDetectingLocation(true);
+    
+    try {
+      const position = await googleMapsService.getCurrentPosition();
+      const coords = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+      
+      console.log('Current position:', coords);
+      
+      const results = await googleMapsService.geocode({ location: coords });
+      if (results.length > 0) {
+        const location: MapLocation = {
+          ...coords,
+          address: results[0].formatted_address
+        };
+        
+        console.log('Current location geocoded:', location);
+        setSearch(location.address || '');
+        setCurrentLocationDetected(true);
+        onLocationSelect(location);
+        
+        toast({
+          title: "Location Detected",
+          description: "Current location set successfully",
+        });
+      }
+    } catch (error) {
+      console.error("Location detection failed", error);
       toast({
-        title: "Location Selected",
-        description: selectedLocation.address
+        title: "Location Error",
+        description: "Unable to detect current location. Please enable location permissions.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
+
+  const handleSearch = async (query: string) => {
+    console.log('Search input:', query);
+    setSearch(query);
+    
+    // Clear existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    if (query.length > 2) {
+      // Debounce search
+      const timeout = setTimeout(async () => {
+        try {
+          console.log('Performing autocomplete search...');
+          const autocompleteService = await googleMapsService.getAutocompleteService();
+          
+          // Enhanced search with country-specific biasing
+          const request: google.maps.places.AutocompletionRequest = {
+            input: query,
+            componentRestrictions: { country: userCountry.toLowerCase() },
+            location: new google.maps.LatLng(mapCenter.lat, mapCenter.lng),
+            radius: 100000, // 100km radius around country center
+            types: ['establishment', 'geocode'], // Include businesses and addresses
+          };
+          
+          autocompleteService.getPlacePredictions(request, (preds, status) => {
+            console.log('Autocomplete result:', status, preds?.length || 0, 'predictions');
+            
+            if (status === google.maps.places.PlacesServiceStatus.OK && preds) {
+              // Sort predictions to prioritize local results
+              const sortedPreds = preds.sort((a, b) => {
+                const countryName = countryInfo?.name.toLowerCase() || '';
+                const aInCountry = a.description.toLowerCase().includes(countryName);
+                const bInCountry = b.description.toLowerCase().includes(countryName);
+                
+                if (aInCountry && !bInCountry) return -1;
+                if (!aInCountry && bInCountry) return 1;
+                
+                // If both mention country or neither, sort by relevance (Google's default order)
+                return 0;
+              });
+              
+              setPredictions(sortedPreds);
+            } else {
+              console.log('No predictions found or error:', status);
+              setPredictions([]);
+            }
+          });
+        } catch (error) {
+          console.error("Autocomplete failed", error);
+          setPredictions([]);
+          toast({
+            title: "Search Error",
+            description: "Unable to search locations. Please check your internet connection.",
+            variant: "destructive"
+          });
+        }
+      }, 300); // 300ms debounce
+      
+      setSearchTimeout(timeout);
+    } else {
+      setPredictions([]);
+    }
+  };
+
+  const handlePredictionSelect = async (prediction: google.maps.places.AutocompletePrediction) => {
+    console.log('Prediction selected:', prediction.description);
+    
+    try {
+      // Close predictions immediately for better UX
+      setPredictions([]);
+      setSearch(prediction.description);
+      
+      // Get places service
+      const placesService = await googleMapsService.getPlacesService(map || undefined);
+      
+      placesService.getDetails({ 
+        placeId: prediction.place_id, 
+        fields: ['geometry', 'formatted_address', 'name', 'place_id'] 
+      }, (place, status) => {
+        console.log('Place details result:', status, place);
+        
+        if (status === google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          const address = place.formatted_address || place.name || prediction.description;
+          const location: MapLocation = { lat, lng, address };
+          
+          console.log('Selected location:', location);
+          onLocationSelect(location);
+          
+          // Update map marker if map is open
+          if (map) {
+            addMapMarker({ lat, lng });
+          }
+        } else {
+          console.error('Place details failed:', status);
+          toast({
+            title: "Location Error",
+            description: "Unable to get details for this location",
+            variant: "destructive"
+          });
+        }
+      });
+    } catch (error) {
+      console.error("Place details failed", error);
+      toast({
+        title: "Location Error",
+        description: "Unable to select this location",
+        variant: "destructive"
       });
     }
+  };
+
+  const confirmMapSelection = () => {
+    setIsMapOpen(false);
+    toast({
+      title: "Location Selected",
+      description: "Location has been set from map",
+    });
   };
 
   return (
-    <Card style={{ height }} className="relative overflow-hidden">
-      <CardContent className="p-0 h-full flex flex-col">
-        {/* Search header */}
-        <div className="p-4 border-b bg-white">
-          <div className="flex space-x-2">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-              <Input
-                ref={searchInputRef}
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                placeholder={placeholder}
-                className="pl-10"
-              />
-            </div>
-            <Button
-              onClick={useCurrentLocation}
-              variant="outline"
-              size="sm"
-            >
-              <Navigation className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Map container */}
+    <div className="space-y-3">
+      {title && <h3 className="font-semibold text-lg">{title}</h3>}
+      
+      {/* Main Input Row */}
+      <div className="flex gap-2">
+        {/* Search Input */}
         <div className="flex-1 relative">
-          <div ref={mapRef} className="w-full h-full" />
+          <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+          <Input
+            placeholder={placeholder}
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="pl-10"
+            data-destination-input={type === 'destination'}
+          />
           
-          {isLoading && (
-            <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="w-8 h-8 mx-auto mb-2 animate-pulse text-purple-600" />
-                <p className="text-sm text-gray-600">Loading map...</p>
-              </div>
-            </div>
+          {/* Autocomplete Dropdown */}
+          {predictions.length > 0 && (
+            <Card className="absolute top-full left-0 right-0 z-50 mt-1 shadow-lg max-h-60 overflow-y-auto">
+              <CardContent className="p-0">
+                {predictions.map(prediction => (
+                  <div 
+                    key={prediction.place_id} 
+                    onClick={() => handlePredictionSelect(prediction)} 
+                    className="p-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0 flex items-start gap-2"
+                  >
+                    <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">
+                        {prediction.structured_formatting?.main_text || prediction.description}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate">
+                        {prediction.structured_formatting?.secondary_text || ''}
+                      </div>
+                      {countryInfo && prediction.description.toLowerCase().includes(countryInfo.name.toLowerCase()) && (
+                        <div className="text-xs text-green-600 font-medium">
+                          {countryInfo.flag} {countryInfo.name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           )}
-
-          {/* Cross-hair indicator */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-8 h-8 relative">
-              <div className="absolute inset-0 border-2 border-purple-600 rounded-full bg-white/80"></div>
-              <div className="absolute top-1/2 left-1/2 w-1 h-1 bg-purple-600 rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
-            </div>
-          </div>
         </div>
 
-        {/* Selection confirmation */}
-        {selectedLocation && (
-          <div className="p-4 border-t bg-white">
-            <div className="flex items-start space-x-3">
-              <MapPin className="w-5 h-5 text-purple-600 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  {selectedLocation.address}
+        {/* Map Picker Button */}
+        <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="icon" className="flex-shrink-0">
+              <Map className="w-4 h-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>
+                Select {type === 'pickup' ? 'Pickup' : 'Destination'} Location
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 relative">
+              {isMapLoading ? (
+                <div className="w-full h-96 rounded-lg border flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin" />
+                  <span className="ml-2">Loading map...</span>
+                </div>
+              ) : (
+                <div ref={mapRef} className="w-full h-96 rounded-lg border" />
+              )}
+              <div className="mt-4 flex justify-between items-center">
+                <p className="text-sm text-gray-600">
+                  Click on the map or drag the marker to select precise location
                 </p>
-                <p className="text-xs text-gray-500">
-                  {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
-                </p>
+                <Button onClick={confirmMapSelection} disabled={isMapLoading}>
+                  <Check className="w-4 h-4 mr-2" />
+                  Confirm Location
+                </Button>
               </div>
-              <Button
-                onClick={confirmSelection}
-                size="sm"
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                Select
-              </Button>
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+          </DialogContent>
+        </Dialog>
+      </div>
 
-export default LocationPicker;
+      {/* Current Location Button (for pickup only) */}
+      {showCurrentLocation && type === 'pickup' && (
+        <Button 
+          variant="outline" 
+          onClick={handleCurrentLocation}
+          disabled={isDetectingLocation}
+          className="w-full"
+        >
+          {isDetectingLocation ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Crosshair className="w-4 h-4 mr-2" />
+          )}
+          {isDetectingLocation ? 'Detecting Location...' : 
+           currentLocationDetected ? 'Current Location ✓' : 'Use Current Location'}
+        </Button>
+      )}
+
+      {/* Selected Location Display */}
+      {selectedLocation && (
+        <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+          <div className="flex items-start gap-2">
+            <MapPin className={`w-4 h-4 mt-0.5 ${type === 'pickup' ? 'text-green-600' : 'text-red-600'}`} />
+            <span className="flex-1">{selectedLocation.address}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Debug Info (only in development) */}
+      {import.meta.env.MODE === 'development' && (
+        <div className="text-xs text-gray-400 bg-gray-100 p-2 rounded">
+          <div>Country: {userCountry} ({countryInfo?.name})</div>
+          <div>Search results: {predictions.length}</div>
+          <div>Map center: {mapCenter.lat.toFixed(4)}, {mapCenter.lng.toFixed(4)}</div>
+        </div>
+      )}
+    </div>
+  );
+}; 
