@@ -1,11 +1,33 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { AIContext } from "../_shared/types.ts";
+import { captureError, logInfo } from "../_shared/logging.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Rate-limit bucket (in-memory)
+const RATE_LIMIT = Number(Deno.env.get('AI_RATE_LIMIT') ?? '30'); // requests per minute per IP
+const buckets: Map<string, { ts: number; count: number }> = new Map();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const bucket = buckets.get(ip);
+  if (!bucket) {
+    buckets.set(ip, { ts: now, count: 1 });
+    return false;
+  }
+  // reset window if >60s
+  if (now - bucket.ts > 60_000) {
+    bucket.ts = now;
+    bucket.count = 1;
+    return false;
+  }
+  bucket.count += 1;
+  return bucket.count > RATE_LIMIT;
+}
 
 // Model selection logic based on task type
 function selectModel(taskType: string, complexity: 'simple' | 'medium' | 'complex' = 'medium'): string {
@@ -23,13 +45,31 @@ function selectModel(taskType: string, complexity: 'simple' | 'medium' | 'comple
     'explain-error': 'gpt-4o',
     'categorize-incident': 'claude',
     'generate-suggestions': 'claude',
-    'ux-recommendations': 'claude'
+    'ux-recommendations': 'claude',
+    'chat': 'gpt-4o-mini' // Use mini model for chat to reduce costs
   };
   
   return modelMap[taskType as keyof typeof modelMap] || 'gpt-4o';
 }
 
-async function callOpenAI(prompt: string, context: AIContext) {
+async function callOpenAI(prompt: string, context: AIContext, messages?: any[]) {
+  const systemMessage = {
+    role: 'system',
+    content: `You are a helpful AI assistant for Kigali Ride AWA, a ride-sharing app for Sub-Saharan Africa. 
+You help users with:
+- Planning trips and finding rides
+- Understanding how to use the app
+- Explaining pricing (typically 150 RWF per km, varies by country)
+- Troubleshooting issues
+- General questions about the service
+
+Be friendly, concise, and helpful. Focus on practical solutions.`
+  };
+
+  const chatMessages = messages 
+    ? [systemMessage, ...messages]
+    : [systemMessage, { role: 'user', content: prompt }];
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -37,13 +77,10 @@ async function callOpenAI(prompt: string, context: AIContext) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: 'You are an expert developer and AI assistant specializing in React, TypeScript, Supabase, and mobile-first PWA development for African markets.' },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.1,
-      max_tokens: 4000,
+      model: context?.model || 'gpt-4o-mini',
+      messages: chatMessages,
+      temperature: 0.7,
+      max_tokens: 500, // Keep responses concise
     }),
   });
   
@@ -94,12 +131,46 @@ async function callGemini(prompt: string, context: AIContext) {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
   try {
-    const { taskType, prompt, context, preferredModel, complexity } = await req.json();
+    // Rate-limit check
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+    if (isRateLimited(ip)) {
+      logInfo("rate limit", { ip });
+      return new Response(JSON.stringify({ error: "rate limit exceeded" }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    const body = await req.json();
+    
+    // Handle chat action specifically
+    if (body.action === 'chat') {
+      const { messages } = body;
+      
+      try {
+        const response = await callOpenAI('', { model: 'gpt-4o-mini' }, messages);
+        
+        return new Response(JSON.stringify({ 
+          response,
+          model: 'gpt-4o-mini',
+          action: 'chat',
+          timestamp: new Date().toISOString()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        console.error('Chat error:', error);
+        throw error;
+      }
+    }
+    
+    // Handle other AI tasks
+    const { taskType, prompt, context, preferredModel, complexity } = body;
     
     console.log(`AI Router: ${taskType} with ${preferredModel || 'auto'} model`);
     
@@ -135,12 +206,9 @@ serve(async (req) => {
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (error) {
-    console.error('AI Router Error:', error);
-    return new Response(JSON.stringify({ 
-      error: 'AI processing failed', 
-      details: error.message 
-    }), {
+  } catch (err) {
+    captureError(err as Error);
+    return new Response(JSON.stringify({ error: 'internal error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -2,18 +2,27 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useEntryPermissions } from '@/hooks/useEntryPermissions';
-import { Car, User, ArrowRight, Plus } from 'lucide-react';
+import { Car, User, ArrowRight, Plus, Bot } from 'lucide-react';
 import { CountryStep } from '@/components/onboarding/CountryStep';
 import { RewardsCard } from '@/components/gamification/RewardsCard';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { countryDetectionService, CountryInfo } from '@/services/CountryDetectionService';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTripHistory } from '@/hooks/useTripHistory';
+import { useActiveRequest } from '@/hooks/useActiveRequest';
+import { ChatDrawer } from '@/features/ai-chat/ChatDrawer';
+import { RoleStep } from '@/components/welcome/RoleStep';
 
 const WelcomePage = () => {
   const navigate = useNavigate();
   const { user, refreshUser } = useCurrentUser();
   const { toast } = useToast();
+  const { trips, loading: tripsLoading } = useTripHistory();
+  const { activeRequest, loading: requestLoading } = useActiveRequest();
   const [showCountrySelection, setShowCountrySelection] = useState(false);
   const {
     locationGranted,
@@ -21,6 +30,10 @@ const WelcomePage = () => {
     requestLocation,
     requestNotification,
   } = useEntryPermissions();
+  const [activeTab, setActiveTab] = useState<'driver' | 'passenger'>('passenger');
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [redirected, setRedirected] = useState(false);
 
   // Check if user needs country selection
   useEffect(() => {
@@ -28,6 +41,19 @@ const WelcomePage = () => {
       setShowCountrySelection(true);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user && !user.role) {
+      setShowRoleSelection(true);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user && user.role && !showCountrySelection && !showRoleSelection && !redirected) {
+      navigate(user.role === 'driver' ? '/driver/home' : '/passenger/home', { replace: true });
+      setRedirected(true);
+    }
+  }, [user, showCountrySelection, showRoleSelection, redirected, navigate]);
 
   const handleCountrySelect = async (country: CountryInfo) => {
     if (!user) return;
@@ -60,6 +86,14 @@ const WelcomePage = () => {
     }
   };
 
+  const handleRoleSave = async (role: 'driver' | 'passenger') => {
+    if (!user) return;
+    await supabase.from('users').update({ role }).eq('id', user.id);
+    await refreshUser();
+    setShowRoleSelection(false);
+    navigate(role === 'driver' ? '/driver/home' : '/passenger/home');
+  };
+
   // Show country selection if needed
   if (showCountrySelection) {
     return (
@@ -68,6 +102,14 @@ const WelcomePage = () => {
           onCountrySelect={handleCountrySelect}
           onSkip={() => setShowCountrySelection(false)}
         />
+      </div>
+    );
+  }
+
+  if (showRoleSelection) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <RoleStep onRoleSelect={handleRoleSave} />
       </div>
     );
   }
@@ -125,60 +167,80 @@ const WelcomePage = () => {
       )}
 
       {/* Quick Start Actions */}
-      <div className="w-full max-w-md space-y-3 pt-4">
-        <h3 className="text-lg font-semibold text-center">Quick Start</h3>
-        
-        <Button 
-          onClick={() => navigate('/passenger/request')} 
-          className="w-full h-14 bg-blue-600 hover:bg-blue-700"
-        >
-          <User className="w-6 h-6 mr-3" /> 
-          Book a Ride
-          <ArrowRight className="w-4 h-4 ml-auto" />
-        </Button>
-        
-        <Button 
-          onClick={() => navigate('/driver/create-trip')} 
-          className="w-full h-14 bg-green-600 hover:bg-green-700"
-        >
-          <Car className="w-6 h-6 mr-3" /> 
-          Offer a Ride
-          <ArrowRight className="w-4 h-4 ml-auto" />
-        </Button>
-
-        <div className="text-center pt-2">
+      {!showRoleSelection && (
+        <div className="w-full max-w-md space-y-3 pt-4">
+          <h3 className="text-lg font-semibold text-center">Quick Start</h3>
+          
           <Button 
-            variant="ghost" 
-            onClick={() => navigate('/role-select')} 
-            className="text-sm text-gray-500"
+            onClick={() => navigate('/passenger/request')} 
+            className="w-full h-14 bg-blue-600 hover:bg-blue-700"
           >
-            Or choose your role first
+            <User className="w-6 h-6 mr-3" /> 
+            Book a Ride
+            <ArrowRight className="w-4 h-4 ml-auto" />
           </Button>
-        </div>
+          
+          <Button 
+            onClick={() => navigate('/driver/create-trip')} 
+            className="w-full h-14 bg-green-600 hover:bg-green-700"
+          >
+            <Car className="w-6 h-6 mr-3" /> 
+            Offer a Ride
+            <ArrowRight className="w-4 h-4 ml-auto" />
+          </Button>
 
-        {/* Country Selection Option */}
-        {user && user.country && (
           <div className="text-center pt-2">
             <Button 
               variant="ghost" 
-              onClick={() => setShowCountrySelection(true)} 
-              className="text-xs text-gray-400"
+              onClick={() => navigate('/role-select')} 
+              className="text-sm text-gray-500"
             >
-              Change Country: {countryDetectionService.getCountryByCode(user.country)?.name}
+              Or choose your role first
             </Button>
           </div>
-        )}
+
+          {/* Country Selection Option */}
+          {user && user.country && (
+            <div className="text-center pt-2">
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowCountrySelection(true)} 
+                className="text-xs text-gray-400"
+              >
+                Change Country: {countryDetectionService.getCountryByCode(user.country)?.name}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Quick Stats */}
+      <div className="container mx-auto px-4 py-8">
+        {/* ... existing code ... */}
       </div>
 
-      {/* Floating Action Button for Trip Wizard */}
-      <Button
-        onClick={() => navigate('/trip/new')}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-[#3D7DFF] to-[#8E42FF] hover:from-[#2D6DFF] hover:to-[#7E32FF] z-50"
-        size="icon"
-        title="Create Trip with Wizard"
-      >
-        <Plus className="w-6 h-6" />
-      </Button>
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+        <Button
+          onClick={() => setIsChatOpen(true)}
+          size="icon"
+          className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+          aria-label="Open AI Assistant"
+        >
+          <Bot className="h-6 w-6" />
+        </Button>
+        <Button
+          onClick={() => navigate('/trip/new')}
+          size="icon"
+          className="h-16 w-16 rounded-full shadow-lg"
+          aria-label="Create new trip"
+        >
+          <Plus className="h-8 w-8" />
+        </Button>
+      </div>
+
+      {/* AI Chat Drawer */}
+      <ChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 };

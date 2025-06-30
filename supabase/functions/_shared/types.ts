@@ -1,6 +1,7 @@
 // Shared type definitions for Supabase Edge Functions
 
-import { SupabaseClient } from '@supabase/supabase-js';
+// Removed runtime import of '@supabase/supabase-js' to avoid bundle errors in Edge Functions.
+// If you need Supabase client types at build time, install dev types and import only in non-edge code.
 
 // Base types
 export interface EdgeFunctionRequest {
@@ -152,8 +153,8 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-// Supabase client type
-export type TypedSupabaseClient = SupabaseClient<Database>;
+// Supabase client type (placeholder – avoids runtime import)
+export type TypedSupabaseClient = unknown;
 
 // Database schema types (simplified)
 export interface Database {

@@ -1,404 +1,256 @@
-import { useState, useEffect, useRef } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Send, Bot, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { Bot, Send, Mic, MicOff, Loader2, X, CheckCircle, Clock, MapPin, Users, Car, Image } from 'lucide-react';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
-import { Card, CardContent } from '@/components/ui/card';
-
-type MessageRole = 'user' | 'assistant';
 
 interface Message {
   id: string;
-  role: MessageRole;
+  role: 'user' | 'assistant';
   content: string;
-  created_at: string;
-  kind?: 'text' | 'tripCard';
-  metadata?: any;
+  timestamp: Date;
 }
 
-export const ChatDrawer = () => {
-  const { user } = useCurrentUser();
-  const { toast } = useToast();
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+interface ChatDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const QUICK_ACTIONS = [
+  { id: 'plan_trip', label: 'Plan a trip', prompt: 'I need help planning a trip' },
+  { id: 'find_ride', label: 'Find a ride', prompt: 'Help me find a ride' },
+  { id: 'app_help', label: 'App help', prompt: 'How do I use this app?' },
+  { id: 'pricing', label: 'Pricing info', prompt: 'How is pricing calculated?' },
+];
+
+export function ChatDrawer({ isOpen, onClose }: ChatDrawerProps) {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      role: 'assistant',
+      content: 'Hello! I\'m your AI assistant. I can help you plan trips, find rides, and answer questions about the app. How can I help you today?',
+      timestamp: new Date(),
+    },
+  ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
-  // Load chat history when drawer opens
   useEffect(() => {
-    if (isOpen && user) {
-      loadChatHistory();
-    }
-  }, [isOpen, user]);
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    // Scroll to bottom when new messages are added
+    if (scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
     }
   }, [messages]);
 
-  const loadChatHistory = async () => {
-    if (!user) return;
+  const handleSend = async (text?: string) => {
+    const messageText = text || input.trim();
+    if (!messageText || isLoading) return;
 
-    try {
-      const { data, error } = await supabase
-        .from('dialog_messages')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
-        .limit(50);
-
-      if (error) throw error;
-      setMessages(data || []);
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-    }
-  };
-
-  const sendMessage = async (content: string) => {
-    if (!user || !content.trim()) return;
-
+    // Add user message
     const userMessage: Message = {
-      id: crypto.randomUUID(),
+      id: Date.now().toString(),
       role: 'user',
-      content: content.trim(),
-      created_at: new Date().toISOString(),
-      kind: 'text'
+      content: messageText,
+      timestamp: new Date(),
     };
-
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await fetch('/functions/v1/ai-trip-agent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+      // Call the AI router edge function
+      const { data, error } = await supabase.functions.invoke('ai-router', {
+        body: {
+          action: 'chat',
+          messages: [...messages, userMessage].map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
         },
-        body: JSON.stringify({
-          userId: user.id,
-          message: content,
-          action: 'chat'
-        })
       });
 
-      if (!response.ok) throw new Error('Failed to get response');
+      if (error) throw error;
 
-      const data = await response.json();
-      const assistantRaw = data.assistant;
-
-      // 1. Regular assistant text response
-      if (assistantRaw.content) {
-        setMessages(prev => [...prev, {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          kind: 'text',
-          content: assistantRaw.content as string,
-          created_at: new Date().toISOString()
-        }]);
-      }
-
-      // 2. Trip published card
-      if (assistantRaw.metadata?.trip_published) {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            kind: 'tripCard',
-            content: '',
-            created_at: new Date().toISOString(),
-            metadata: assistantRaw.metadata
-          }
-        ]);
-      }
+      // Add assistant response
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.response || 'I apologize, but I couldn\'t process your request. Please try again.',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to send message. Please try again.',
-        variant: 'destructive'
-      });
+      console.error('Chat error:', error);
+      
+      // Fallback response if AI service is unavailable
+      const fallbackMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: getFallbackResponse(messageText),
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, fallbackMessage]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleVoiceInput = async () => {
-    if (!user) return;
-
-    if (isRecording && mediaRecorder) {
-      // Stop recording
-      mediaRecorder.stop();
-      setIsRecording(false);
-      return;
+  const getFallbackResponse = (message: string): string => {
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('plan') || lowerMessage.includes('trip')) {
+      return 'To plan a trip, click the "+" button on the home screen and follow these steps:\n\n1. Enter your pickup and destination locations\n2. Select your travel date and time\n3. Choose whether you\'re a driver offering seats or a passenger looking for a ride\n4. Review and confirm your trip details\n\nThe app will automatically match you with suitable drivers or passengers!';
     }
-
-    try {
-      // Start recording
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-
-      recorder.ondataavailable = (e) => chunks.push(e.data);
-      recorder.onstop = async () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        const reader = new FileReader();
-        
-        reader.onloadend = async () => {
-          const base64Audio = reader.result?.toString().split(',')[1];
-          if (!base64Audio) return;
-
-          try {
-            const response = await fetch('/functions/v1/ai-trip-agent', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-              },
-              body: JSON.stringify({
-                userId: user.id,
-                action: 'voice_to_text',
-                data: { audioBase64: base64Audio }
-              })
-            });
-
-            const data = await response.json();
-            if (data.transcription) {
-              setInput(data.transcription);
-            }
-          } catch (error) {
-            console.error('Voice transcription error:', error);
-            toast({
-              title: 'Voice Error',
-              description: 'Failed to transcribe voice. Please try again.',
-              variant: 'destructive'
-            });
-          }
-        };
-
-        reader.readAsDataURL(audioBlob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      recorder.start();
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Microphone error:', error);
-      toast({
-        title: 'Microphone Error',
-        description: 'Unable to access microphone. Please check permissions.',
-        variant: 'destructive'
-      });
+    
+    if (lowerMessage.includes('price') || lowerMessage.includes('cost')) {
+      return 'Pricing is calculated based on:\n\n• Distance: Approximately 150 RWF per kilometer\n• Base fare may vary by country\n• Drivers set their own prices within recommended ranges\n• You\'ll see the estimated price before confirming your trip';
     }
+    
+    if (lowerMessage.includes('find') || lowerMessage.includes('ride')) {
+      return 'To find a ride:\n\n1. Open the app and tap the "+" button\n2. Switch to "Passenger" mode\n3. Enter your pickup location and destination\n4. Select your preferred travel time\n5. Browse available drivers and their offers\n6. Choose a driver and confirm your booking';
+    }
+    
+    if (lowerMessage.includes('help') || lowerMessage.includes('how')) {
+      return 'Here are the main features of Kigali Ride AWA:\n\n• Create trips as a driver or passenger\n• Real-time matching with suitable travel partners\n• Secure in-app messaging\n• Points and rewards system\n• Trip history and ratings\n\nNeed help with something specific? Just ask!';
+    }
+    
+    return 'I\'m here to help! You can ask me about:\n\n• Planning trips\n• Finding rides\n• Understanding pricing\n• Using app features\n• Earning rewards\n\nWhat would you like to know?';
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage(input);
+      handleSend();
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <Button
-          className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 z-50"
-          size="icon"
-        >
-          <Bot className="w-6 h-6" />
-        </Button>
-      </SheetTrigger>
-      
-      <SheetContent side="right" className="w-full sm:w-96 p-0 flex flex-col">
-        <SheetHeader className="p-4 border-b bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-          <SheetTitle className="flex items-center justify-between text-white">
-            <div className="flex items-center space-x-2">
-              <Bot className="w-5 h-5" />
-              <span>AI Trip Assistant</span>
-            </div>
-            <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-              Beta
-            </Badge>
-          </SheetTitle>
-        </SheetHeader>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <Card className="w-full sm:max-w-lg h-[90vh] sm:h-[600px] rounded-t-xl sm:rounded-xl flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">AI Assistant</h3>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
 
-        {/* Messages Area */}
-        <ScrollArea ref={scrollRef} className="flex-1 p-4">
+        {/* Messages */}
+        <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
           <div className="space-y-4">
-            {messages.length === 0 && (
-              <div className="text-center py-8">
-                <Bot className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-500 text-sm">
-                  Hi! I'm your AI trip assistant. Ask me anything about planning your trips!
-                </p>
-                <div className="mt-4 space-y-2">
-                  <p className="text-xs text-gray-400">Try saying:</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    <Badge 
-                      variant="outline" 
-                      className="cursor-pointer hover:bg-gray-100"
-                      onClick={() => setInput("Take me home at 5pm")}
-                    >
-                      "Take me home at 5pm"
-                    </Badge>
-                    <Badge 
-                      variant="outline" 
-                      className="cursor-pointer hover:bg-gray-100"
-                      onClick={() => setInput("I need a ride to the airport tomorrow")}
-                    >
-                      "Need ride to airport"
-                    </Badge>
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={cn(
+                  'flex gap-3',
+                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                )}
+              >
+                {message.role === 'assistant' && (
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Bot className="h-4 w-4 text-primary" />
                   </div>
-                </div>
-              </div>
-            )}
-
-            {messages.map((message) => {
-              if (message.kind === 'tripCard' && message.metadata?.summary) {
-                const p = message.metadata.summary;
-                return (
-                  <div key={message.id} className="flex justify-start">
-                    <Card className="w-full max-w-xs bg-green-50 border-green-200">
-                      <CardContent className="p-3 space-y-2">
-                        <div className="flex items-center text-green-700 font-medium"><CheckCircle className="w-4 h-4 mr-1"/>Trip Booked</div>
-                        <div className="flex items-start text-sm"><MapPin className="w-3 h-3 mt-0.5 text-gray-500 mr-1"/> {p.origin_text} → {p.dest_text}</div>
-                        <div className="flex items-center text-xs text-gray-600 space-x-2">
-                          <Clock className="w-3 h-3"/><span>{new Date(p.departure_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                          {p.seats && <><Users className="w-3 h-3"/><span>{p.seats}</span></>}
-                          {p.vehicle_type && <><Car className="w-3 h-3"/><span className="capitalize">{p.vehicle_type}</span></>}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                );
-              }
-
-              // default text bubble
-              return (
+                )}
                 <div
-                  key={message.id}
                   className={cn(
-                    "flex",
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
+                    'rounded-lg px-4 py-2 max-w-[80%]',
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
                   )}
                 >
-                  <div
-                    className={cn(
-                      "max-w-[80%] rounded-lg px-4 py-2",
-                      message.role === 'user'
-                        ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-800'
-                    )}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    <p className={cn(
-                      "text-xs mt-1",
-                      message.role === 'user' ? 'text-white/70' : 'text-gray-500'
-                    )}>
-                      {new Date(message.created_at).toLocaleTimeString()}
-                    </p>
-                  </div>
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-xs opacity-70 mt-1">
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
                 </div>
-              );
-            })}
-
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-lg px-4 py-2">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                {message.role === 'user' && (
+                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                    <User className="h-4 w-4 text-primary-foreground" />
                   </div>
+                )}
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex gap-3 justify-start">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Bot className="h-4 w-4 text-primary" />
+                </div>
+                <div className="rounded-lg px-4 py-2 bg-muted">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               </div>
             )}
           </div>
         </ScrollArea>
 
-        {/* Input Area */}
-        <div className="border-t p-4 space-y-2">
+        {/* Quick Actions */}
+        {messages.length === 1 && (
+          <div className="px-4 pb-2">
+            <p className="text-xs text-muted-foreground mb-2">Quick actions:</p>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_ACTIONS.map((action) => (
+                <Button
+                  key={action.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSend(action.prompt)}
+                  className="text-xs"
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Input */}
+        <div className="p-4 border-t">
           <div className="flex gap-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask me anything..."
+              placeholder="Type your message..."
               disabled={isLoading}
               className="flex-1"
             />
             <Button
-              onClick={handleVoiceInput}
-              size="icon"
-              variant={isRecording ? "destructive" : "outline"}
-              disabled={isLoading}
-              aria-label={isRecording ? 'Stop recording' : 'Start voice input'}
-            >
-              {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            </Button>
-            <Button
-              onClick={() => sendMessage(input)}
-              size="icon"
+              onClick={() => handleSend()}
               disabled={!input.trim() || isLoading}
+              size="icon"
             >
               {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Send className="w-4 h-4" />
+                <Send className="h-4 w-4" />
               )}
             </Button>
-            {/* Image upload */}
-            <Button
-              size="icon"
-              variant="outline"
-              disabled={isLoading}
-              aria-label="Send image"
-              onClick={() => {
-                const f = document.createElement('input');
-                f.type = 'file';
-                f.accept = 'image/*';
-                f.onchange = async () => {
-                  const file = f.files?.[0];
-                  if (!file) return;
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    const base64 = reader.result?.toString().split(',')[1];
-                    if (!base64) return;
-                    // send image
-                    sendImage(base64);
-                  };
-                  reader.readAsDataURL(file);
-                };
-                f.click();
-              }}
-            >
-              <Image className="w-4 h-4" />
-            </Button>
           </div>
-          
-          {isRecording && (
-            <div className="flex items-center justify-center space-x-2 text-red-600">
-              <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
-              <span className="text-sm">Recording... Tap to stop</span>
-            </div>
-          )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </Card>
+    </div>
   );
-}; 
+} 

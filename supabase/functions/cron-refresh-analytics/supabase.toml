@@ -1,0 +1,4 @@
+[function]
+name = "cron-refresh-analytics"
+# Every Monday at 03:00 UTC
+schedule = "0 3 * * 1" 

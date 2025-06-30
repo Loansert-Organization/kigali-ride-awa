@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { ErrorReport, TypedSupabaseClient } from "../_shared/types.ts"
+import { captureError, logInfo } from "../_shared/logging.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,7 +30,7 @@ serve(async (req) => {
 
     const errorReport = await req.json() as ExtendedErrorReport
 
-    console.log('Processing error report:', errorReport.component, errorReport.error_type)
+    logInfo('processing error report', { component: errorReport.component, type: errorReport.error_type })
 
     // Store error in agent_logs table
     const { error: logError } = await supabase
@@ -73,10 +74,11 @@ serve(async (req) => {
     )
 
   } catch (error) {
+    captureError(error as Error)
     console.error('Error handler error:', error)
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: (error as Error).message,
         success: false 
       }),
       { 
