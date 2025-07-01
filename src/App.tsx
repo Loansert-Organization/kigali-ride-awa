@@ -17,6 +17,8 @@ import MapTestPage from "@/pages/diag/MapTest";
 import { TripNew } from "@/pages/TripNew";
 import { ChatDrawer } from './features/ai-chat/ChatDrawer';
 import { DraftTripBanner } from './features/ai-chat/DraftTripBanner';
+import { BottomNav } from '@/components/ui/bottom-nav';
+import { EmergencyNav } from '@/components/ui/emergency-nav';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useEffect } from 'react';
@@ -72,7 +74,7 @@ function App() {
           <PushInit />
           <ToastProvider>
             <Router>
-              <div className="font-sans">
+              <div className="font-sans pb-16">
                 {/* Theme toggle floating button */}
                 <div className="fixed top-4 right-4 z-50">
                   <ThemeToggle />
@@ -80,8 +82,8 @@ function App() {
                 <AppRoutes />
                 <Toaster />
                 <DraftTripBanner />
-                {/* Global AI chat drawer (initially closed) */}
-                <ChatDrawer isOpen={false} onClose={() => {}} />
+                <BottomNav />
+                <EmergencyNav />
               </div>
             </Router>
           </ToastProvider>

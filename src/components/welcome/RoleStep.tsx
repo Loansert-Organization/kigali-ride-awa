@@ -26,7 +26,13 @@ const RoleStep: React.FC<RoleStepProps> = ({
   setPromoCode
 }) => {
   const handleRoleClick = (role: 'passenger' | 'driver') => {
-    if (isProcessing) return;
+    console.log('Button clicked:', role);
+    console.log('isProcessing:', isProcessing);
+    if (isProcessing) {
+      console.log('Processing in progress, ignoring click');
+      return;
+    }
+    console.log('Calling onRoleSelect with:', role);
     onRoleSelect(role);
   };
 

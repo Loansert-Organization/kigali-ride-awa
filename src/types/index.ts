@@ -189,7 +189,10 @@ export type CombinedTrip = (PassengerTrip | DriverTrip) & {
 export interface EdgeFunctionResponse<T = unknown> {
   success: boolean;
   data?: T;
-  error?: { message: string };
+  error?: { 
+    message: string;
+    code?: string;
+  };
 }
 
 // Lightweight trip shape used by UI while schemas stabilise

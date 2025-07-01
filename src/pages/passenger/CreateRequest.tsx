@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SimpleLocationPicker } from '@/components/maps/SimpleLocationPicker';
 import { SmartTimePicker } from '@/components/ui/smart-time-picker';
+import { PageHeader } from '@/components/ui/page-header';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/services/APIClient';
 import { VehicleType, PassengerTrip, MapLocation } from '@/types';
@@ -139,145 +140,153 @@ const CreateRequest = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto p-4 space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Car className="w-5 h-5" />
-            Request a Ride
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* From Location - Pickup with 3 options */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-base font-semibold">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                Pickup Location
-              </Label>
-              <SimpleLocationPicker
-                onLocationSelect={handleFromLocationSelect}
-                placeholder="Where do you want to be picked up?"
-                selectedLocation={fromLocation}
-                showCurrentLocation={true}
-                type="pickup"
-              />
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      <PageHeader 
+        title="Request a Ride" 
+        showBack={true} 
+        showHome={true}
+      />
+      
+      <div className="max-w-md mx-auto p-4 space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Car className="w-5 h-5" />
+              Request a Ride
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* From Location - Pickup with 3 options */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-base font-semibold">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  Pickup Location
+                </Label>
+                <SimpleLocationPicker
+                  onLocationSelect={handleFromLocationSelect}
+                  placeholder="Where do you want to be picked up?"
+                  selectedLocation={fromLocation}
+                  showCurrentLocation={true}
+                  type="pickup"
+                />
+              </div>
 
-            {/* To Location - Destination with 2 options */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-base font-semibold">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                Destination
-              </Label>
-              <SimpleLocationPicker
-                onLocationSelect={handleToLocationSelect}
-                placeholder="Where are you going?"
-                selectedLocation={toLocation}
-                showCurrentLocation={false}
-                type="destination"
-              />
-            </div>
+              {/* To Location - Destination with 2 options */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-base font-semibold">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  Destination
+                </Label>
+                <SimpleLocationPicker
+                  onLocationSelect={handleToLocationSelect}
+                  placeholder="Where are you going?"
+                  selectedLocation={toLocation}
+                  showCurrentLocation={false}
+                  type="destination"
+                />
+              </div>
 
-            {/* Smart Departure Time */}
-            <div className="space-y-2">
-              <SmartTimePicker
-                value={departureTime}
-                onChange={(v) => setDepartureTime(typeof v === 'string' ? v : v.toISOString())}
-                label="When do you want to travel?"
-              />
-            </div>
+              {/* Smart Departure Time */}
+              <div className="space-y-2">
+                <SmartTimePicker
+                  value={departureTime}
+                  onChange={(v) => setDepartureTime(typeof v === 'string' ? v : v.toISOString())}
+                  label="When do you want to travel?"
+                />
+              </div>
 
-            {/* Vehicle Type Preference */}
-            <div className="space-y-2">
-              <Label className="text-base font-semibold">Vehicle Preference</Label>
-              <Select value={vehicleType} onValueChange={(value) => setVehicleType(value as VehicleType | 'any')}>
-                <SelectTrigger className="h-12">
-                  <SelectValue>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{getVehicleIcon(vehicleType)}</span>
-                      <span>
-                        {vehicleType === 'any' ? 'Any Vehicle' : 
-                         vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1)}
-                      </span>
-                    </div>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">🚗</span>
-                      <span>Any Vehicle</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={VehicleType.MOTO}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">🏍️</span>
-                      <span>Motorcycle</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={VehicleType.CAR}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">🚗</span>
-                      <span>Car</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={VehicleType.TUKTUK}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">🛺</span>
-                      <span>Tuk-Tuk</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={VehicleType.MINIBUS}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">🚐</span>
-                      <span>Minibus</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Vehicle Type Preference */}
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Vehicle Preference</Label>
+                <Select value={vehicleType} onValueChange={(value) => setVehicleType(value as VehicleType | 'any')}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{getVehicleIcon(vehicleType)}</span>
+                        <span>
+                          {vehicleType === 'any' ? 'Any Vehicle' : 
+                           vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1)}
+                        </span>
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">🚗</span>
+                        <span>Any Vehicle</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value={VehicleType.MOTO}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">🏍️</span>
+                        <span>Motorcycle</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value={VehicleType.CAR}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">🚗</span>
+                        <span>Car</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value={VehicleType.TUKTUK}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">🛺</span>
+                        <span>Tuk-Tuk</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value={VehicleType.MINIBUS}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">🚐</span>
+                        <span>Minibus</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Trip Summary */}
-            {fromLocation && toLocation && (
-              <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="p-4">
-                  <div className="text-sm font-medium text-blue-800 mb-2">Trip Summary</div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="truncate">{fromLocation.address}</span>
+              {/* Trip Summary */}
+              {fromLocation && toLocation && (
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-4">
+                    <div className="text-sm font-medium text-blue-800 mb-2">Trip Summary</div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="truncate">{fromLocation.address}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <span className="truncate">{toLocation.address}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3 h-3 text-blue-600" />
+                        <span>{new Date(departureTime).toLocaleString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      <span className="truncate">{toLocation.address}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3 h-3 text-blue-600" />
-                      <span>{new Date(departureTime).toLocaleString('en-US', {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      })}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
 
-            {/* Submit Button */}
-            <Button 
-              type="submit" 
-              className="w-full h-12 text-lg" 
-              disabled={loading || !fromLocation || !toLocation || !user}
-            >
-              {loading ? 'Creating Request...' : 'Find My Ride'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              {/* Submit Button */}
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-lg" 
+                disabled={loading || !fromLocation || !toLocation || !user}
+              >
+                {loading ? 'Creating Request...' : 'Find My Ride'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

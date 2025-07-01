@@ -56,6 +56,20 @@ export const RewardsCard = () => {
       return;
     }
 
+    // For local sessions, show placeholder data
+    if (user.id.startsWith('local-')) {
+      setRewards({
+        totalPoints: 0,
+        weeklyPoints: 0,
+        weeklyRank: 0,
+        referralsMade: 0,
+        promoCode: 'LOCAL-USER',
+        currency: countryInfo?.currency || 'RWF'
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('loyalty_actions')

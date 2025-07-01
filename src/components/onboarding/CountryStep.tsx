@@ -19,6 +19,7 @@ export const CountryStep = ({ onCountrySelect, onSkip }: CountryStepProps) => {
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllCountries, setShowAllCountries] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const allCountries = countryDetectionService.getAllSupportedCountries();
   const filteredCountries = searchQuery 
@@ -29,11 +30,8 @@ export const CountryStep = ({ onCountrySelect, onSkip }: CountryStepProps) => {
 
   const handleAutoDetect = useCallback(async () => {
     setIsDetecting(true);
-    
     try {
-      // Try GPS-based detection first
       const locationResult = await countryDetectionService.detectCountryFromLocation();
-      
       if (locationResult?.country) {
         setDetectedCountry(locationResult.country);
         setSelectedCountry(locationResult.country);
@@ -41,24 +39,24 @@ export const CountryStep = ({ onCountrySelect, onSkip }: CountryStepProps) => {
           title: "Country Detected",
           description: `We detected you're in ${locationResult.country.name}`,
         });
+        return;
+      }
+      
+      const ipCountry = await countryDetectionService.detectCountryFromIP();
+      if (ipCountry) {
+        setDetectedCountry(ipCountry);
+        setSelectedCountry(ipCountry);
+        toast({
+          title: "Country Detected",
+          description: `We detected you're in ${ipCountry.name}`,
+        });
       } else {
-        // Fallback to IP-based detection
-        const ipCountry = await countryDetectionService.detectCountryFromIP();
-        if (ipCountry) {
-          setDetectedCountry(ipCountry);
-          setSelectedCountry(ipCountry);
-          toast({
-            title: "Country Detected",
-            description: `We detected you're in ${ipCountry.name}`,
-          });
-        } else {
-          toast({
-            title: "Auto-detection Failed",
-            description: "Please select your country manually",
-            variant: "destructive"
-          });
-          setShowAllCountries(true);
-        }
+        toast({
+          title: "Auto-detection Failed",
+          description: "Please select your country manually",
+          variant: "destructive"
+        });
+        setShowAllCountries(true);
       }
     } catch (error) {
       console.error('Country detection error:', error);
@@ -184,13 +182,12 @@ export const CountryStep = ({ onCountrySelect, onSkip }: CountryStepProps) => {
         {/* Try Auto-detect Again */}
         {showAllCountries && (
           <Button 
-            onClick={handleAutoDetect}
+            onClick={handleManualSelection}
             variant="outline"
             className="w-full"
-            disabled={isDetecting}
           >
             <MapPin className="w-4 h-4 mr-2" />
-            Try Auto-Detect Again
+            Try Manual Selection
           </Button>
         )}
 

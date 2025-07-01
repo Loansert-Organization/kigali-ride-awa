@@ -14,15 +14,8 @@ try {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
     port: 8080,
-    proxy: {
-      '/functions': {
-        target: 'http://localhost:54321',
-        changeOrigin: true,
-        secure: false,
-      }
-    }
+    strictPort: false,
   },
   plugins: [
     react(),
@@ -55,5 +48,10 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom'],
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/tests/setup.ts',
   },
 }));

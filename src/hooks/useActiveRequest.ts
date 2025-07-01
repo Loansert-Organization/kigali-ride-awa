@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/services/APIClient';
@@ -9,30 +9,51 @@ export const useActiveRequest = () => {
   const [activeRequest, setActiveRequest] = useState<PassengerTrip | null>(null);
   const [matches, setMatches] = useState<DriverTrip[]>([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  // Fetch active passenger trip on mount and when user changes
-  useEffect(() => {
-    if (!user) return;
+  const fetchActiveRequest = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-    const fetchActiveRequest = async () => {
+    // Skip database queries for local sessions
+    if (user.id.startsWith('local-')) {
+      setLoading(false);
+      setActiveRequest(null);
+      return;
+    }
+
+    try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('passenger_trips')
         .select('*')
         .eq('passenger_id', user.id)
-        .in('status', [TripStatus.REQUESTED, TripStatus.MATCHED])
+        .in('status', ['requested', 'matched'])
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching active request:', error);
-      } else if (data) {
-        setActiveRequest(data as PassengerTrip);
+        setError(error);
+      } else {
+        setActiveRequest(data);
+        setError(null);
       }
-    };
-
-    fetchActiveRequest();
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchActiveRequest();
+  }, [fetchActiveRequest]);
 
   // Poll for matches when there's an active request
   useEffect(() => {
@@ -189,5 +210,8 @@ export const useActiveRequest = () => {
     isLoadingMatches,
     clearRequest,
     acceptMatch,
+    loading,
+    error,
+    refetch: fetchActiveRequest,
   };
 }; 

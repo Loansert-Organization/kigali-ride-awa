@@ -1,6 +1,6 @@
-# Kigali Ride AWA
+# Kigali Ride AWA - Lifuti PWA
 
-A comprehensive ride-sharing platform for Kigali, Rwanda, connecting drivers and passengers through a modern web application built with React, TypeScript, and Supabase.
+This project is a Progressive Web App for a ride-sharing service, built with React, TypeScript, Vite, and Supabase.
 
 ## 🚀 Features
 
@@ -50,38 +50,63 @@ A comprehensive ride-sharing platform for Kigali, Rwanda, connecting drivers and
 ## 📋 Prerequisites
 
 - Node.js 18+ and npm 9+
-- Supabase account
-- Google Maps API key
-- WhatsApp Business API access (for OTP)
+- Supabase CLI: `npm install -g supabase`
 
 ## 🚀 Getting Started
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/yourusername/kigali-ride-awa.git
-cd kigali-ride-awa
-```
+Follow these steps to get the development environment running.
 
-### 2. Install dependencies
+### 1. Prerequisites
+
+-   Node.js (v18 or later)
+-   npm
+-   Supabase CLI: `npm install -g supabase`
+
+### 2. Installation
+
+Clone the repository and install the dependencies.
+
 ```bash
+git clone <repository-url>
+cd kigali-ride-awa
 npm install
 ```
 
-### 3. Set up environment variables
-Create a `.env` file based on `.env.example`:
-```env
-# Google Maps API Key for location services
-VITE_GOOGLE_MAPS_KEY=your_google_maps_api_key_here
+### 3. Supabase Local Setup
+
+The app requires a local Supabase instance to be running for database and Edge Function support.
+
+**In a separate terminal**, run the following command from the project root:
+
+```bash
+supabase start
 ```
 
-The Supabase configuration is already set up in `src/config/environment.ts`.
+This will start the local Supabase services (database, auth, functions) and provide you with local API keys and a URL. **Keep this terminal running while you develop.**
 
-### 4. Run the development server
+### 4. Environment Variables
+
+Create a `.env.local` file in the project root. Copy the local credentials provided by `supabase start` into it.
+
+It should look like this:
+
+```env
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY_HERE
+```
+
+**Note:** You need to obtain your own Google Maps API key.
+
+### 5. Run the Application
+
+Once the Supabase services are running and your `.env.local` file is set up, you can start the Vite development server.
+
 ```bash
 npm run dev
 ```
 
-Visit `http://localhost:5173` to see the application.
+The application will now be running on `http://localhost:5173` (or another port if 5173 is busy) and will be able to connect to your local Supabase instance.
 
 ## 📁 Project Structure
 
@@ -224,3 +249,14 @@ For support, email support@kigaliride.rw or join our Slack channel.
 ---
 
 **Made with ❤️ in Kigali, Rwanda**
+
+## ✅ Key Development Scripts
+
+-   `npm run dev`: Starts the Vite dev server.
+-   `npm run build`: Builds the app for production.
+-   `npm run lint`: Lints the code.
+-   `npm run type-check`: Checks for TypeScript errors.
+-   `supabase start`: Starts the local Supabase environment.
+-   `supabase stop`: Stops the local Supabase environment.
+
+*This README was updated to include essential local development setup instructions.*

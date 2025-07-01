@@ -57,6 +57,13 @@ export const DraftTripBanner = () => {
   const loadDraftTrips = async () => {
     if (!user) return;
 
+    // Skip database queries for local sessions
+    if (user.id.startsWith('local-')) {
+      setDrafts([]);
+      setCurrentDraft(null);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('ai_draft_trips')

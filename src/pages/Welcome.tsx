@@ -20,12 +20,16 @@ import { UserRole } from '@/types';
 
 const WelcomePage = () => {
   const navigate = useNavigate();
-  const { user, role } = useCurrentUser();
+  const { user, role, loading } = useCurrentUser();
   const { setRole } = useAuth();
   const { toast } = useToast();
-  // initialise hooks for side-effects; values are not needed here
+  
+  console.log('WelcomePage render - user:', user, 'role:', role, 'loading:', loading);
+  
+  // Initialize all hooks at the top level - before any conditional returns
   useTripHistory();
   useActiveRequest();
+  
   const [showCountrySelection, setShowCountrySelection] = useState(false);
   const {
     locationGranted,
@@ -38,6 +42,13 @@ const WelcomePage = () => {
   const [redirected, setRedirected] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(() => !locationGranted);
   const [isSavingRole, setIsSavingRole] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+
+  useEffect(() => {
+    // Skip anonymous sign-in since it's disabled on this Supabase instance
+    // The AuthContext will automatically create a local session
+    console.log('Welcome page mounted - local session will be created by AuthContext');
+  }, []);
 
   // Check if user needs country selection
   useEffect(() => {
@@ -52,7 +63,7 @@ const WelcomePage = () => {
 
   useEffect(() => {
     if (role && role !== UserRole.ADMIN && !showCountrySelection && !showRoleSelection && !redirected) {
-      const targetPath = role === UserRole.DRIVER ? '/driver/home' : '/passenger/home';
+      const targetPath = role === UserRole.DRIVER ? '/driver/vehicle-setup' : '/passenger/home';
       navigate(targetPath, { replace: true });
       setRedirected(true);
     }
@@ -62,17 +73,49 @@ const WelcomePage = () => {
     setShowLocationPrompt(!locationGranted);
   }, [locationGranted]);
 
+  // Define all handler functions
   const handleCountrySelect = async (country: CountryInfo) => {
     if (!user) return;
 
     try {
-      // Update user's country in database
+      // For local sessions, just save to localStorage
+      if (user.id.startsWith('local-')) {
+        localStorage.setItem('userCountry', country.code);
+        (user as any).country = country.code;
+        
+        // Update local session
+        const localSession = localStorage.getItem('localSession');
+        if (localSession) {
+          const session = JSON.parse(localSession);
+          session.user.country = country.code;
+          localStorage.setItem('localSession', JSON.stringify(session));
+        }
+        
+        setShowCountrySelection(false);
+        
+        toast({
+          title: "Country Set!",
+          description: `Welcome to ${country.name}! Pricing and features are now localized for you.`,
+        });
+        return;
+      }
+
+      // For real Supabase users, try to update in database
       const { error } = await supabase
         .from('users')
         .update({ country: country.code })
-        .eq('id', user.id);
+        .eq('auth_user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating country:', error);
+        // Still save locally as fallback
+        localStorage.setItem('userCountry', country.code);
+        (user as any).country = country.code;
+      } else {
+        // Also save locally for quick access
+        localStorage.setItem('userCountry', country.code);
+        (user as any).country = country.code;
+      }
       
       setShowCountrySelection(false);
       
@@ -82,16 +125,30 @@ const WelcomePage = () => {
       });
     } catch (error) {
       console.error('Error updating country:', error);
+      
+      // Fallback to localStorage
+      localStorage.setItem('userCountry', country.code);
+      (user as any).country = country.code;
+      setShowCountrySelection(false);
+      
       toast({
-        title: "Error",
-        description: "Failed to save your country. Please try again.",
-        variant: "destructive"
+        title: "Country Set!",
+        description: `Welcome to ${country.name}!`,
       });
     }
   };
 
   const handleRoleSave = async (roleString: 'driver' | 'passenger') => {
+    console.log('handleRoleSave called with:', roleString);
+    console.log('Current user:', user);
+    
     if (!user) {
+      console.error('No user found');
+      toast({ 
+        title: 'Error', 
+        description: 'User session not found. Please refresh the page.', 
+        variant: 'destructive'
+      });
       return;
     }
     
@@ -111,15 +168,61 @@ const WelcomePage = () => {
       navigate(targetPath, { replace: true });
       
     } catch (e) {
+      console.error('Error saving role:', e);
       toast({ title: 'Error', description: 'Failed to save role', variant: 'destructive'});
     } finally {
       setIsSavingRole(false);
     }
   };
 
-  const handleRequestLocation = () => {
-    requestLocation();
+  const handleRequestLocation = async () => {
+    try {
+      const granted = await requestLocation();
+      // Always hide the prompt after attempting, regardless of result
+      setShowLocationPrompt(false);
+      
+      if (!granted) {
+        toast({
+          title: "No worries!",
+          description: "You can still use the app. Just enter locations manually when needed.",
+        });
+      }
+    } catch (error) {
+      console.error('Location request error:', error);
+      // Even on error, let user continue
+      setShowLocationPrompt(false);
+    }
   };
+
+  const handleRequestNotification = async () => {
+    try {
+      await requestNotification();
+    } catch (error) {
+      console.error('Notification request error:', error);
+    }
+  };
+
+  const handleSkipPermissions = () => {
+    setShowLocationPrompt(false);
+    toast({
+      title: "Permissions Skipped",
+      description: "You can always enable them later in your device settings.",
+    });
+  };
+
+  // Now we can have conditional returns - after all hooks
+  
+  // If auth is still loading, show a loader
+  if (loading || isSigningIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Overlay chain: Location -> Country -> Role
   if (showLocationPrompt) {
@@ -127,7 +230,7 @@ const WelcomePage = () => {
       <PermissionsStep
         selectedRole={role === 'admin' ? null : role}
         onRequestLocation={handleRequestLocation}
-        onSkipLocation={() => setShowLocationPrompt(false)}
+        onSkipLocation={handleSkipPermissions}
         showPWAPrompt={false}
         setShowPWAPrompt={() => {}}
       />
@@ -178,7 +281,7 @@ const WelcomePage = () => {
       <div className="w-full max-w-md space-y-3">
         {!locationGranted && (
           <div className="text-center space-y-2">
-            <Button onClick={requestLocation} className="w-full max-w-xs">
+            <Button onClick={handleRequestLocation} className="w-full max-w-xs">
               Allow Location (Recommended)
             </Button>
             <p className="text-xs text-gray-500">For better ride matching</p>
@@ -187,7 +290,7 @@ const WelcomePage = () => {
 
         {!notificationGranted && (
           <div className="text-center space-y-2">
-            <Button onClick={requestNotification} variant="outline" className="w-full max-w-xs">
+            <Button onClick={handleRequestNotification} variant="outline" className="w-full max-w-xs">
               Enable Notifications (Optional)
             </Button>
             <p className="text-xs text-gray-500">Get notified about ride matches</p>
@@ -200,6 +303,27 @@ const WelcomePage = () => {
             {notificationGranted ? '🔔 Notifications' : ''}
           </p>
         )}
+        
+        {/* Continue button - always show if we're on this screen */}
+        <div className="text-center pt-4">
+          <Button 
+            onClick={() => {
+              if (!role) {
+                setShowRoleSelection(true);
+              } else {
+                const targetPath = role === UserRole.DRIVER ? '/driver/vehicle-setup' : '/passenger/home';
+                navigate(targetPath, { replace: true });
+              }
+            }}
+            className="w-full max-w-xs"
+            variant="default"
+          >
+            Continue to App →
+          </Button>
+          <p className="text-xs text-gray-500 mt-2">
+            {!locationGranted && !notificationGranted ? 'Skip permissions and continue' : 'Get started'}
+          </p>
+        </div>
       </div>
 
       {/* Rewards Card (if user exists and has country) */}

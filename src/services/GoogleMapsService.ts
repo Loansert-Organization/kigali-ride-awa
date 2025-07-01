@@ -122,13 +122,20 @@ class GoogleMapsService {
 
   public async getCurrentPosition(): Promise<GeolocationPosition> {
     return new Promise((resolve, reject) => {
+      // Check if we're in a secure context (HTTPS)
+      if (!window.isSecureContext && window.location.hostname !== 'localhost') {
+        console.warn('Geolocation requires a secure context (HTTPS)');
+        reject(new Error('Geolocation requires HTTPS. Please use a secure connection.'));
+        return;
+      }
+      
       if (!navigator.geolocation) {
         reject(new Error('Geolocation is not supported'));
         return;
       }
 
       navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
+        enableHighAccuracy: false, // Use low accuracy for faster response
         timeout: 15000,
         maximumAge: 300000 // 5 minutes
       });
