@@ -1,4 +1,4 @@
-import { TripCreationWizard } from '@/features/trip-creation-wizard/TripCreationWizard';
+import { TripCreationWizardComplete } from '@/features/trip-creation-wizard/TripCreationWizardComplete';
 import { useNavigate } from 'react-router-dom';
 
 export const TripNew = () => {
@@ -8,5 +8,5 @@ export const TripNew = () => {
     navigate(-1); // Go back to previous page
   };
 
-  return <TripCreationWizard onClose={handleClose} />;
+  return <TripCreationWizardComplete onClose={handleClose} />;
 }; 
