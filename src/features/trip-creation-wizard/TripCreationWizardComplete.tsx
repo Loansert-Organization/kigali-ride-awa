@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { MapPin, Clock, Calendar, Car, Check, AlertCircle, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ interface TripCreationWizardCompleteProps {
   onClose?: () => void;
 }
 
-export const TripCreationWizardComplete: React.FC<TripCreationWizardCompleteProps> = ({ onClose }) => {
+export const TripCreationWizardComplete = ({ onClose }: TripCreationWizardCompleteProps) => {
   const { toast } = useToast();
   const { user } = useCurrentUser();
   
@@ -61,7 +61,7 @@ export const TripCreationWizardComplete: React.FC<TripCreationWizardCompleteProp
     setPickupQuery('Current Location');
   };
 
-  const searchPlaces = (query: string, setSuggestions: React.Dispatch<React.SetStateAction<Place[]>>) => {
+  const searchPlaces = (query: string, setSuggestions: (places: Place[]) => void) => {
     if (!query.trim()) {
       setSuggestions([]);
       return;
