@@ -20,12 +20,18 @@ const Matches = () => {
 
   const handleAcceptMatch = async (driverTripId: string) => {
     try {
-      await acceptMatch(driverTripId);
-      toast({
-        title: "Match Accepted!",
-        description: "Your ride has been confirmed. The driver will be notified.",
-      });
-      navigate('/passenger/home');
+      const booking = await acceptMatch(driverTripId);
+      
+      // Navigate to booking confirmation with WhatsApp integration
+      if (booking?.id) {
+        navigate(`/passenger/booking-confirmed/${booking.id}`);
+      } else {
+        toast({
+          title: "Match Accepted!",
+          description: "Your ride has been confirmed. The driver will be notified.",
+        });
+        navigate('/passenger/home');
+      }
     } catch {
       toast({
         title: "Error",

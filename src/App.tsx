@@ -11,6 +11,7 @@ import DriverHomePage from "@/pages/driver/Home";
 import WelcomePage from "@/pages/Welcome";
 import CreateRequest from "@/pages/passenger/CreateRequest";
 import MatchesPage from "@/pages/passenger/Matches";
+import BookingConfirmedPage from "@/pages/passenger/BookingConfirmed";
 import CreateTripPage from "@/pages/driver/CreateTrip";
 import VehicleSetupPage from "@/pages/driver/VehicleSetup";
 import MapTestPage from "@/pages/diag/MapTest";
@@ -46,6 +47,7 @@ const AppRoutes = () => {
       <Route path="/passenger/home" element={<PassengerHomePage />} />
       <Route path="/passenger/request" element={<CreateRequest />} />
       <Route path="/passenger/matches" element={<MatchesPage />} />
+      <Route path="/passenger/booking-confirmed/:bookingId" element={<BookingConfirmedPage />} />
       <Route path="/driver/home" element={<DriverHomePage />} />
       <Route path="/driver/create-trip" element={<CreateTripPage />} />
       <Route path="/driver/vehicle-setup" element={<VehicleSetupPage />} />
