@@ -17,7 +17,12 @@ import TripDetails from "@/pages/passenger/TripDetails";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import CreateTripPage from "@/pages/driver/CreateTrip";
 import VehicleSetupPage from "@/pages/driver/VehicleSetup";
+import DriverTripHistory from "@/pages/driver/TripHistory";
 import MapTestPage from "@/pages/diag/MapTest";
+import Settings from "@/pages/Settings";
+import Profile from "@/pages/Profile";
+import Notifications from "@/pages/Notifications";
+import WhatsAppAuth from "@/pages/auth/WhatsAppAuth";
 import { TripNew } from "@/pages/TripNew";
 import { ChatDrawer } from './features/ai-chat/ChatDrawer';
 import { DraftTripBanner } from './features/ai-chat/DraftTripBanner';
@@ -58,6 +63,11 @@ const AppRoutes = () => {
       <Route path="/driver/home" element={<DriverHomePage />} />
       <Route path="/driver/create-trip" element={<CreateTripPage />} />
       <Route path="/driver/vehicle-setup" element={<VehicleSetupPage />} />
+      <Route path="/driver/trips/history" element={<DriverTripHistory />} />
+      <Route path="/settings" element={<Settings />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/notifications" element={<Notifications />} />
+      <Route path="/auth/whatsapp" element={<WhatsAppAuth />} />
       <Route path="/diag/map-test" element={<MapTestPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
