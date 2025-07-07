@@ -169,6 +169,62 @@ export class APIClient {
       };
     }
   }
+
+  // ===================================
+  // FALLBACK DATABASE METHODS
+  // ===================================
+  private async fallbackGetNearbyTrips(location: { lat: number, lng: number }, radius = 10, vehicleType?: string) {
+    try {
+      let query = supabase
+        .from('trips')
+        .select(`
+          *,
+          users!inner(promo_code),
+          driver_profiles!inner(plate_number, vehicle_type, is_online)
+        `)
+        .eq('role', 'driver')
+        .eq('status', 'pending')
+        .eq('driver_profiles.is_online', true)
+        .gte('scheduled_time', new Date().toISOString())
+        .not('from_lat', 'is', null)
+        .not('from_lng', 'is', null);
+
+      if (vehicleType && vehicleType !== 'any') {
+        query = query.eq('vehicle_type', vehicleType);
+      }
+
+      const { data: trips, error } = await query.limit(20);
+
+      if (error) throw error;
+
+      // Filter by distance
+      const nearbyTrips = trips
+        ?.map(trip => {
+          const R = 6371; // Earth's radius in km
+          const dLat = (trip.from_lat - location.lat) * Math.PI / 180;
+          const dLng = (trip.from_lng - location.lng) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(location.lat * Math.PI / 180) * Math.cos(trip.from_lat * Math.PI / 180) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const distance = R * c;
+
+          return { ...trip, distance };
+        })
+        .filter(trip => trip.distance <= radius)
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 10) || [];
+
+      return {
+        success: true,
+        trips: nearbyTrips,
+        count: nearbyTrips.length
+      };
+    } catch (error) {
+      console.error('Fallback nearby trips failed:', error);
+      return { success: true, trips: [], count: 0 };
+    }
+  }
   
   // ===================================
   // AUTH ENDPOINTS
@@ -182,6 +238,17 @@ export class APIClient {
       
     checkDuplicatePhone: (phoneNumber: string) =>
       this.request<{ exists: boolean }>('check-duplicate-phone', { body: { phoneNumber } }),
+
+    // WhatsApp OAuth integration
+    whatsappSendOtp: (phoneNumber: string) =>
+      this.request<{ success: boolean, message: string, otp?: string }>('whatsapp-oauth', { 
+        body: { phoneNumber, action: 'send_otp' } 
+      }),
+
+    whatsappVerifyOtp: (phoneNumber: string, otp: string) =>
+      this.request<{ user: UserProfile, session_token: string }>('whatsapp-oauth', { 
+        body: { phoneNumber, otp, action: 'verify_otp' } 
+      }),
   };
 
   // ===================================
@@ -349,14 +416,15 @@ export class APIClient {
       
     getMatchesForRequest: async (requestId: string) => {
       try {
-        return await this.request<DriverTrip[]>('get-matches-for-request', { body: { requestId } });
+        const response = await this.request<DriverTrip[]>('get-matches-for-request', { body: { requestId } });
+        return response;
       } catch (error) {
         console.warn('Matches edge function failed:', error);
-        // Fallback to empty matches for now
-        return { success: true, data: [] };
+        // Fallback to direct DB matching
+        return await this.fallbackGetMatches(requestId);
       }
     },
-      
+
     getLiveDrivers: async (location: { lat: number, lng: number }, radius?: number) => {
       try {
         return await this.request<DriverTrip[]>('get-live-drivers', { body: { location, radius } });
@@ -367,13 +435,38 @@ export class APIClient {
       }
     },
       
-    getNearbyOpenTrips: async (location: { lat: number, lng: number }, radius?: number) => {
+    getNearbyOpenTrips: async (location: { lat: number, lng: number }, radius?: number, vehicleType?: string) => {
       try {
-        return await this.request<DriverTrip[]>('get-nearby-open-trips', { body: { location, radius } });
+        // Use GET request with query parameters for better caching
+        const params = new URLSearchParams({
+          lat: location.lat.toString(),
+          lng: location.lng.toString(),
+          radius: (radius || 10).toString(),
+          limit: '20'
+        });
+        
+        if (vehicleType && vehicleType !== 'any') {
+          params.append('vehicleType', vehicleType);
+        }
+
+        const url = `${this.baseURL}/functions/v1/get-nearby-open-trips?${params}`;
+        const authHeaders = await this.getAuthHeaders();
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: authHeaders,
+        });
+
+        if (!response.ok) {
+          throw new Error(response.statusText);
+        }
+
+        const data = await response.json();
+        return data;
       } catch (error) {
         console.warn('Nearby trips edge function failed:', error);
-        // Fallback to empty trips for now
-        return { success: true, data: [] };
+        // Fallback to direct DB query
+        return await this.fallbackGetNearbyTrips(location, radius, vehicleType);
       }
     },
       
@@ -386,6 +479,68 @@ export class APIClient {
       }
     },
   };
+
+  // Fallback matching logic
+  private async fallbackGetMatches(requestId: string) {
+    try {
+      // Get passenger trip
+      const { data: passengerTrip, error: passengerError } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('id', requestId)
+        .eq('role', 'passenger')
+        .single();
+
+      if (passengerError || !passengerTrip) {
+        return { success: false, error: { message: 'Passenger trip not found' } };
+      }
+
+      // Find nearby driver trips
+      const { data: driverTrips, error: driversError } = await supabase
+        .from('trips')
+        .select(`
+          *,
+          users!inner(promo_code),
+          driver_profiles!inner(plate_number, vehicle_type, is_online)
+        `)
+        .eq('role', 'driver')
+        .eq('status', 'pending')
+        .eq('driver_profiles.is_online', true)
+        .not('from_lat', 'is', null)
+        .not('from_lng', 'is', null);
+
+      if (driversError) {
+        console.error('Error fetching driver trips:', driversError);
+        return { success: true, data: [] };
+      }
+
+      // Simple distance-based matching
+      const matches = driverTrips
+        ?.filter(trip => {
+          if (!trip.from_lat || !trip.from_lng || !passengerTrip.from_lat || !passengerTrip.from_lng) {
+            return false;
+          }
+
+          // Simple distance check (10km radius)
+          const distance = Math.sqrt(
+            Math.pow(trip.from_lat - passengerTrip.from_lat, 2) + 
+            Math.pow(trip.from_lng - passengerTrip.from_lng, 2)
+          ) * 111; // Rough km conversion
+
+          return distance <= 10;
+        })
+        .slice(0, 5) || [];
+
+      return { 
+        success: true, 
+        data: matches,
+        match_count: matches.length
+      };
+    } catch (error) {
+      console.error('Fallback matching failed:', error);
+      return { success: true, data: [] };
+    }
+  }
   
   // ===================================
   // VEHICLES ENDPOINTS
@@ -486,4 +641,4 @@ export class APIClient {
   };
 }
 
-export const apiClient = APIClient.getInstance(); 
+export const apiClient = APIClient.getInstance();
