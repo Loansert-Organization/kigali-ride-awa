@@ -12,44 +12,46 @@ export const useActiveRequest = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchActiveRequest = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    // Skip database queries for local sessions
-    if (user.id.startsWith('local-')) {
-      setLoading(false);
-      setActiveRequest(null);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('passenger_trips')
-        .select('*')
-        .eq('passenger_id', user.id)
-        .in('status', ['requested', 'matched'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching active request:', error);
-        setError(error);
-      } else {
-        setActiveRequest(data);
-        setError(null);
+    const fetchActiveRequest = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      setError(err as Error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+
+      // Skip database queries for local sessions
+      if (user.id.startsWith('local-')) {
+        setLoading(false);
+        setActiveRequest(null);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        // Use unified trips table with role filter
+        const { data, error } = await supabase
+          .from('trips')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('role', 'passenger')
+          .in('status', ['pending', 'matched'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching active request:', error);
+          setError(error);
+        } else {
+          setActiveRequest(data);
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+        setError(err as Error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
   useEffect(() => {
     fetchActiveRequest();
@@ -65,9 +67,15 @@ export const useActiveRequest = () => {
     const pollForMatches = async () => {
       setIsLoadingMatches(true);
       try {
-        const response = await apiClient.trips.getMatchesForRequest(activeRequest.id);
-        if (response.success && response.data) {
-          setMatches(response.data);
+        const response = await apiClient.request('match-passenger-driver', {
+          body: { 
+            action: 'find_matches',
+            passengerTripId: activeRequest.id
+          }
+        });
+        
+        if (response.success && response.data?.matches) {
+          setMatches(response.data.matches);
         }
       } catch (error) {
         console.error('Error fetching matches:', error);
@@ -188,16 +196,18 @@ export const useActiveRequest = () => {
     if (!activeRequest) return;
 
     try {
-      const response = await apiClient.trips.matchPassengerDriver(
-        activeRequest.id,
-        driverTripId
-      );
+      const response = await apiClient.request('match-passenger-driver', {
+        body: { 
+          action: 'create_booking',
+          passengerTripId: activeRequest.id,
+          driverTripId
+        }
+      });
 
-      if (response.success) {
-        // The trip status will be updated via real-time subscription
-        console.log('Match accepted successfully');
+      if (response.success && response.data?.booking) {
+        return response.data.booking;
       } else {
-        console.error('Error accepting match:', response.error);
+        throw new Error(response.error || 'Failed to create booking');
       }
     } catch (error) {
       console.error('Error accepting match:', error);

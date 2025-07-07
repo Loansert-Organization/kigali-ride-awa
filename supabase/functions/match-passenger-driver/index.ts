@@ -94,13 +94,13 @@ serve(async (req) => {
         throw new Error('Passenger trip not found');
       }
 
-      // Get available driver trips
+      // Get available driver trips - Fixed to use correct table structure
       const { data: driverTrips, error: driverError } = await supabase
         .from('trips')
         .select(`
           *,
-          users!inner(promo_code),
-          driver_profiles!inner(plate_number, is_online)
+          user:user_id!inner(promo_code, phone_number),
+          driver_profiles!inner(plate_number, is_online, vehicle_type)
         `)
         .eq('role', 'driver')
         .eq('status', 'pending')
