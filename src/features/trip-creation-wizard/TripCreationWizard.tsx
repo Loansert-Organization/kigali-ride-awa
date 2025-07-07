@@ -63,8 +63,8 @@ export const TripCreationWizard = ({ onClose }: TripCreationWizardProps) => {
   const submitTrip = async () => {
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to create a trip",
+        title: t('authentication_required'),
+        description: t('login_required'),
         variant: "destructive"
       });
       return;
@@ -72,8 +72,8 @@ export const TripCreationWizard = ({ onClose }: TripCreationWizardProps) => {
 
     if (!tripData.pickup || !tripData.dropoff || !tripData.vehicleType) {
       toast({
-        title: "Incomplete Trip",
-        description: "Please fill in all required fields",
+        title: t('incomplete_trip'),
+        description: t('fill_required_fields'),
         variant: "destructive"
       });
       return;
@@ -150,8 +150,8 @@ export const TripCreationWizard = ({ onClose }: TripCreationWizardProps) => {
             <div className="space-y-8 pb-6">
               {/* Pickup Location */}
               <PickupInput
-                label="Where from?"
-                placeholder="Enter pickup location"
+                label={t('where_from')}
+                placeholder={t('enter_pickup_location')}
                 allowCurrentLocation={true}
                 onSelect={(location) => updateTripData({ pickup: location })}
                 value={tripData.pickup}
@@ -159,8 +159,8 @@ export const TripCreationWizard = ({ onClose }: TripCreationWizardProps) => {
 
               {/* Drop-off Location */}
               <DropoffInput
-                label="Where to?"
-                placeholder="Enter drop-off location"
+                label={t('where_to')}
+                placeholder={t('enter_dropoff_location')}
                 onSelect={(location) => updateTripData({ dropoff: location })}
                 value={tripData.dropoff}
                 pickupLocation={tripData.pickup}
@@ -189,14 +189,14 @@ export const TripCreationWizard = ({ onClose }: TripCreationWizardProps) => {
 
               {/* Vehicle Type Selection */}
               <VehicleTypeSelector
-                label="Choose Vehicle Type"
+                label={t('choose_vehicle_type')}
                 value={tripData.vehicleType}
                 onSelect={(vehicleType) => updateTripData({ vehicleType })}
               />
 
               {/* Trip Summary */}
               <TripSummaryCard
-                title="Confirm Trip"
+                title={t('confirm_trip')}
                 pickup={tripData.pickup}
                 dropoff={tripData.dropoff}
                 travelTime={tripData.travelTime}

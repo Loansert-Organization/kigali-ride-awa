@@ -14,11 +14,13 @@ import { DriverTrip, MapLocation, DriverVehicle } from '@/types';
 import { Clock, Car, Users, DollarSign, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useLocalization } from '@/hooks/useLocalization';
 
 const CreateTrip = () => {
   const navigate = useNavigate();
   const { user, userProfile, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { t } = useLocalization();
   
   const [vehicles, setVehicles] = useState<DriverVehicle[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
@@ -83,7 +85,7 @@ const CreateTrip = () => {
     setFromLocation({
       lat: location.lat,
       lng: location.lng,
-      address: location.address || 'Selected Location'
+      address: location.address || t('selected_location')
     });
   };
 
@@ -91,7 +93,7 @@ const CreateTrip = () => {
     setToLocation({
       lat: location.lat,
       lng: location.lng,
-      address: location.address || 'Selected Location'
+      address: location.address || t('selected_location')
     });
   };
 
@@ -100,8 +102,8 @@ const CreateTrip = () => {
     
     if (!user) {
       toast({
-        title: "Connection Required",
-        description: "Please check your internet connection.",
+        title: t('connection_required'),
+        description: t('check_internet'),
         variant: "destructive"
       });
       return;
@@ -123,8 +125,8 @@ const CreateTrip = () => {
 
     if (!selectedVehicleId) {
       toast({
-        title: "Vehicle Required",
-        description: "Please add a vehicle first to post trips.",
+        title: t('vehicle_required'),
+        description: t('add_vehicle_first_desc'),
         variant: "destructive"
       });
       return;
@@ -132,8 +134,8 @@ const CreateTrip = () => {
 
     if (!fromLocation || !toLocation) {
       toast({
-        title: "Missing Locations",
-        description: "Please select both departure and destination locations.",
+        title: t('missing_locations'),
+        description: t('select_pickup_destination'),
         variant: "destructive"
       });
       return;
@@ -141,8 +143,8 @@ const CreateTrip = () => {
 
     if (!farePerSeat || parseFloat(farePerSeat) <= 0) {
       toast({
-        title: "Invalid Fare",
-        description: "Please enter a valid fare per seat.",
+        title: t('invalid_fare'),
+        description: t('enter_valid_fare'),
         variant: "destructive"
       });
       return;
@@ -169,8 +171,8 @@ const CreateTrip = () => {
 
       if (response.success && response.data) {
         toast({
-          title: "Trip Posted!",
-          description: "Your trip has been posted. Passengers can now book seats.",
+          title: t('trip_posted'),
+          description: t('trip_posted_description'),
         });
         
         navigate('/driver/home');
@@ -180,7 +182,7 @@ const CreateTrip = () => {
     } catch (error) {
       console.error('Error creating driver trip:', error);
       toast({
-        title: "Error",
+        title: t('error'),
         description: "Failed to post your trip. Please try again.",
         variant: "destructive"
       });
@@ -214,12 +216,12 @@ const CreateTrip = () => {
         <Card>
           <CardContent className="p-6 text-center">
             <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold mb-2">No Vehicles Found</h2>
+            <h2 className="text-lg font-semibold mb-2">{t('no_vehicles_found')}</h2>
             <p className="text-gray-600 mb-4">
-              You need to add a vehicle before you can post trips.
+              {t('need_add_vehicle')}
             </p>
             <Button onClick={() => navigate('/driver/vehicle-setup')}>
-              Add Vehicle
+              {t('add_vehicle')}
             </Button>
           </CardContent>
         </Card>
@@ -230,7 +232,7 @@ const CreateTrip = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader 
-        title="Post a Trip" 
+        title={t('post_trip')} 
         showBack={true} 
         showHome={true}
       />
@@ -240,17 +242,17 @@ const CreateTrip = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Car className="w-5 h-5" />
-              Post a Trip
+              {t('post_trip')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Vehicle Selection */}
               <div className="space-y-2">
-                <Label className="text-base font-semibold">Your Vehicle</Label>
+                <Label className="text-base font-semibold">{t('your_vehicle')}</Label>
                 <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
                   <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Select your vehicle" />
+                    <SelectValue placeholder={t('select_your_vehicle')} />
                   </SelectTrigger>
                   <SelectContent>
                     {vehicles.map((vehicle) => (
@@ -266,11 +268,11 @@ const CreateTrip = () => {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-base font-semibold">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  Departure Location
+                  {t('departure_location')}
                 </Label>
                 <SimpleLocationPicker
                   onLocationSelect={handleFromLocationSelect}
-                  placeholder="Where are you starting from?"
+                  placeholder={t('where_starting_from')}
                   selectedLocation={fromLocation}
                   showCurrentLocation={true}
                   type="pickup"
@@ -281,11 +283,11 @@ const CreateTrip = () => {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-base font-semibold">
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  Destination
+                  {t('destination')}
                 </Label>
                 <SimpleLocationPicker
                   onLocationSelect={handleToLocationSelect}
-                  placeholder="Where are you going?"
+                  placeholder={t('where_are_you_going')}
                   selectedLocation={toLocation}
                   showCurrentLocation={false}
                   type="destination"
