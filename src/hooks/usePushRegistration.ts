@@ -11,17 +11,15 @@ export const usePushRegistration = () => {
     if (permission !== 'granted') return;
 
     const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlB64ToUint8Array(import.meta.env.VITE_VAPID_PUB!)
-    });
-
-    const { endpoint, keys } = sub.toJSON() as any;
-    await supabase.from('user_push_subscriptions').upsert({
+    // Skip push subscription for now - needs VAPID configuration
+    console.log('Push notifications available but not configured');
+    
+    // Store basic token in push_tokens table instead
+    await supabase.from('push_tokens').upsert({
       user_id: user.id,
-      endpoint,
-      p256dh: keys.p256dh,
-      auth: keys.auth
+      token: `web_${Date.now()}`, // Simple web token for now
+      device_type: 'web',
+      is_active: true
     });
   };
 
