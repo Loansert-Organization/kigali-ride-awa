@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { MessageCircle, ExternalLink, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/services/APIClient';
+import { useLocalization } from '@/hooks/useLocalization';
 
 interface WhatsAppLaunchButtonProps {
   driverPhone: string;
@@ -25,6 +26,7 @@ export const WhatsAppLaunchButton = ({
 }: WhatsAppLaunchButtonProps) => {
   const [isLaunching, setIsLaunching] = useState(false);
   const { toast } = useToast();
+  const { t } = useLocalization();
 
   const handleLaunchWhatsApp = async () => {
     setIsLaunching(true);
@@ -90,8 +92,8 @@ Murakoze cyane! / Thank you!`;
     } catch (error) {
       console.error('WhatsApp launch error:', error);
       toast({
-        title: "Error",
-        description: "Failed to open WhatsApp. Please try again.",
+        title: t('error'),
+        description: t('failed_open_whatsapp'),
         variant: "destructive"
       });
     } finally {

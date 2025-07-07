@@ -218,8 +218,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         toast({
-          title: "Success",
-          description: `You're now a ${role === UserRole.DRIVER ? 'driver' : 'passenger'}!`,
+        title: t('success'),
+        description: role === UserRole.DRIVER ? t('youre_now_driver') : t('youre_now_passenger'),
         });
         
         return;
@@ -292,8 +292,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       toast({
-        title: "Success",
-        description: `You're now a ${role === UserRole.DRIVER ? 'driver' : 'passenger'}!`,
+        title: t('success'),
+        description: role === UserRole.DRIVER ? t('youre_now_driver') : t('youre_now_passenger'),
       });
       
     } catch (error) {

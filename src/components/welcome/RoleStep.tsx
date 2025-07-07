@@ -120,7 +120,7 @@ const RoleStep: React.FC<RoleStepProps> = ({
               {showPromoInput && (
                 <input
                   type="text"
-                  placeholder="Enter promo code"
+                  placeholder={t('enter_promo_code')}
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center font-mono text-[17px] font-medium"

@@ -151,6 +151,22 @@ const translations = {
     'select_country_manually': 'Please select your country manually',
     'failed_save_role': 'Failed to save role. Please try again.',
     'failed_accept_draft': 'Failed to accept draft. Please try again.',
+    
+    // Additional hardcoded strings
+    'country_detected': 'Country Detected',
+    'auto_detection_failed': 'Auto-detection Failed',
+    'detection_failed': 'Detection Failed',
+    'we_detected_country': 'We detected you\'re in',
+    'authentication_required': 'Authentication Required',
+    'incomplete_trip': 'Incomplete Trip',
+    'where_from': 'Where from?',
+    'where_to': 'Where to?',
+    'success': 'Success',
+    'youre_now_driver': 'You\'re now a driver!',
+    'youre_now_passenger': 'You\'re now a passenger!',
+    'detecting_location': 'Detecting Location...',
+    'use_current_location': 'Use Current Location',
+    'current_location_checkmark': 'Current Location ✓',
   },
   
   rw: {
@@ -302,6 +318,22 @@ const translations = {
     'select_country_manually': 'Hitamo igihugu cyawe wenyine',
     'failed_save_role': 'Ntibyakunze kubika uruhare. Ongera ugerageze.',
     'failed_accept_draft': 'Ntibyakunze kwemeza icyanditswe. Ongera ugerageze.',
+    
+    // Additional hardcoded strings
+    'country_detected': 'Igihugu cyamenywe',
+    'auto_detection_failed': 'Gumenya byihariye byanze',
+    'detection_failed': 'Gumenya byanze',
+    'we_detected_country': 'Twamenye ko uri muri',
+    'authentication_required': 'Injira bisabwa',
+    'incomplete_trip': 'Urugendo rute',
+    'where_from': 'Uhereye he?',
+    'where_to': 'Ujya he?',
+    'success': 'Byagenze neza',
+    'youre_now_driver': 'Ubu uri umushoferi!',
+    'youre_now_passenger': 'Ubu uri umugenzi!',
+    'detecting_location': 'Turashakisha aho uri...',
+    'use_current_location': 'Koresha aho uri ubu',
+    'current_location_checkmark': 'Aho uri ubu ✓',
   },
   
   fr: {
@@ -453,6 +485,22 @@ const translations = {
     'select_country_manually': 'Veuillez sélectionner votre pays manuellement',
     'failed_save_role': 'Échec de la sauvegarde du rôle. Veuillez réessayer.',
     'failed_accept_draft': 'Échec de l\'acceptation du brouillon. Veuillez réessayer.',
+    
+    // Additional hardcoded strings
+    'country_detected': 'Pays détecté',
+    'auto_detection_failed': 'Détection automatique échouée',
+    'detection_failed': 'Détection échouée',
+    'we_detected_country': 'Nous avons détecté que vous êtes en',
+    'authentication_required': 'Authentification requise',
+    'incomplete_trip': 'Voyage incomplet',
+    'where_from': 'D\'où?',
+    'where_to': 'Vers où?',
+    'success': 'Succès',
+    'youre_now_driver': 'Vous êtes maintenant conducteur!',
+    'youre_now_passenger': 'Vous êtes maintenant passager!',
+    'detecting_location': 'Détection de localisation...',
+    'use_current_location': 'Utiliser la position actuelle',
+    'current_location_checkmark': 'Position actuelle ✓',
   }
 };
 

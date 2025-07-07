@@ -47,13 +47,13 @@ export const CountryStep = ({ onCountrySelect, onSkip }: CountryStepProps) => {
         setDetectedCountry(ipCountry);
         setSelectedCountry(ipCountry);
         toast({
-          title: "Country Detected",
-          description: `We detected you're in ${ipCountry.name}`,
+          title: t('country_detected'),
+          description: `${t('we_detected_country')} ${ipCountry.name}`,
         });
       } else {
         toast({
-          title: "Auto-detection Failed",
-          description: "Please select your country manually",
+          title: t('auto_detection_failed'),
+          description: t('select_country_manually'),
           variant: "destructive"
         });
         setShowAllCountries(true);
@@ -61,8 +61,8 @@ export const CountryStep = ({ onCountrySelect, onSkip }: CountryStepProps) => {
     } catch (error) {
       console.error('Country detection error:', error);
       toast({
-        title: "Detection Failed",
-        description: "Please select your country manually",
+        title: t('detection_failed'),
+        description: t('select_country_manually'),
         variant: "destructive"
       });
       setShowAllCountries(true);
@@ -172,7 +172,7 @@ export const CountryStep = ({ onCountrySelect, onSkip }: CountryStepProps) => {
         <div className="relative">
           <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
           <Input
-            placeholder="Search for your country..."
+            placeholder={t('search_country')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
