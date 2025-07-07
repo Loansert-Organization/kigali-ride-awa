@@ -16,9 +16,14 @@ const DriverHome = () => {
   const [trips, setTrips] = useState<DriverTrip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchTrips = async () => {
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
 
       // Skip database queries for local sessions
       if (user.id.startsWith('local-')) {
@@ -28,15 +33,18 @@ const DriverHome = () => {
       }
       
       setIsLoading(true);
+      setError(null);
+      
       try {
         const response = await apiClient.trips.getDriverTrips(user.id);
         if (response.success && response.data) {
           setTrips(response.data);
         } else {
-          console.error('Failed to fetch trips:', response.error?.message);
+          setError(response.error?.message || 'Failed to fetch trips');
         }
       } catch (error) {
         console.error('Error fetching driver trips:', error);
+        setError('Connection error. Please check your internet.');
       } finally {
         setIsLoading(false);
       }
@@ -45,8 +53,40 @@ const DriverHome = () => {
     fetchTrips();
   }, [user]);
 
+  const refetchTrips = async () => {
+    if (!user || user.id.startsWith('local-')) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiClient.trips.getDriverTrips(user.id);
+      if (response.success && response.data) {
+        setTrips(response.data);
+      } else {
+        setError(response.error?.message || 'Failed to fetch trips');
+      }
+    } catch (error) {
+      console.error('Error fetching driver trips:', error);
+      setError('Connection error. Please check your internet.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (authLoading || isLoading) {
-    return <div className="p-4 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div>
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <PageHeader 
+          title={t('profile')} 
+          showBack={false} 
+          showHome={false}
+        />
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -76,13 +116,24 @@ const DriverHome = () => {
           <h2 className="text-xl font-bold">{t('requests')}</h2>
         </div>
 
-        {trips.length === 0 ? (
-          <div className="text-center p-6">
-            <p className="text-gray-600 mb-4">{t('no_trips')}</p>
-            <Link to="/driver/create-trip">
-              <Button>{t('post_trip')}</Button>
-            </Link>
-          </div>
+        {error ? (
+          <Card className="bg-red-50 border-red-200">
+            <CardContent className="p-6 text-center">
+              <p className="text-red-800 mb-4">{error}</p>
+              <Button onClick={refetchTrips} variant="outline">
+                {t('try_again')}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : trips.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-gray-600 mb-4">{t('no_trips')}</p>
+              <Link to="/driver/create-trip">
+                <Button>{t('post_trip')}</Button>
+              </Link>
+            </CardContent>
+          </Card>
         ) : (
           trips.map(trip => (
             <Card key={trip.id}>

@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLocalization } from '@/hooks/useLocalization';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/services/APIClient';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Notification {
   id: string;
@@ -33,48 +34,67 @@ const Notifications = () => {
   }, []);
 
   const loadNotifications = async () => {
-    setLoading(true);
-    try {
-      // Mock notifications - in real app, this would call edge function
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    // For local users, use mock data
+    if (user.id.startsWith('local-')) {
       const mockNotifications: Notification[] = [
         {
           id: '1',
-          title: t('trip_matched'),
-          message: t('driver_found_for_trip'),
-          type: 'success',
-          read: false,
-          timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-          tripId: 'trip-123'
-        },
-        {
-          id: '2',
-          title: t('payment_reminder'),
-          message: t('complete_payment_for_trip'),
-          type: 'warning',
-          read: false,
-          timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          tripId: 'trip-122'
-        },
-        {
-          id: '3',
-          title: t('trip_completed'),
-          message: t('trip_completed_successfully'),
-          type: 'info',
-          read: true,
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          tripId: 'trip-121'
-        },
-        {
-          id: '4',
           title: t('welcome_message'),
           message: t('welcome_to_kigali_ride'),
           type: 'info',
-          read: true,
-          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+          read: false,
+          timestamp: new Date().toISOString()
         }
       ];
-
       setNotifications(mockNotifications);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Try to load from a basic query - for MVP, we can use trip updates as notifications
+      const { data: recentTrips, error } = await supabase
+        .from('trips')
+        .select('id, status, created_at, from_location, to_location')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (!error && recentTrips) {
+        // Convert recent trips to notifications
+        const tripNotifications: Notification[] = recentTrips.map((trip, index) => ({
+          id: `trip-${trip.id}`,
+          title: trip.status === 'completed' ? t('trip_completed') : 
+                 trip.status === 'matched' ? t('trip_matched') : 
+                 'Trip Update',
+          message: `${trip.from_location} → ${trip.to_location}`,
+          type: trip.status === 'completed' ? 'success' : 
+                trip.status === 'matched' ? 'info' : 'info',
+          read: index > 2, // Mark first 3 as unread
+          timestamp: trip.created_at,
+          tripId: trip.id
+        }));
+
+        setNotifications(tripNotifications);
+      } else {
+        // Fallback to basic notifications
+        setNotifications([
+          {
+            id: '1',
+            title: t('welcome_message'),
+            message: t('welcome_to_kigali_ride'),
+            type: 'info',
+            read: false,
+            timestamp: new Date().toISOString()
+          }
+        ]);
+      }
     } catch (error) {
       console.error('Failed to load notifications:', error);
       toast({
@@ -82,6 +102,18 @@ const Notifications = () => {
         description: t('failed_load_notifications'),
         variant: "destructive"
       });
+      
+      // Fallback notifications
+      setNotifications([
+        {
+          id: '1',
+          title: t('welcome_message'),
+          message: t('welcome_to_kigali_ride'),
+          type: 'info',
+          read: false,
+          timestamp: new Date().toISOString()
+        }
+      ]);
     } finally {
       setLoading(false);
     }
