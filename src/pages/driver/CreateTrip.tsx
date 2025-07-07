@@ -113,8 +113,8 @@ const CreateTrip = () => {
     if (user.id.startsWith('local-')) {
       setLoading(true);
       toast({
-        title: "Trip Posted! (Local)",
-        description: "Your trip has been saved locally. This is a preview and will not be visible to other users.",
+        title: t('trip_posted_local'),
+        description: t('trip_saved_locally_desc'),
       });
       setTimeout(() => {
         setLoading(false);
@@ -299,7 +299,7 @@ const CreateTrip = () => {
                 <SmartTimePicker
                   value={departureTime}
                   onChange={(v) => setDepartureTime(typeof v === 'string' ? v : v.toISOString())}
-                  label="When do you plan to leave?"
+                  label={t('when_plan_to_leave')}
                 />
               </div>
 
@@ -309,7 +309,7 @@ const CreateTrip = () => {
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-base font-semibold">
                     <Users className="w-4 h-4" />
-                    Seats
+                    {t('s_seats')}
                   </Label>
                   <Select value={availableSeats} onValueChange={setAvailableSeats}>
                     <SelectTrigger className="h-12">
@@ -318,7 +318,7 @@ const CreateTrip = () => {
                     <SelectContent>
                       {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
                         <SelectItem key={num} value={num.toString()}>
-                          {num} seat{num > 1 ? 's' : ''}
+                          {num} {num > 1 ? t('seat_count_plural') : t('seat_count')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -329,7 +329,7 @@ const CreateTrip = () => {
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-base font-semibold">
                     <DollarSign className="w-4 h-4" />
-                    Fare (RWF)
+                    {t('fare_rwf_label')}
                   </Label>
                   <Input
                     type="number"
@@ -347,7 +347,7 @@ const CreateTrip = () => {
               {fromLocation && toLocation && farePerSeat && (
                 <Card className="bg-green-50 border-green-200">
                   <CardContent className="p-4">
-                    <div className="text-sm font-medium text-green-800 mb-2">Trip Summary</div>
+                    <div className="text-sm font-medium text-green-800 mb-2">{t('trip_summary_header')}</div>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -383,7 +383,7 @@ const CreateTrip = () => {
                 className="w-full h-12 text-lg" 
                 disabled={loading || !fromLocation || !toLocation || !farePerSeat || !user}
               >
-                {loading ? 'Posting Trip...' : 'Post Your Trip'}
+                {loading ? t('posting_trip_loading') : t('post_your_trip_button')}
               </Button>
             </form>
           </CardContent>
