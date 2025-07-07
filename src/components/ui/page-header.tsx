@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Home } from 'lucide-react';
 import { useNavigation } from '@/hooks/useNavigation';
+import { useLocalization } from '@/hooks/useLocalization';
 
 interface PageHeaderProps {
   title: string;
@@ -19,6 +20,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   className = ""
 }) => {
   const { goBack, goToHome, canGoBack, isOnHomePage } = useNavigation();
+  const { t } = useLocalization();
 
   const handleBack = () => {
     if (onBack) {
@@ -47,7 +49,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               size="sm"
               onClick={handleBack}
               className="mr-3"
-              aria-label="Go back"
+              aria-label={t('go_back')}
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
@@ -60,7 +62,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleHome}
-            aria-label="Go to home"
+            aria-label={t('go_to_home')}
           >
             <Home className="w-4 h-4" />
           </Button>

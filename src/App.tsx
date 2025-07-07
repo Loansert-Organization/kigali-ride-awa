@@ -23,7 +23,7 @@ import { ChatDrawer } from './features/ai-chat/ChatDrawer';
 import { DraftTripBanner } from './features/ai-chat/DraftTripBanner';
 import { BottomNav } from '@/components/ui/bottom-nav';
 import { EmergencyNav } from '@/components/ui/emergency-nav';
-import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import { ErrorBoundary } from '@/components/error/LocalizedErrorBoundary';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useEffect } from 'react';

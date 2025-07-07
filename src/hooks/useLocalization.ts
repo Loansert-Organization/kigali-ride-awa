@@ -96,6 +96,15 @@ const translations = {
     'going_offline': 'Going Offline',
     'you_are_online': 'You are online and visible to passengers',
     'you_are_offline': 'You are offline and not visible to passengers',
+    
+    // Error handling
+    'something_went_wrong': 'Something went wrong',
+    'unexpected_error': 'The app encountered an unexpected error. You can try refreshing the page or going back.',
+    'error_details': 'Error Details',
+    'try_again': 'Try Again',
+    'reload_page': 'Reload Page',
+    'go_back': 'Go back',
+    'go_to_home': 'Go to home',
   },
   
   rw: {
@@ -192,6 +201,15 @@ const translations = {
     'going_offline': 'Gufunga serivisi',
     'you_are_online': 'Uri kumurongo kandi abagenji barakubona',
     'you_are_offline': 'Ntidukurikuriwe kandi abagenji ntibakubona',
+    
+    // Error handling
+    'something_went_wrong': 'Hari ikibazo',
+    'unexpected_error': 'Porogaramu yahuye n\'ikibazo kitunguranye. Ushobora kugerageza gusohora ukindi urupapuro cyangwa gusubira inyuma.',
+    'error_details': 'Amakuru y\'ikibazo',
+    'try_again': 'Ongera ugerageze',
+    'reload_page': 'Ongera ufungure urupapuro',
+    'go_back': 'Subira inyuma',
+    'go_to_home': 'Jya ku rukiko',
   },
   
   fr: {
@@ -288,6 +306,15 @@ const translations = {
     'going_offline': 'Mise hors ligne',
     'you_are_online': 'Vous êtes en ligne et visible aux passagers',
     'you_are_offline': 'Vous êtes hors ligne et non visible aux passagers',
+    
+    // Error handling
+    'something_went_wrong': 'Quelque chose s\'est mal passé',
+    'unexpected_error': 'L\'application a rencontré une erreur inattendue. Vous pouvez essayer de rafraîchir la page ou de revenir en arrière.',
+    'error_details': 'Détails de l\'erreur',
+    'try_again': 'Réessayer',
+    'reload_page': 'Recharger la page',
+    'go_back': 'Retourner',
+    'go_to_home': 'Aller à l\'accueil',
   }
 };
 
