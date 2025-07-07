@@ -7,10 +7,12 @@ import { apiClient } from '@/services/APIClient';
 import { DriverTrip } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Plus, Settings } from 'lucide-react';
+import { useLocalization } from '@/hooks/useLocalization';
 
 const DriverHome = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { t } = useLocalization();
   const [trips, setTrips] = useState<DriverTrip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -50,7 +52,7 @@ const DriverHome = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader 
-        title="Driver Dashboard" 
+        title={t('profile')} 
         showBack={false} 
         showHome={false}
       />
@@ -60,7 +62,7 @@ const DriverHome = () => {
         <div className="flex gap-3 mb-4">
           <Link to="/driver/create-trip" className="flex-1">
             <Button className="w-full">
-              <Plus className="w-4 h-4 mr-2" /> Post Trip
+              <Plus className="w-4 h-4 mr-2" /> {t('post_trip')}
             </Button>
           </Link>
           <Link to="/driver/vehicle-setup">
@@ -71,22 +73,30 @@ const DriverHome = () => {
         </div>
 
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">My Posted Trips</h2>
+          <h2 className="text-xl font-bold">{t('requests')}</h2>
         </div>
 
         {trips.length === 0 ? (
           <div className="text-center p-6">
-            <p className="text-gray-600 mb-4">You haven't posted any trips yet.</p>
+            <p className="text-gray-600 mb-4">{t('no_trips')}</p>
             <Link to="/driver/create-trip">
-              <Button>Post Your First Trip</Button>
+              <Button>{t('post_trip')}</Button>
             </Link>
           </div>
         ) : (
           trips.map(trip => (
             <Card key={trip.id}>
               <CardContent className="p-4">
-                <p className="font-semibold">{trip.from_address} ➜ {trip.to_address}</p>
-                <p className="text-sm text-gray-500">{new Date(trip.scheduled_departure_time).toLocaleString()}</p>
+                <p className="font-semibold">{trip.from_location} ➜ {trip.to_location}</p>
+                <p className="text-sm text-gray-500">{new Date(trip.scheduled_time).toLocaleString()}</p>
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                    {trip.status}
+                  </span>
+                  <span className="text-sm font-medium">
+                    {trip.seats_available} {t('seats_available')}
+                  </span>
+                </div>
               </CardContent>
             </Card>
           ))

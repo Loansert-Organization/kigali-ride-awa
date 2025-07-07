@@ -199,17 +199,18 @@ export class APIClient {
   // TRIPS ENDPOINTS
   // ===================================
   trips = {
-    createPassengerTrip: async (tripData: Partial<PassengerTrip>) => {
-      // Add default status and ensure all required fields
+    createPassengerTrip: async (tripData: any) => {
+      // Add default status and ensure all required fields for unified trips table
       const dataWithDefaults = {
         ...tripData,
-        status: tripData.status || 'requested',
+        role: 'passenger',
+        status: tripData.status || 'pending',
         created_at: new Date().toISOString()
       };
       
-      // Direct database insert instead of edge function (since edge functions aren't deployed)
+      // Use unified trips table
       const { data, error } = await supabase
-        .from('passenger_trips')
+        .from('trips')
         .insert(dataWithDefaults)
         .select()
         .single();
@@ -229,17 +230,18 @@ export class APIClient {
       };
     },
 
-    createDriverTrip: async (tripData: Partial<DriverTrip>) => {
-      // Add default status and ensure all required fields
+    createDriverTrip: async (tripData: any) => {
+      // Add default status and ensure all required fields for unified trips table
       const dataWithDefaults = {
         ...tripData,
-        status: tripData.status || 'open',
+        role: 'driver',
+        status: tripData.status || 'pending',
         created_at: new Date().toISOString()
       };
       
-      // Direct database insert instead of edge function (since edge functions aren't deployed)
+      // Use unified trips table
       const { data, error } = await supabase
-        .from('driver_trips')
+        .from('trips')
         .insert(dataWithDefaults)
         .select()
         .single();
@@ -259,8 +261,28 @@ export class APIClient {
       };
     },
 
-    getDriverTrips: (driverId: string) =>
-      this.request<DriverTrip[]>('get-driver-trips', { body: { driverId } }),
+    getDriverTrips: async (driverId: string) => {
+      // Query unified trips table for driver trips
+      const { data, error } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('user_id', driverId)
+        .eq('role', 'driver')
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Database error fetching driver trips:', error);
+        return {
+          success: false,
+          error: { message: error.message || 'Failed to fetch trips' }
+        };
+      }
+      
+      return {
+        success: true,
+        data
+      };
+    },
       
     getMatchesForRequest: (requestId: string) =>
       this.request<DriverTrip[]>('get-matches-for-request', { body: { requestId } }),
