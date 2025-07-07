@@ -641,6 +641,8 @@ export type Database = {
       }
       otp_codes: {
         Row: {
+          attempts: number | null
+          code: string | null
           created_at: string
           expires_at: string
           id: string
@@ -650,8 +652,11 @@ export type Database = {
           updated_at: string
           used: boolean
           user_id: string | null
+          verified: boolean | null
         }
         Insert: {
+          attempts?: number | null
+          code?: string | null
           created_at?: string
           expires_at?: string
           id?: string
@@ -661,8 +666,11 @@ export type Database = {
           updated_at?: string
           used?: boolean
           user_id?: string | null
+          verified?: boolean | null
         }
         Update: {
+          attempts?: number | null
+          code?: string | null
           created_at?: string
           expires_at?: string
           id?: string
@@ -672,6 +680,7 @@ export type Database = {
           updated_at?: string
           used?: boolean
           user_id?: string | null
+          verified?: boolean | null
         }
         Relationships: [
           {
@@ -1282,6 +1291,71 @@ export type Database = {
           },
           {
             foreignKeyName: "user_rewards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_rewards_leaderboard_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_sessions: {
+        Row: {
+          auth_method: string | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          is_active: boolean | null
+          phone_number: string | null
+          session_token: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_method?: string | null
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          is_active?: boolean | null
+          phone_number?: string | null
+          session_token: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_method?: string | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean | null
+          phone_number?: string | null
+          session_token?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "driver_booking_success_view"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_user_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "weekly_rewards_leaderboard_view"
