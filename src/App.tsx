@@ -23,6 +23,7 @@ import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import Notifications from "@/pages/Notifications";
 import WhatsAppAuth from "@/pages/auth/WhatsAppAuth";
+import MoMoPayment from "@/pages/payment/MoMoPayment";
 import { TripNew } from "@/pages/TripNew";
 import { ChatDrawer } from './features/ai-chat/ChatDrawer';
 import { DraftTripBanner } from './features/ai-chat/DraftTripBanner';
@@ -68,6 +69,7 @@ const AppRoutes = () => {
       <Route path="/profile" element={<Profile />} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/auth/whatsapp" element={<WhatsAppAuth />} />
+      <Route path="/payment/momo" element={<MoMoPayment />} />
       <Route path="/diag/map-test" element={<MapTestPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

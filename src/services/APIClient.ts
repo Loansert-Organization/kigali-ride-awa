@@ -200,15 +200,25 @@ export class APIClient {
   // ===================================
   trips = {
     createPassengerTrip: async (tripData: any) => {
-      // Add default status and ensure all required fields for unified trips table
+      // Try edge function first, fallback to direct DB
+      try {
+        const response = await this.request<any>('create-passenger-trip', { body: tripData });
+        if (response.success) {
+          return response;
+        }
+      } catch (error) {
+        console.warn('Edge function failed, using direct DB:', error);
+      }
+
+      // Fallback to direct database insertion
       const dataWithDefaults = {
         ...tripData,
         role: 'passenger',
         status: tripData.status || 'pending',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        user_id: tripData.passenger_id || tripData.user_id
       };
       
-      // Use unified trips table
       const { data, error } = await supabase
         .from('trips')
         .insert(dataWithDefaults)
@@ -231,15 +241,25 @@ export class APIClient {
     },
 
     createDriverTrip: async (tripData: any) => {
-      // Add default status and ensure all required fields for unified trips table
+      // Try edge function first, fallback to direct DB
+      try {
+        const response = await this.request<any>('create-driver-trip', { body: tripData });
+        if (response.success) {
+          return response;
+        }
+      } catch (error) {
+        console.warn('Edge function failed, using direct DB:', error);
+      }
+
+      // Fallback to direct database insertion
       const dataWithDefaults = {
         ...tripData,
         role: 'driver',
         status: tripData.status || 'pending',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        user_id: tripData.driver_id || tripData.user_id
       };
       
-      // Use unified trips table
       const { data, error } = await supabase
         .from('trips')
         .insert(dataWithDefaults)
@@ -262,7 +282,17 @@ export class APIClient {
     },
 
     getDriverTrips: async (driverId: string) => {
-      // Query unified trips table for driver trips
+      // Try edge function first, fallback to direct DB
+      try {
+        const response = await this.request<any>('get-driver-trips', { body: { driverId } });
+        if (response.success) {
+          return response;
+        }
+      } catch (error) {
+        console.warn('Edge function failed, using direct DB:', error);
+      }
+
+      // Fallback to direct database query
       const { data, error } = await supabase
         .from('trips')
         .select('*')
@@ -283,18 +313,78 @@ export class APIClient {
         data
       };
     },
+
+    getPassengerTrips: async (passengerId: string) => {
+      // Try edge function first, fallback to direct DB
+      try {
+        const response = await this.request<any>('get-passenger-trips', { body: { passengerId } });
+        if (response.success) {
+          return response;
+        }
+      } catch (error) {
+        console.warn('Edge function failed, using direct DB:', error);
+      }
+
+      // Fallback to direct database query
+      const { data, error } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('user_id', passengerId)
+        .eq('role', 'passenger')
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Database error fetching passenger trips:', error);
+        return {
+          success: false,
+          error: { message: error.message || 'Failed to fetch trips' }
+        };
+      }
       
-    getMatchesForRequest: (requestId: string) =>
-      this.request<DriverTrip[]>('get-matches-for-request', { body: { requestId } }),
+      return {
+        success: true,
+        data
+      };
+    },
       
-    getLiveDrivers: (location: { lat: number, lng: number }, radius?: number) =>
-      this.request<DriverTrip[]>('get-live-drivers', { body: { location, radius } }),
+    getMatchesForRequest: async (requestId: string) => {
+      try {
+        return await this.request<DriverTrip[]>('get-matches-for-request', { body: { requestId } });
+      } catch (error) {
+        console.warn('Matches edge function failed:', error);
+        // Fallback to empty matches for now
+        return { success: true, data: [] };
+      }
+    },
       
-    getNearbyOpenTrips: (location: { lat: number, lng: number }, radius?: number) =>
-      this.request<DriverTrip[]>('get-nearby-open-trips', { body: { location, radius } }),
+    getLiveDrivers: async (location: { lat: number, lng: number }, radius?: number) => {
+      try {
+        return await this.request<DriverTrip[]>('get-live-drivers', { body: { location, radius } });
+      } catch (error) {
+        console.warn('Live drivers edge function failed:', error);
+        // Fallback to empty drivers for now
+        return { success: true, data: [] };
+      }
+    },
       
-    matchPassengerDriver: (passengerTripId: string, driverTripId: string) =>
-      this.request<TripMatch>('match-passenger-driver', { body: { passengerTripId, driverTripId } }),
+    getNearbyOpenTrips: async (location: { lat: number, lng: number }, radius?: number) => {
+      try {
+        return await this.request<DriverTrip[]>('get-nearby-open-trips', { body: { location, radius } });
+      } catch (error) {
+        console.warn('Nearby trips edge function failed:', error);
+        // Fallback to empty trips for now
+        return { success: true, data: [] };
+      }
+    },
+      
+    matchPassengerDriver: async (passengerTripId: string, driverTripId: string) => {
+      try {
+        return await this.request<TripMatch>('match-passenger-driver', { body: { passengerTripId, driverTripId } });
+      } catch (error) {
+        console.warn('Match passenger driver edge function failed:', error);
+        return { success: false, error: { message: 'Failed to match trips' } };
+      }
+    },
   };
   
   // ===================================

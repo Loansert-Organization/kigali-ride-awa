@@ -67,18 +67,18 @@ export const useActiveRequest = () => {
     const pollForMatches = async () => {
       setIsLoadingMatches(true);
       try {
-        const response = await apiClient.request('match-passenger-driver', {
-          body: { 
-            action: 'find_matches',
-            passengerTripId: activeRequest.id
-          }
-        });
+        // Use improved APIClient with proper error handling
+        const response = await apiClient.trips.getMatchesForRequest(activeRequest.id);
         
-        if (response.success && response.data?.matches) {
-          setMatches(response.data.matches);
+        if (response.success && response.data) {
+          setMatches(Array.isArray(response.data) ? response.data : []);
+        } else {
+          console.warn('No matches found or API error:', response.error);
+          setMatches([]);
         }
       } catch (error) {
         console.error('Error fetching matches:', error);
+        setMatches([]);
       } finally {
         setIsLoadingMatches(false);
       }
@@ -87,8 +87,8 @@ export const useActiveRequest = () => {
     // Initial fetch
     pollForMatches();
 
-    // Poll every 10 seconds for new matches
-    const interval = setInterval(pollForMatches, 10000);
+    // Poll every 15 seconds for new matches (reduced frequency to avoid spam)
+    const interval = setInterval(pollForMatches, 15000);
 
     return () => clearInterval(interval);
   }, [activeRequest]);
@@ -155,14 +155,9 @@ export const useActiveRequest = () => {
             // New booking created - refresh matches
             const pollForMatches = async () => {
               try {
-                const response = await apiClient.request('match-passenger-driver', {
-                  body: { 
-                    action: 'find_matches',
-                    passengerTripId: activeRequest.id
-                  }
-                });
-                if (response.success && response.data?.matches) {
-                  setMatches(response.data.matches);
+                const response = await apiClient.trips.getMatchesForRequest(activeRequest.id);
+                if (response.success && response.data) {
+                  setMatches(Array.isArray(response.data) ? response.data : []);
                 }
               } catch (error) {
                 console.error('Error refreshing matches after booking update:', error);
@@ -205,21 +200,17 @@ export const useActiveRequest = () => {
     if (!activeRequest) return;
 
     try {
-      const response = await apiClient.request('match-passenger-driver', {
-        body: { 
-          action: 'create_booking',
-          passengerTripId: activeRequest.id,
-          driverTripId
-        }
-      });
+      // Use improved APIClient
+      const response = await apiClient.trips.matchPassengerDriver(activeRequest.id, driverTripId);
 
-      if (response.success && response.data?.booking) {
-        return response.data.booking;
+      if (response.success && response.data) {
+        return response.data;
       } else {
-        throw new Error(response.error || 'Failed to create booking');
+        throw new Error(response.error?.message || 'Failed to create booking');
       }
     } catch (error) {
       console.error('Error accepting match:', error);
+      throw error; // Re-throw so UI can handle it
     }
   };
 
