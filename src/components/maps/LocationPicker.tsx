@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { MapLocation } from '@/types';
 import { Search, MapPin, Crosshair, Map, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useLocalization } from '@/hooks/useLocalization';
 
 interface LocationPickerProps {
   onLocationSelect: (location: MapLocation) => void;
@@ -22,12 +23,13 @@ interface LocationPickerProps {
 export const LocationPicker = ({ 
   onLocationSelect, 
   title, 
-  placeholder = "Search for a location...",
+  placeholder,
   selectedLocation,
   showCurrentLocation = false,
   type = 'destination'
 }: LocationPickerProps) => {
   const { toast } = useToast();
+  const { t } = useLocalization();
   const { user } = useCurrentUser();
   const mapRef = useRef<HTMLDivElement>(null);
   
@@ -93,8 +95,8 @@ export const LocationPicker = ({
           console.error('Failed to initialize map:', error);
           setIsMapLoading(false);
           toast({
-            title: "Map Error",
-            description: "Failed to load map. Please check your internet connection.",
+            title: t('map_error'),
+            description: t('failed_load_map'),
             variant: "destructive"
           });
         });
@@ -172,7 +174,7 @@ export const LocationPicker = ({
     } catch (error) {
       console.error("Geocoding failed", error);
       toast({
-        title: "Location Error",
+        title: t('location_error'),
         description: "Unable to get address for this location",
         variant: "destructive"
       });
@@ -205,14 +207,14 @@ export const LocationPicker = ({
         onLocationSelect(location);
         
         toast({
-          title: "Location Detected",
+          title: t('location_detected'),
           description: "Current location set successfully",
         });
       }
     } catch (error) {
       console.error("Location detection failed", error);
       toast({
-        title: "Location Error",
+        title: t('location_error'),
         description: "Unable to detect current location. Please enable location permissions.",
         variant: "destructive"
       });
@@ -273,7 +275,7 @@ export const LocationPicker = ({
           console.error("Autocomplete failed", error);
           setPredictions([]);
           toast({
-            title: "Search Error",
+            title: t('search_error'),
             description: "Unable to search locations. Please check your internet connection.",
             variant: "destructive"
           });
@@ -319,7 +321,7 @@ export const LocationPicker = ({
         } else {
           console.error('Place details failed:', status);
           toast({
-            title: "Location Error",
+            title: t('location_error'),
             description: "Unable to get details for this location",
             variant: "destructive"
           });
@@ -328,7 +330,7 @@ export const LocationPicker = ({
     } catch (error) {
       console.error("Place details failed", error);
       toast({
-        title: "Location Error",
+        title: t('location_error'),
         description: "Unable to select this location",
         variant: "destructive"
       });
@@ -338,8 +340,8 @@ export const LocationPicker = ({
   const confirmMapSelection = () => {
     setIsMapOpen(false);
     toast({
-      title: "Location Selected",
-      description: "Location has been set from map",
+      title: t('location_selected'),
+      description: t('location_has_been_set'),
     });
   };
 
@@ -353,7 +355,7 @@ export const LocationPicker = ({
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
           <Input
-            placeholder={placeholder}
+            placeholder={placeholder || t('search_location')}
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
             className="pl-10"
@@ -408,7 +410,7 @@ export const LocationPicker = ({
               {isMapLoading ? (
                 <div className="w-full h-96 rounded-lg border flex items-center justify-center">
                   <Loader2 className="w-8 h-8 animate-spin" />
-                  <span className="ml-2">Loading map...</span>
+                  <span className="ml-2">{t('loading_map')}</span>
                 </div>
               ) : (
                 <div ref={mapRef} className="w-full h-96 rounded-lg border" />
@@ -419,7 +421,7 @@ export const LocationPicker = ({
                 </p>
                 <Button onClick={confirmMapSelection} disabled={isMapLoading}>
                   <Check className="w-4 h-4 mr-2" />
-                  Confirm Location
+                  {t('confirm_location')}
                 </Button>
               </div>
             </div>

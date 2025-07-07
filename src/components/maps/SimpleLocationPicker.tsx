@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Search, MapPin, Crosshair, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { countryDetectionService } from '@/services/CountryDetectionService';
+import { useLocalization } from '@/hooks/useLocalization';
 
 interface SimpleLocationPickerProps {
   onLocationSelect: (location: MapLocation) => void;
@@ -44,12 +45,13 @@ const getCommonLocations = (country: string) => {
 
 export const SimpleLocationPicker = ({ 
   onLocationSelect, 
-  placeholder = "Search for a location...",
+  placeholder,
   selectedLocation,
   showCurrentLocation = false,
   type = 'destination'
 }: SimpleLocationPickerProps) => {
   const { toast } = useToast();
+  const { t } = useLocalization();
   const { user } = useCurrentUser();
   const [search, setSearch] = useState(selectedLocation?.address || '');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -77,7 +79,7 @@ export const SimpleLocationPicker = ({
     onLocationSelect(mapLocation);
     
     toast({
-      title: "Location Selected",
+      title: t('location_selected'),
       description: location.name,
     });
   };
@@ -113,13 +115,13 @@ export const SimpleLocationPicker = ({
       onLocationSelect(location);
       
       toast({
-        title: "Location Detected",
+        title: t('location_detected'),
         description: "Current location set successfully",
       });
     } catch (error) {
       console.error("Location detection failed", error);
       toast({
-        title: "Location Error",
+        title: t('location_error'),
         description: "Unable to detect current location. Please enable location permissions.",
         variant: "destructive"
       });
@@ -139,7 +141,7 @@ export const SimpleLocationPicker = ({
       <div className="relative">
         <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
         <Input
-          placeholder={placeholder}
+          placeholder={placeholder || t('search_location')}
           value={search}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => setShowSuggestions(search.length > 0)}
@@ -206,7 +208,7 @@ export const SimpleLocationPicker = ({
           ) : (
             <Crosshair className="w-4 h-4 mr-2" />
           )}
-          {isDetectingLocation ? 'Detecting Location...' : 'Use Current Location'}
+          {isDetectingLocation ? t('loading') : 'Use Current Location'}
         </Button>
       )}
 

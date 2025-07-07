@@ -105,6 +105,52 @@ const translations = {
     'reload_page': 'Reload Page',
     'go_back': 'Go back',
     'go_to_home': 'Go to home',
+    
+    // Map and Location
+    'map_error': 'Map Error',
+    'location_error': 'Location Error',
+    'location_detected': 'Location Detected',
+    'location_selected': 'Location Selected',
+    'search_error': 'Search Error',
+    'search_location': 'Search for a location...',
+    'confirm_location': 'Confirm Location',
+    'loading_map': 'Loading map...',
+    'failed_load_map': 'Failed to load map. Please check your internet connection.',
+    'location_has_been_set': 'Location has been set from map',
+    'failed_open_whatsapp': 'Failed to open WhatsApp. Please try again.',
+    
+    // Form placeholders and labels
+    'enter_pickup_location': 'Enter pickup location',
+    'enter_dropoff_location': 'Enter drop-off location',
+    'enter_destination': 'Enter destination',
+    'choose_vehicle_type': 'Choose Vehicle Type',
+    'select_date': 'Select date',
+    'select_time': 'Select time',
+    'enter_promo_code': 'Enter promo code',
+    'search_country': 'Search for your country...',
+    
+    // Trip creation
+    'confirm_trip': 'Confirm Trip',
+    'failed_create_trip': 'Failed to Create Trip',
+    'complete_route': 'Complete Route',
+    'complete_details': 'Complete Details',
+    'select_pickup_destination': 'Please select both pickup and destination locations',
+    'fill_required_details': 'Please fill in all required trip details',
+    'login_required': 'Please log in to create a trip',
+    'fill_required_fields': 'Please fill in all required fields',
+    'complete_required_fields': 'Please complete all required fields',
+    'ensure_logged_in': 'Please ensure you\'re logged in',
+    'check_internet': 'Please check your internet connection.',
+    'add_vehicle_first': 'Please add a vehicle first to post trips.',
+    'missing_locations': 'Missing Locations',
+    'invalid_fare': 'Invalid Fare',
+    'enter_valid_fare': 'Please enter a valid fare per seat',
+    
+    // General messages
+    'permissions_skipped': 'Permissions Skipped',
+    'select_country_manually': 'Please select your country manually',
+    'failed_save_role': 'Failed to save role. Please try again.',
+    'failed_accept_draft': 'Failed to accept draft. Please try again.',
   },
   
   rw: {
@@ -210,6 +256,52 @@ const translations = {
     'reload_page': 'Ongera ufungure urupapuro',
     'go_back': 'Subira inyuma',
     'go_to_home': 'Jya ku rukiko',
+    
+    // Map and Location
+    'map_error': 'Ikibazo cy\'ikarita',
+    'location_error': 'Ikibazo cy\'aho uri',
+    'location_detected': 'Aho uri hamenye',
+    'location_selected': 'Aho uri hahitanwe',
+    'search_error': 'Ikibazo cyo gushakisha',
+    'search_location': 'Shakisha aho uri...',
+    'confirm_location': 'Emeza aho uri',
+    'loading_map': 'Kuraguza ikarita...',
+    'failed_load_map': 'Ntabwo ikarita yashyitsemo. Reba niba internet ikora.',
+    'location_has_been_set': 'Ahantu hashyizweho ku karita',
+    'failed_open_whatsapp': 'Ntabwo WhatsApp yafunguye. Ongera ugerageze.',
+    
+    // Form placeholders and labels
+    'enter_pickup_location': 'Andika aho uzatorwa',
+    'enter_dropoff_location': 'Andika aho ugiye',
+    'enter_destination': 'Andika aho ugiye',
+    'choose_vehicle_type': 'Hitamo ubwoko bw\'ikinyabiziga',
+    'select_date': 'Hitamo itariki',
+    'select_time': 'Hitamo igihe',
+    'enter_promo_code': 'Andika kode ya promo',
+    'search_country': 'Shakisha igihugu cyawe...',
+    
+    // Trip creation
+    'confirm_trip': 'Emeza urugendo',
+    'failed_create_trip': 'Ntibyakunze gukora urugendo',
+    'complete_route': 'Rangiza inzira',
+    'complete_details': 'Rangiza amakuru',
+    'select_pickup_destination': 'Hitamo aho uzatorwa n\'aho ugiye',
+    'fill_required_details': 'Uzuza amakuru akenewe',
+    'login_required': 'Injira mbere yo gukora urugendo',
+    'fill_required_fields': 'Uzuza ibisabwa byose',
+    'complete_required_fields': 'Rangiza ibisabwa byose',
+    'ensure_logged_in': 'Menya neza ko wainjiye',
+    'check_internet': 'Reba niba internet ikora.',
+    'add_vehicle_first': 'Ongeraho ikinyabiziga mbere yo gushyiraho urugendo.',
+    'missing_locations': 'Ahantu habuze',
+    'invalid_fare': 'Ikiguzi kitari cyo',
+    'enter_valid_fare': 'Andika ikiguzi nyacyo ku ntebe',
+    
+    // General messages
+    'permissions_skipped': 'Uruhushya rwasimbukwe',
+    'select_country_manually': 'Hitamo igihugu cyawe wenyine',
+    'failed_save_role': 'Ntibyakunze kubika uruhare. Ongera ugerageze.',
+    'failed_accept_draft': 'Ntibyakunze kwemeza icyanditswe. Ongera ugerageze.',
   },
   
   fr: {
@@ -315,6 +407,52 @@ const translations = {
     'reload_page': 'Recharger la page',
     'go_back': 'Retourner',
     'go_to_home': 'Aller à l\'accueil',
+    
+    // Map and Location
+    'map_error': 'Erreur de carte',
+    'location_error': 'Erreur de localisation',
+    'location_detected': 'Localisation détectée',
+    'location_selected': 'Localisation sélectionnée',
+    'search_error': 'Erreur de recherche',
+    'search_location': 'Rechercher un lieu...',
+    'confirm_location': 'Confirmer la localisation',
+    'loading_map': 'Chargement de la carte...',
+    'failed_load_map': 'Échec du chargement de la carte. Vérifiez votre connexion internet.',
+    'location_has_been_set': 'La localisation a été définie sur la carte',
+    'failed_open_whatsapp': 'Échec de l\'ouverture de WhatsApp. Veuillez réessayer.',
+    
+    // Form placeholders and labels
+    'enter_pickup_location': 'Entrez le lieu de prise en charge',
+    'enter_dropoff_location': 'Entrez le lieu de dépôt',
+    'enter_destination': 'Entrez la destination',
+    'choose_vehicle_type': 'Choisissez le type de véhicule',
+    'select_date': 'Sélectionner la date',
+    'select_time': 'Sélectionner l\'heure',
+    'enter_promo_code': 'Entrez le code promo',
+    'search_country': 'Recherchez votre pays...',
+    
+    // Trip creation
+    'confirm_trip': 'Confirmer le trajet',
+    'failed_create_trip': 'Échec de création du trajet',
+    'complete_route': 'Compléter l\'itinéraire',
+    'complete_details': 'Compléter les détails',
+    'select_pickup_destination': 'Veuillez sélectionner les lieux de prise en charge et de destination',
+    'fill_required_details': 'Veuillez remplir tous les détails requis du trajet',
+    'login_required': 'Veuillez vous connecter pour créer un trajet',
+    'fill_required_fields': 'Veuillez remplir tous les champs requis',
+    'complete_required_fields': 'Veuillez compléter tous les champs requis',
+    'ensure_logged_in': 'Veuillez vous assurer d\'être connecté',
+    'check_internet': 'Veuillez vérifier votre connexion internet.',
+    'add_vehicle_first': 'Veuillez d\'abord ajouter un véhicule pour publier des trajets.',
+    'missing_locations': 'Lieux manquants',
+    'invalid_fare': 'Tarif invalide',
+    'enter_valid_fare': 'Veuillez entrer un tarif valide par siège',
+    
+    // General messages
+    'permissions_skipped': 'Permissions ignorées',
+    'select_country_manually': 'Veuillez sélectionner votre pays manuellement',
+    'failed_save_role': 'Échec de la sauvegarde du rôle. Veuillez réessayer.',
+    'failed_accept_draft': 'Échec de l\'acceptation du brouillon. Veuillez réessayer.',
   }
 };
 
