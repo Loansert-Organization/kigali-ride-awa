@@ -14,6 +14,7 @@ import MatchesPage from "@/pages/passenger/Matches";
 import BookingConfirmedPage from "@/pages/passenger/BookingConfirmed";
 import TripHistory from "@/pages/passenger/TripHistory";
 import TripDetails from "@/pages/passenger/TripDetails";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
 import CreateTripPage from "@/pages/driver/CreateTrip";
 import VehicleSetupPage from "@/pages/driver/VehicleSetup";
 import MapTestPage from "@/pages/diag/MapTest";
@@ -22,6 +23,7 @@ import { ChatDrawer } from './features/ai-chat/ChatDrawer';
 import { DraftTripBanner } from './features/ai-chat/DraftTripBanner';
 import { BottomNav } from '@/components/ui/bottom-nav';
 import { EmergencyNav } from '@/components/ui/emergency-nav';
+import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useEffect } from 'react';
@@ -52,6 +54,7 @@ const AppRoutes = () => {
       <Route path="/passenger/booking-confirmed/:bookingId" element={<BookingConfirmedPage />} />
       <Route path="/passenger/history" element={<TripHistory />} />
       <Route path="/passenger/trip-details/:tripId" element={<TripDetails />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/driver/home" element={<DriverHomePage />} />
       <Route path="/driver/create-trip" element={<CreateTripPage />} />
       <Route path="/driver/vehicle-setup" element={<VehicleSetupPage />} />
@@ -77,22 +80,24 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <PushInit />
-          <ToastProvider>
-            <Router>
-              <div className="font-sans pb-16">
-                {/* Theme toggle floating button */}
-                <div className="fixed top-4 right-4 z-50">
-                  <ThemeToggle />
+          <ErrorBoundary>
+            <PushInit />
+            <ToastProvider>
+              <Router>
+                <div className="font-sans pb-16">
+                  {/* Theme toggle floating button */}
+                  <div className="fixed top-4 right-4 z-50">
+                    <ThemeToggle />
+                  </div>
+                  <AppRoutes />
+                  <Toaster />
+                  <DraftTripBanner />
+                  <BottomNav />
+                  <EmergencyNav />
                 </div>
-                <AppRoutes />
-                <Toaster />
-                <DraftTripBanner />
-                <BottomNav />
-                <EmergencyNav />
-              </div>
-            </Router>
-          </ToastProvider>
+              </Router>
+            </ToastProvider>
+          </ErrorBoundary>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
