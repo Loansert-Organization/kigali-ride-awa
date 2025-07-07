@@ -48,8 +48,12 @@ const Profile = () => {
     if (!user) return;
     
     try {
-      // Get user trip history using existing API
-      const response = await apiClient.trips.getDriverTrips(user.id);
+      // Get appropriate trip history based on user role
+      const isDriver = userProfile?.role === 'driver';
+      const response = isDriver 
+        ? await apiClient.trips.getDriverTrips(user.id)
+        : await apiClient.trips.getPassengerTrips(user.id);
+        
       if (response.success && response.data) {
         const trips = response.data;
         setUserStats({
@@ -61,6 +65,13 @@ const Profile = () => {
       }
     } catch (error) {
       console.error('Failed to load user stats:', error);
+      // Set fallback stats
+      setUserStats({
+        totalTrips: 0,
+        completedTrips: 0,
+        rating: 0,
+        joinDate: userProfile?.created_at || new Date().toISOString()
+      });
     }
   };
 

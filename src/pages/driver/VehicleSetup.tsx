@@ -82,9 +82,15 @@ const VehicleSetupPage = () => {
       // For real users, save to Supabase
       console.log('Saving vehicle to Supabase:', vehicleData);
       
+      // Use driver_profiles table (which exists) instead of driver_vehicles
       const { data, error } = await supabase
-        .from('driver_vehicles')
-        .insert(vehicleData)
+        .from('driver_profiles')
+        .upsert({
+          user_id: vehicleData.driver_id,
+          vehicle_type: vehicleData.vehicle_type,
+          plate_number: vehicleData.license_plate,
+          is_online: false,
+        })
         .select()
         .single();
 
