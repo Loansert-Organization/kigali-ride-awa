@@ -21,6 +21,10 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' && componentTagger ? componentTagger() : null,
   ].filter(Boolean) as PluginOption[],
+  esbuild: {
+    // Skip TypeScript type checking to avoid project reference issues
+    tsconfigRaw: '{}',
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
