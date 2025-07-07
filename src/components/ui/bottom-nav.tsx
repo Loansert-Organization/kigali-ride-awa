@@ -47,8 +47,8 @@ export const BottomNav: React.FC = () => {
     },
     {
       icon: User,
-      label: t('find_matches'),
-      path: '/passenger/matches',
+      label: t('trip_history'),
+      path: '/passenger/history',
     },
   ];
 

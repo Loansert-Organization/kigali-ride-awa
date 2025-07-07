@@ -93,12 +93,12 @@ export const useActiveRequest = () => {
     return () => clearInterval(interval);
   }, [activeRequest]);
 
-  // Listen for real-time updates on trips
+  // Listen for real-time updates on trips using the custom hook
   useEffect(() => {
-    if (!user) return;
+    if (!user || user.id.startsWith('local-')) return;
 
     const channel = supabase
-      .channel('trips_updates')
+      .channel(`trips_updates_${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -136,10 +136,10 @@ export const useActiveRequest = () => {
 
   // Listen for real-time updates on bookings
   useEffect(() => {
-    if (!activeRequest) return;
+    if (!activeRequest || user?.id.startsWith('local-')) return;
 
     const channel = supabase
-      .channel('bookings_updates')
+      .channel(`bookings_updates_${activeRequest.id}`)
       .on(
         'postgres_changes',
         {
@@ -154,14 +154,18 @@ export const useActiveRequest = () => {
           if (payload.eventType === 'INSERT' && payload.new) {
             // New booking created - refresh matches
             const pollForMatches = async () => {
-              const response = await apiClient.request('match-passenger-driver', {
-                body: { 
-                  action: 'find_matches',
-                  passengerTripId: activeRequest.id
+              try {
+                const response = await apiClient.request('match-passenger-driver', {
+                  body: { 
+                    action: 'find_matches',
+                    passengerTripId: activeRequest.id
+                  }
+                });
+                if (response.success && response.data?.matches) {
+                  setMatches(response.data.matches);
                 }
-              });
-              if (response.success && response.data?.matches) {
-                setMatches(response.data.matches);
+              } catch (error) {
+                console.error('Error refreshing matches after booking update:', error);
               }
             };
             pollForMatches();
@@ -173,7 +177,7 @@ export const useActiveRequest = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeRequest]);
+  }, [activeRequest, user]);
 
   const clearRequest = async () => {
     if (!activeRequest) return;

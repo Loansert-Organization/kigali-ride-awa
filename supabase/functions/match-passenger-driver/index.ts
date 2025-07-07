@@ -94,17 +94,16 @@ serve(async (req) => {
         throw new Error('Passenger trip not found');
       }
 
-      // Get available driver trips - Fixed to use correct table structure
+      // Get available driver trips with correct schema
       const { data: driverTrips, error: driverError } = await supabase
         .from('trips')
         .select(`
           *,
-          user:user_id!inner(promo_code, phone_number),
+          users!inner(promo_code, phone_number),
           driver_profiles!inner(plate_number, is_online, vehicle_type)
         `)
         .eq('role', 'driver')
         .eq('status', 'pending')
-        .eq('driver_profiles.is_online', true)
         .gt('seats_available', 0);
 
       if (driverError) throw driverError;
@@ -115,8 +114,8 @@ serve(async (req) => {
         .map(trip => ({
           ...trip,
           match_score: calculateMatchScore(passengerTrip, trip),
-          driver_promo_code: trip.users.promo_code,
-          plate_number: trip.driver_profiles.plate_number
+          driver_promo_code: trip.users?.promo_code || '',
+          plate_number: trip.driver_profiles?.plate_number || ''
         }))
         .filter(trip => trip.match_score >= 40) // Minimum match threshold
         .sort((a, b) => b.match_score - a.match_score)

@@ -38,23 +38,23 @@ serve(async (req) => {
         created_at,
         updated_at,
         passenger_trip:passenger_trip_id(
-          from_address:from_location,
-          to_address:to_location,
-          requested_departure_time:scheduled_time,
-          passenger:user_id(
+          from_location,
+          to_location,
+          scheduled_time,
+          users!inner(
             phone_number,
-            name:auth_user_id
+            auth_user_id
           )
         ),
         driver_trip:driver_trip_id(
-          from_address:from_location,
-          to_address:to_location,
-          scheduled_departure_time:scheduled_time,
+          from_location,
+          to_location,
+          scheduled_time,
           vehicle_type,
-          fare_per_seat:fare,
-          driver:user_id(
+          fare,
+          users!inner(
             phone_number,
-            name:auth_user_id
+            auth_user_id
           )
         )
       `)
@@ -83,23 +83,23 @@ serve(async (req) => {
       whatsapp_launched: booking.whatsapp_launched,
       created_at: booking.created_at,
       passengerTrip: {
-        from_address: booking.passenger_trip?.from_address || '',
-        to_address: booking.passenger_trip?.to_address || '',
-        requested_departure_time: booking.passenger_trip?.requested_departure_time || booking.created_at
+        from_location: booking.passenger_trip?.from_location || '',
+        to_location: booking.passenger_trip?.to_location || '',
+        scheduled_time: booking.passenger_trip?.scheduled_time || booking.created_at
       },
       driverTrip: {
-        from_address: booking.driver_trip?.from_address || '',
-        to_address: booking.driver_trip?.to_address || '',
-        scheduled_departure_time: booking.driver_trip?.scheduled_departure_time || booking.created_at,
+        from_location: booking.driver_trip?.from_location || '',
+        to_location: booking.driver_trip?.to_location || '',
+        scheduled_time: booking.driver_trip?.scheduled_time || booking.created_at,
         vehicle_type: booking.driver_trip?.vehicle_type || 'car',
-        fare_per_seat: booking.driver_trip?.fare_per_seat || 0
+        fare: booking.driver_trip?.fare || 0
       },
       driver: {
-        phone_number: booking.driver_trip?.driver?.phone_number || '',
-        name: booking.driver_trip?.driver?.name || 'Driver'
+        phone_number: booking.driver_trip?.users?.phone_number || '',
+        name: booking.driver_trip?.users?.auth_user_id || 'Driver'
       },
       passenger: {
-        name: booking.passenger_trip?.passenger?.name || 'Passenger'
+        name: booking.passenger_trip?.users?.auth_user_id || 'Passenger'
       }
     };
 

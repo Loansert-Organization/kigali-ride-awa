@@ -53,6 +53,8 @@ const translations = {
     'trip_created': 'Trip created successfully',
     'booking_confirmed': 'Booking confirmed',
     'connection_error': 'Connection error. Please try again.',
+    'offline_mode': 'Offline Mode',
+    'trip_history': 'Trip History',
   },
   
   rw: {
@@ -106,6 +108,8 @@ const translations = {
     'trip_created': 'Urugendo rwashyizweho neza',
     'booking_confirmed': 'Igifuzo cyemejwe',
     'connection_error': 'Ikibazo cy\'ukwihuza. Gerageza undi mukanya.',
+    'offline_mode': 'Ntamurongo',
+    'trip_history': 'Amateka y\'ingendo',
   },
   
   fr: {
@@ -159,6 +163,8 @@ const translations = {
     'trip_created': 'Voyage créé avec succès',
     'booking_confirmed': 'Réservation confirmée',
     'connection_error': 'Erreur de connexion. Veuillez réessayer.',
+    'offline_mode': 'Mode Hors Ligne',
+    'trip_history': 'Historique des Voyages',
   }
 };
 
