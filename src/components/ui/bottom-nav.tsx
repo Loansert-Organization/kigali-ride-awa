@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Home, Plus, User, Car } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types';
+import { useLocalization } from '@/hooks/useLocalization';
 
 export const BottomNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { role } = useAuth();
+  const { t } = useLocalization();
 
   if (!role || role === UserRole.ADMIN) return null;
 
@@ -17,17 +19,17 @@ export const BottomNav: React.FC = () => {
   const driverTabs = [
     {
       icon: Home,
-      label: 'Home',
+      label: t('home'),
       path: '/driver/home',
     },
     {
       icon: Plus,
-      label: 'Post Trip',
+      label: t('post_trip'),
       path: '/driver/create-trip',
     },
     {
       icon: Car,
-      label: 'Vehicle',
+      label: t('vehicle_type'),
       path: '/driver/vehicle-setup',
     },
   ];
@@ -35,17 +37,17 @@ export const BottomNav: React.FC = () => {
   const passengerTabs = [
     {
       icon: Home,
-      label: 'Home',
+      label: t('home'),
       path: '/passenger/home',
     },
     {
       icon: Plus,
-      label: 'Request',
+      label: t('book'),
       path: '/passenger/request',
     },
     {
       icon: User,
-      label: 'Matches',
+      label: t('find_matches'),
       path: '/passenger/matches',
     },
   ];

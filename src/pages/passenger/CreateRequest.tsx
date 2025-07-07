@@ -12,11 +12,13 @@ import { apiClient } from '@/services/APIClient';
 import { VehicleType, PassengerTrip, MapLocation } from '@/types';
 import { Car, Clock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLocalization } from '@/hooks/useLocalization';
 
 const CreateRequest = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { t } = useLocalization();
   
   const [fromLocation, setFromLocation] = useState<MapLocation | null>(null);
   const [toLocation, setToLocation] = useState<MapLocation | null>(null);
@@ -142,7 +144,7 @@ const CreateRequest = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader 
-        title="Request a Ride" 
+        title={t('book_ride')} 
         showBack={true} 
         showHome={true}
       />
@@ -152,7 +154,7 @@ const CreateRequest = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Car className="w-5 h-5" />
-              Request a Ride
+              {t('book_ride')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -161,7 +163,7 @@ const CreateRequest = () => {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-base font-semibold">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  Pickup Location
+                  {t('from')}
                 </Label>
                 <SimpleLocationPicker
                   onLocationSelect={handleFromLocationSelect}
@@ -176,7 +178,7 @@ const CreateRequest = () => {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-base font-semibold">
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  Destination
+                  {t('to')}
                 </Label>
                 <SimpleLocationPicker
                   onLocationSelect={handleToLocationSelect}
@@ -198,15 +200,14 @@ const CreateRequest = () => {
 
               {/* Vehicle Type Preference */}
               <div className="space-y-2">
-                <Label className="text-base font-semibold">Vehicle Preference</Label>
+                <Label className="text-base font-semibold">{t('vehicle_type')}</Label>
                 <Select value={vehicleType} onValueChange={(value) => setVehicleType(value as VehicleType | 'any')}>
                   <SelectTrigger className="h-12">
                     <SelectValue>
                       <div className="flex items-center gap-3">
                         <span className="text-xl">{getVehicleIcon(vehicleType)}</span>
                         <span>
-                          {vehicleType === 'any' ? 'Any Vehicle' : 
-                           vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1)}
+                          {vehicleType === 'any' ? t('vehicle_type') : t(vehicleType)}
                         </span>
                       </div>
                     </SelectValue>
@@ -215,31 +216,31 @@ const CreateRequest = () => {
                     <SelectItem value="any">
                       <div className="flex items-center gap-3">
                         <span className="text-lg">🚗</span>
-                        <span>Any Vehicle</span>
+                        <span>{t('vehicle_type')}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value={VehicleType.MOTO}>
                       <div className="flex items-center gap-3">
                         <span className="text-lg">🏍️</span>
-                        <span>Motorcycle</span>
+                        <span>{t('moto')}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value={VehicleType.CAR}>
                       <div className="flex items-center gap-3">
                         <span className="text-lg">🚗</span>
-                        <span>Car</span>
+                        <span>{t('car')}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value={VehicleType.TUKTUK}>
                       <div className="flex items-center gap-3">
                         <span className="text-lg">🛺</span>
-                        <span>Tuk-Tuk</span>
+                        <span>{t('tuktuk')}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value={VehicleType.MINIBUS}>
                       <div className="flex items-center gap-3">
                         <span className="text-lg">🚐</span>
-                        <span>Minibus</span>
+                        <span>{t('minibus')}</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -281,7 +282,7 @@ const CreateRequest = () => {
                 className="w-full h-12 text-lg" 
                 disabled={loading || !fromLocation || !toLocation || !user}
               >
-                {loading ? 'Creating Request...' : 'Find My Ride'}
+                {loading ? t('loading') : t('book_ride')}
               </Button>
             </form>
           </CardContent>

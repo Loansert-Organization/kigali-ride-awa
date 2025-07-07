@@ -7,11 +7,13 @@ import { useActiveRequest } from '@/hooks/useActiveRequest';
 import { VehicleType } from '@/types';
 import { Car, Star, MapPin, Clock, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLocalization } from '@/hooks/useLocalization';
 
 const Matches = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { activeRequest, matches, isLoadingMatches, acceptMatch } = useActiveRequest();
+  const { t } = useLocalization();
 
   if (!activeRequest) {
     navigate('/passenger/home');
@@ -83,7 +85,7 @@ const Matches = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader 
-        title="Available Matches" 
+        title={t('find_matches')} 
         showBack={true} 
         showHome={true}
         onBack={() => navigate('/passenger/home')}
@@ -97,14 +99,14 @@ const Matches = () => {
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-gray-600">From</p>
+                  <p className="text-sm text-gray-600">{t('from')}</p>
                   <p className="font-medium">{activeRequest.from_address}</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-red-600 mt-1 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-gray-600">To</p>
+                  <p className="text-sm text-gray-600">{t('to')}</p>
                   <p className="font-medium">{activeRequest.to_address}</p>
                 </div>
               </div>
@@ -204,7 +206,7 @@ const Matches = () => {
                     className="w-full"
                     size="sm"
                   >
-                    Accept Match
+                    {t('confirm')}
                   </Button>
                 </div>
               </CardContent>
