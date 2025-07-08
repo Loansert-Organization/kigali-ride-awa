@@ -598,8 +598,8 @@ export class APIClient {
     sendWhatsAppTemplate: (phoneNumber: string, templateName: string, parameters?: string[]) =>
       this.request('send-whatsapp-template', { body: { phoneNumber, templateName, parameters } }),
       
-    sendWhatsAppInvite: (phoneNumber: string, inviteLink: string) =>
-      this.request('send-whatsapp-invite', { body: { phoneNumber, inviteLink } }),
+    sendWhatsAppInvite: (phoneNumber: string, message: string) =>
+      this.request('send-whatsapp-invite', { body: { phoneNumber, message } }),
       
     notifyTripMatched: (matchId: string) =>
       this.request('notify-trip-matched', { body: { matchId } }),
