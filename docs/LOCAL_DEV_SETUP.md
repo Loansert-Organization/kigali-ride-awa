@@ -15,17 +15,18 @@ npm install
 
 ## 2. Start Supabase
 
-Run the Supabase CLI from the project root. This starts the local Postgres database, authentication and Edge Functions.
+Start the Supabase services from the project root:
 
 ```bash
 supabase start
 ```
 
-Leave this process running in its terminal so the services remain available.
+Leave this command running so the database and auth services remain available.
 
 ## 3. Configure environment variables
 
-Create a `.env.local` file and copy the credentials printed by `supabase start` into it. A typical file looks like:
+Create a `.env.local` file in the project root and paste the credentials printed by `supabase start`.
+A minimal file looks like:
 
 ```env
 VITE_SUPABASE_URL=http://127.0.0.1:54321
@@ -33,7 +34,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 VITE_GOOGLE_MAPS_API_KEY=your-google-maps-key
 ```
 
-## 4. Start the dev server
+## 4. Start the development server
 
 In a new terminal, run:
 
@@ -41,4 +42,4 @@ In a new terminal, run:
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173` and will use the local Supabase instance.
+The app will be available at `http://localhost:5173` and will connect to your local Supabase instance.
