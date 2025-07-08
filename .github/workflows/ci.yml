@@ -1,30 +1,38 @@
-name: CI
+name: CI with pnpm
 
 on:
-  pull_request:
   push:
+    branches: [ main ]
+  pull_request:
     branches: [ main ]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Setup Node
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18.20.8
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-          cache: 'pnpm'
+          node-version: 18.20.8
 
-      - name: Install pnpm
+      - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
-          run_install: true
+          run_install: false
 
-      - name: Type check
-        run: pnpm run type-check || true  # keep going even if script missing
+      - name: Check pnpm version (debug)
+        run: pnpm --version
 
-      - name: Run unit tests
-        run: pnpm exec vitest run --coverage 
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
